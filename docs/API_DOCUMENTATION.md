@@ -8,7 +8,7 @@ This document provides comprehensive API documentation for the Sales Dashboard A
 
 ```
 Production: https://yourdomain.com/api
-Development: http://localhost:3000/api
+Development: http://localhost:5000/api
 ```
 
 ## 🔐 Authentication
@@ -668,15 +668,15 @@ interface Bill {
 
 ```bash
 # Get all customers
-curl http://localhost:3000/api/customers
+curl http://localhost:5000/api/customers
 
 # Create customer
-curl -X POST http://localhost:3000/api/customers \
+curl -X POST http://localhost:5000/api/customers \
   -H "Content-Type: application/json" \
   -d '{"serial_number": 1001, "name_of_party": "Test Customer"}'
 
 # Upload file
-curl -X POST http://localhost:3000/api/upload/customers \
+curl -X POST http://localhost:5000/api/upload/customers \
   -F "file=@customers.xlsx"
 ```
 
@@ -686,7 +686,7 @@ curl -X POST http://localhost:3000/api/upload/customers \
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:3000/api'
+  baseURL: 'http://localhost:5000/api'
 });
 
 // Get customers

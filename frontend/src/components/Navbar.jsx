@@ -1,68 +1,139 @@
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaChartLine, FaPlus, FaEye, FaFileImport } from 'react-icons/fa';
+import { Menu, X, Moon, Sun } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
+import { motion } from 'framer-motion';
 
-function Navbar() {
+export default function Navbar() {
+  const [isOpen, setIsOpen] = useState(false);
+  const { isDark, toggleTheme } = useTheme();
   const location = useLocation();
 
   const navItems = [
-    { path: '/', label: 'Dashboard', icon: FaChartLine },
-    { path: '/data-entry', label: 'Data Entry', icon: FaPlus },
-    { path: '/view-data', label: 'View Data', icon: FaEye },
-    { path: '/import-export', label: 'Import/Export', icon: FaFileImport },
+    { name: 'Dashboard', path: '/' },
+    { name: 'Data Entry', path: '/data-entry' },
+    { name: 'Customers', path: '/customers' },
   ];
 
+  const isActive = (path) => location.pathname === path;
+
   return (
-    <nav className="navbar-luxury sticky top-0 z-50">
-      <div className="container mx-auto px-6">
-        <div className="flex items-center justify-between h-16">
-          <Link to="/" className="navbar-brand-luxury flex items-center space-x-3">
-            <FaChartLine className="text-2xl" />
-            <span>Sales Analytics</span>
+    <nav className={`sticky top-0 z-50 backdrop-blur-md transition-all duration-300 ${
+      isDark 
+        ? 'bg-dark-900/80 border-dark-700' 
+        : 'bg-white/80 border-gold-100'
+    } border-b`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo */}
+          <Link to="/" className="flex items-center space-x-2 group">
+            <div className={`w-10 h-10 rounded-lg bg-gradient-premium flex items-center justify-center transform group-hover:scale-110 transition-transform ${
+              isDark ? 'shadow-premium' : 'shadow-lg'
+            }`}>
+              <span className="text-white font-bold text-lg">SD</span>
+            </div>
+            <span className={`font-serif text-xl font-bold hidden sm:inline ${
+              isDark ? 'text-gold-400' : 'text-gold-600'
+            }`}>
+              Sales Dashboard
+            </span>
           </Link>
 
+          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-1">
-            {navItems.map(({ path, label, icon: Icon }) => (
+            {navItems.map((item) => (
               <Link
-                key={path}
-                to={path}
-                className={`nav-link-luxury flex items-center space-x-2 ${
-                  location.pathname === path ? 'text-gold-400' : ''
+                key={item.path}
+                to={item.path}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 relative group ${
+                  isActive(item.path)
+                    ? isDark
+                      ? 'text-gold-400 bg-dark-800'
+                      : 'text-gold-600 bg-gold-50'
+                    : isDark
+                    ? 'text-silver-300 hover:text-gold-400'
+                    : 'text-gray-700 hover:text-gold-600'
                 }`}
               >
-                <Icon className="text-sm" />
-                <span>{label}</span>
+                {item.name}
+                {isActive(item.path) && (
+                  <motion.div
+                    layoutId="navbar-indicator"
+                    className={`absolute bottom-0 left-0 right-0 h-1 rounded-full bg-gradient-premium`}
+                    transition={{ type: 'spring', stiffness: 380, damping: 40 }}
+                  />
+                )}
               </Link>
             ))}
           </div>
 
-          {/* Mobile menu button */}
-          <button className="md:hidden text-gold-400 hover:text-gold-300 transition-colors">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
+          {/* Right Side Actions */}
+          <div className="flex items-center space-x-4">
+            {/* Theme Toggle */}
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={toggleTheme}
+              className={`p-2 rounded-lg transition-all duration-300 ${
+                isDark
+                  ? 'bg-dark-800 text-gold-400 hover:bg-dark-700'
+                  : 'bg-gold-50 text-gold-600 hover:bg-gold-100'
+              }`}
+              aria-label="Toggle theme"
+            >
+              {isDark ? <Sun size={20} /> : <Moon size={20} />}
+            </motion.button>
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className={`md:hidden p-2 rounded-lg transition-all duration-300 ${
+                isDark
+                  ? 'bg-dark-800 text-gold-400 hover:bg-dark-700'
+                  : 'bg-gold-50 text-gold-600 hover:bg-gold-100'
+              }`}
+              aria-label="Toggle menu"
+            >
+              {isOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
         </div>
 
-        {/* Mobile menu */}
-        <div className="md:hidden pb-4">
-          <div className="flex flex-col space-y-2">
-            {navItems.map(({ path, label, icon: Icon }) => (
+        {/* Mobile Navigation */}
+        <motion.div
+          initial={false}
+          animate={isOpen ? 'open' : 'closed'}
+          variants={{
+            open: { opacity: 1, height: 'auto' },
+            closed: { opacity: 0, height: 0 },
+          }}
+          transition={{ duration: 0.3 }}
+          className="md:hidden overflow-hidden"
+        >
+          <div className={`py-4 space-y-2 border-t ${
+            isDark ? 'border-dark-700' : 'border-gold-100'
+          }`}>
+            {navItems.map((item) => (
               <Link
-                key={path}
-                to={path}
-                className={`nav-link-luxury flex items-center space-x-3 py-2 px-4 rounded-lg ${
-                  location.pathname === path ? 'bg-gold-400/10 text-gold-400' : ''
+                key={item.path}
+                to={item.path}
+                onClick={() => setIsOpen(false)}
+                className={`block px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                  isActive(item.path)
+                    ? isDark
+                      ? 'text-gold-400 bg-dark-800'
+                      : 'text-gold-600 bg-gold-50'
+                    : isDark
+                    ? 'text-silver-300 hover:text-gold-400 hover:bg-dark-800'
+                    : 'text-gray-700 hover:text-gold-600 hover:bg-gold-50'
                 }`}
               >
-                <Icon className="text-sm" />
-                <span>{label}</span>
+                {item.name}
               </Link>
             ))}
           </div>
-        </div>
+        </motion.div>
       </div>
     </nav>
   );
 }
-
-export default Navbar;

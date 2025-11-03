@@ -17,6 +17,8 @@
     "multer": "^2.0.2",
     "papaparse": "^5.5.3",
     "sqlite3": "^5.1.7",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

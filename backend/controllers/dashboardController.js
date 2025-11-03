@@ -203,10 +203,172 @@ const getCustomerStatus = async (req, res) => {
   }
 };
 
+// Get KAM performance analytics
+const getKAMPerformance = async (req, res) => {
+  try {
+    const kamPerformance = await db.allAsync(`
+      SELECT
+        c.kam,
+        COUNT(DISTINCT c.id) as total_customers,
+        COUNT(DISTINCT CASE WHEN c.status = 'Active' THEN c.id END) as active_customers,
+        SUM(br.total_bill) as total_revenue,
+        ROUND(AVG(br.total_bill), 2) as avg_revenue_per_customer,
+        SUM(br.total_received) as total_received,
+        SUM(br.total_due) as total_due
+      FROM customers c
+      LEFT JOIN bill_records br ON c.id = br.customer_id AND br.status = 'Active'
+      WHERE c.kam IS NOT NULL AND c.kam != ''
+      GROUP BY c.kam
+      ORDER BY total_revenue DESC
+    `);
+
+    res.json({
+      success: true,
+      data: kamPerformance
+    });
+  } catch (error) {
+    console.error('Error fetching KAM performance:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch KAM performance'
+    });
+  }
+};
+
+// Get weekly revenue analytics
+const getWeeklyRevenue = async (req, res) => {
+  try {
+    const weeklyRevenue = await db.allAsync(`
+      SELECT
+        strftime('%Y-W%W', billing_date) as week,
+        strftime('%Y-%m-%d', billing_date) as date,
+        SUM(total_bill) as revenue,
+        SUM(total_received) as received,
+        SUM(total_due) as due
+      FROM bill_records
+      WHERE status = 'Active' AND billing_date >= date('now', '-12 weeks')
+      GROUP BY strftime('%Y-W%W', billing_date)
+      ORDER BY week DESC
+    `);
+
+    res.json({
+      success: true,
+      data: weeklyRevenue || []
+    });
+  } catch (error) {
+    console.error('Error fetching weekly revenue:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch weekly revenue'
+    });
+  }
+};
+
+// Get monthly revenue analytics
+const getMonthlyRevenue = async (req, res) => {
+  try {
+    const monthlyRevenue = await db.allAsync(`
+      SELECT
+        strftime('%Y-%m', billing_date) as month,
+        SUM(total_bill) as revenue,
+        SUM(total_received) as received,
+        SUM(total_due) as due,
+        COUNT(*) as bill_count
+      FROM bill_records
+      WHERE status = 'Active'
+      GROUP BY strftime('%Y-%m', billing_date)
+      ORDER BY month DESC
+    `);
+
+    res.json({
+      success: true,
+      data: monthlyRevenue || []
+    });
+  } catch (error) {
+    console.error('Error fetching monthly revenue:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch monthly revenue'
+    });
+  }
+};
+
+// Get yearly revenue analytics
+const getYearlyRevenue = async (req, res) => {
+  try {
+    const yearlyRevenue = await db.allAsync(`
+      SELECT
+        strftime('%Y', billing_date) as year,
+        SUM(total_bill) as revenue,
+        SUM(total_received) as received,
+        SUM(total_due) as due,
+        COUNT(*) as bill_count
+      FROM bill_records
+      WHERE status = 'Active'
+      GROUP BY strftime('%Y', billing_date)
+      ORDER BY year DESC
+    `);
+
+    res.json({
+      success: true,
+      data: yearlyRevenue || []
+    });
+  } catch (error) {
+    console.error('Error fetching yearly revenue:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch yearly revenue'
+    });
+  }
+};
+
+// Get customer-wise revenue analytics
+const getCustomerWiseRevenue = async (req, res) => {
+  try {
+    const customerWiseRevenue = await db.allAsync(`
+      SELECT
+        c.id,
+        c.name_of_party,
+        c.serial_number,
+        c.kam,
+        c.status,
+        COUNT(br.id) as bill_count,
+        SUM(br.total_bill) as revenue,
+        SUM(br.total_received) as received,
+        SUM(br.total_due) as due,
+        CASE
+          WHEN SUM(br.total_bill) > 0 THEN ROUND((SUM(br.total_received) / SUM(br.total_bill)) * 100, 2)
+          ELSE 0
+        END as collectionRate
+      FROM customers c
+      LEFT JOIN bill_records br ON c.id = br.customer_id AND br.status = 'Active'
+      WHERE c.status = 'Active'
+      GROUP BY c.id, c.name_of_party, c.serial_number, c.kam, c.status
+      ORDER BY revenue DESC
+    `);
+
+    res.json({
+      success: true,
+      data: customerWiseRevenue || []
+    });
+  } catch (error) {
+    console.error('Error fetching customer-wise revenue:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch customer-wise revenue'
+    });
+  }
+};
+
 module.exports = {
   getOverview,
   getTopCustomers,
   getRevenueByService,
   getCollectionStatus,
-  getCustomerStatus
+  getCustomerStatus,
+  getKAMPerformance,
+  getWeeklyRevenue,
+  getMonthlyRevenue,
+  getYearlyRevenue,
+  getCustomerWiseRevenue
 };

@@ -50,17 +50,27 @@ function initializeTables() {
       active_date DATE,
       billing_date DATE,
       termination_date DATE,
+      iig_qt REAL DEFAULT 0,
+
       iig_qt_price REAL DEFAULT 0,
+
+      fna REAL DEFAULT 0,
       fna_price REAL DEFAULT 0,
+      ggc REAL DEFAULT 0,
       ggc_price REAL DEFAULT 0,
+      cdn REAL DEFAULT 0,
       cdn_price REAL DEFAULT 0,
+      bdix REAL DEFAULT 0,
       bdix_price REAL DEFAULT 0,
+      baishan REAL DEFAULT 0,
       baishan_price REAL DEFAULT 0,
+     
       total_bill REAL DEFAULT 0,
       total_received REAL DEFAULT 0,
       total_due REAL DEFAULT 0,
       discount REAL DEFAULT 0,
       status TEXT DEFAULT 'Active',
+      remarks TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY(customer_id) REFERENCES customers(id) ON DELETE CASCADE

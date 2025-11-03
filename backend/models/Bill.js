@@ -2,10 +2,21 @@
 const db = require('../config/database');
 
 class Bill {
-  // Get all bills with optional filters
+  // Get all bills with optional filters and pagination
   static async getAll(filters = {}) {
     let sql = `
-      SELECT br.*, c.name_of_party, c.serial_number
+      SELECT br.*,
+             c.id as customer_id_ref,
+             c.serial_number,
+             c.name_of_party,
+             c.address,
+             c.email,
+             c.proprietor_name,
+             c.phone_number,
+             c.link_id,
+             c.remarks as customer_remarks,
+             c.kam,
+             c.status as customer_status
       FROM bill_records br
       LEFT JOIN customers c ON br.customer_id = c.id
       WHERE 1=1
@@ -29,18 +40,56 @@ class Bill {
 
     sql += ` ORDER BY br.created_at DESC`;
 
-    if (filters.limit) {
-      sql += ` LIMIT ?`;
-      params.push(filters.limit);
-    }
+    // Pagination support
+    const page = filters.page || 1;
+    const pageSize = filters.pageSize || 10;
+    const offset = (page - 1) * pageSize;
+
+    sql += ` LIMIT ? OFFSET ?`;
+    params.push(pageSize, offset);
 
     return await db.allAsync(sql, params);
+  }
+
+  // Get total count of bills with optional filters
+  static async getCount(filters = {}) {
+    let sql = `SELECT COUNT(*) as count FROM bill_records WHERE 1=1`;
+    const params = [];
+
+    if (filters.customer_id) {
+      sql += ` AND customer_id = ?`;
+      params.push(filters.customer_id);
+    }
+
+    if (filters.status) {
+      sql += ` AND status = ?`;
+      params.push(filters.status);
+    }
+
+    if (filters.start_date && filters.end_date) {
+      sql += ` AND billing_date BETWEEN ? AND ?`;
+      params.push(filters.start_date, filters.end_date);
+    }
+
+    const result = await db.getAsync(sql, params);
+    return result.count;
   }
 
   // Get bill by ID
   static async getById(id) {
     const sql = `
-      SELECT br.*, c.name_of_party, c.serial_number
+      SELECT br.*,
+             c.id as customer_id_ref,
+             c.serial_number,
+             c.name_of_party,
+             c.address,
+             c.email,
+             c.proprietor_name,
+             c.phone_number,
+             c.link_id,
+             c.remarks as customer_remarks,
+             c.kam,
+             c.status as customer_status
       FROM bill_records br
       LEFT JOIN customers c ON br.customer_id = c.id
       WHERE br.id = ?
@@ -143,11 +192,65 @@ class Bill {
   // Get bills by customer
   static async getByCustomer(customerId) {
     const sql = `
-      SELECT * FROM bill_records
-      WHERE customer_id = ?
-      ORDER BY billing_date DESC
+      SELECT br.*,
+             c.id as customer_id_ref,
+             c.serial_number,
+             c.name_of_party,
+             c.address,
+             c.email,
+             c.proprietor_name,
+             c.phone_number,
+             c.link_id,
+             c.remarks as customer_remarks,
+             c.kam,
+             c.status as customer_status
+      FROM bill_records br
+      LEFT JOIN customers c ON br.customer_id = c.id
+      WHERE br.customer_id = ?
+      ORDER BY br.billing_date DESC
     `;
     return await db.allAsync(sql, [customerId]);
+  }
+
+  // Get all bills with customer info for export (no pagination)
+  static async getAllWithCustomerInfo(filters = {}) {
+    let sql = `
+      SELECT br.*,
+             c.id as customer_id_ref,
+             c.serial_number,
+             c.name_of_party,
+             c.address,
+             c.email,
+             c.proprietor_name,
+             c.phone_number,
+             c.link_id,
+             c.remarks as customer_remarks,
+             c.kam,
+             c.status as customer_status
+      FROM bill_records br
+      LEFT JOIN customers c ON br.customer_id = c.id
+      WHERE 1=1
+    `;
+    const params = [];
+
+    if (filters.customer_id) {
+      sql += ` AND br.customer_id = ?`;
+      params.push(filters.customer_id);
+    }
+
+    if (filters.status) {
+      sql += ` AND br.status = ?`;
+      params.push(filters.status);
+    }
+
+    if (filters.start_date && filters.end_date) {
+      sql += ` AND br.billing_date BETWEEN ? AND ?`;
+      params.push(filters.start_date, filters.end_date);
+    }
+
+    sql += ` ORDER BY c.serial_number ASC, br.created_at DESC`;
+
+    return await db.allAsync(sql, params);
   }
 }
 

@@ -101,6 +101,42 @@ const updateCustomer = async (req, res) => {
   }
 };
 
+// Patch customer (partial update)
+const patchCustomer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    const existingCustomer = await Customer.getById(id);
+    if (!existingCustomer) {
+      return res.status(404).json({
+        success: false,
+        error: 'Customer not found'
+      });
+    }
+
+    // Merge existing data with new data (only update provided fields)
+    const mergedData = {
+      ...existingCustomer,
+      ...updateData
+    };
+
+    const updatedCustomer = await Customer.update(id, mergedData);
+
+    res.json({
+      success: true,
+      data: updatedCustomer,
+      message: 'Customer partially updated successfully'
+    });
+  } catch (error) {
+    console.error('Error patching customer:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to patch customer'
+    });
+  }
+};
+
 // Delete customer
 const deleteCustomer = async (req, res) => {
   try {
@@ -134,5 +170,6 @@ module.exports = {
   getCustomerById,
   createCustomer,
   updateCustomer,
+  patchCustomer,
   deleteCustomer
 };

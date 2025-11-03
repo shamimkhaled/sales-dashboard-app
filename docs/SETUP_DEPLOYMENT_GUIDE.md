@@ -25,7 +25,7 @@ cd frontend && npm install && npm run dev
 
 **That's it!** Your dashboard is now running at:
 - **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:3000/api
+- **Backend API**: http://localhost:5000/api
 
 ---
 
@@ -85,7 +85,7 @@ npm start
 ═══════════════════════════════════════════════════════════
 Sales Dashboard Server is running!
 Open: http://localhost:3000
-API Docs: http://localhost:3000/api
+API Docs: http://localhost:5000/api
 ✓ Connected to SQLite Database: /path/to/sales_dashboard.db
 ✓ Customers table ready
 ✓ Bill Records table ready
@@ -128,7 +128,7 @@ VITE v7.1.7  ready in 300ms
 #### Test Backend API
 ```bash
 # Health check
-curl http://localhost:3000/api/health
+curl http://localhost:5000/api/health
 
 # Expected response:
 {"status":"OK","message":"Server is running"}
@@ -473,7 +473,7 @@ free -h
 #### CORS Errors
 ```bash
 # Check backend CORS configuration
-curl -H "Origin: http://localhost:5173" http://localhost:3000/api/health
+curl -H "Origin: http://localhost:5173" http://localhost:5000/api/health
 
 # Update ALLOWED_ORIGINS in .env
 ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000

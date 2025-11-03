@@ -1,31 +1,108 @@
-function KPICard({ title, value, icon: Icon, color = 'gold' }) {
+import React from 'react';
+import { motion } from 'framer-motion';
+import { useTheme } from '../context/ThemeContext';
+import { TrendingUp, TrendingDown } from 'lucide-react';
+
+export default function KPICard({ 
+  title, 
+  value, 
+  icon: Icon, 
+  trend, 
+  trendValue, 
+  color = 'gold',
+  subtitle,
+  onClick 
+}) {
+  const { isDark } = useTheme();
+
   const colorClasses = {
-    gold: 'border-gold-400 text-gold-400',
-    success: 'border-emerald-400 text-emerald-400',
-    danger: 'border-red-400 text-red-400',
-    primary: 'border-blue-400 text-blue-400'
+    gold: isDark ? 'from-gold-600 to-gold-700' : 'from-gold-400 to-gold-500',
+    blue: isDark ? 'from-blue-600 to-blue-700' : 'from-blue-400 to-blue-500',
+    green: isDark ? 'from-green-600 to-green-700' : 'from-green-400 to-green-500',
+    red: isDark ? 'from-red-600 to-red-700' : 'from-red-400 to-red-500',
+    purple: isDark ? 'from-purple-600 to-purple-700' : 'from-purple-400 to-purple-500',
   };
 
+  const bgColor = colorClasses[color] || colorClasses.gold;
+
   return (
-    <div className="w-full md:w-1/2 lg:w-1/3 px-3 mb-6 animate-fade-in-up">
-      <div className="kpi-card-luxury group">
-        <div className="flex items-center justify-between">
+    <motion.div
+      whileHover={{ y: -5, scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={onClick}
+      className={`group relative overflow-hidden rounded-2xl cursor-pointer transition-all duration-300 ${
+        isDark
+          ? 'bg-dark-800 border border-dark-700 hover:border-gold-500'
+          : 'bg-white border border-gold-100 hover:border-gold-400'
+      } ${onClick ? 'cursor-pointer' : ''}`}
+    >
+      {/* Background Gradient */}
+      <div className={`absolute inset-0 bg-gradient-to-br ${bgColor} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
+
+      {/* Content */}
+      <div className="relative p-6 sm:p-8">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
-            <p className="kpi-label-luxury mb-2">{title}</p>
-            <h3 className="kpi-value-luxury group-hover:scale-105 transition-transform duration-300">
-              {value}
-            </h3>
+            <p className={`text-sm font-medium mb-1 ${
+              isDark ? 'text-silver-400' : 'text-gray-600'
+            }`}>
+              {title}
+            </p>
+            {subtitle && (
+              <p className={`text-xs ${
+                isDark ? 'text-silver-500' : 'text-gray-500'
+              }`}>
+                {subtitle}
+              </p>
+            )}
           </div>
-          <div className={`p-3 rounded-xl bg-gradient-to-br ${colorClasses[color]} bg-opacity-10 group-hover:scale-110 transition-transform duration-300`}>
-            {Icon && <Icon size={24} />}
-          </div>
+          {Icon && (
+            <div className={`p-3 rounded-lg bg-gradient-to-br ${bgColor} text-white transform group-hover:scale-110 transition-transform duration-300`}>
+              <Icon size={24} />
+            </div>
+          )}
         </div>
 
-        {/* Decorative element */}
-        <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-gold-400/10 to-transparent rounded-full -translate-y-6 translate-x-6"></div>
+        {/* Value */}
+        <div className="mb-4">
+          <h3 className={`text-3xl sm:text-4xl font-bold font-serif ${
+            isDark ? 'text-white' : 'text-dark-900'
+          }`}>
+            {value}
+          </h3>
+        </div>
+
+        {/* Trend */}
+        {trend && trendValue && (
+          <div className="flex items-center space-x-2">
+            <div className={`flex items-center space-x-1 px-3 py-1 rounded-full ${
+              trend === 'up'
+                ? isDark
+                  ? 'bg-green-900/30 text-green-400'
+                  : 'bg-green-100 text-green-700'
+                : isDark
+                ? 'bg-red-900/30 text-red-400'
+                : 'bg-red-100 text-red-700'
+            }`}>
+              {trend === 'up' ? (
+                <TrendingUp size={16} />
+              ) : (
+                <TrendingDown size={16} />
+              )}
+              <span className="text-sm font-semibold">{trendValue}</span>
+            </div>
+            <span className={`text-xs ${
+              isDark ? 'text-silver-500' : 'text-gray-500'
+            }`}>
+              vs last month
+            </span>
+          </div>
+        )}
       </div>
-    </div>
+
+      {/* Bottom Border Accent */}
+      <div className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${bgColor} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left`} />
+    </motion.div>
   );
 }
-
-export default KPICard;

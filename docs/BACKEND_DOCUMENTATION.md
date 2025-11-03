@@ -388,10 +388,10 @@ CREATE INDEX idx_bills_date ON bill_records(billing_date);
 ### API Testing Examples
 ```bash
 # Health check
-curl http://localhost:3000/api/health
+curl http://localhost:5000/api/health
 
 # Create customer
-curl -X POST http://localhost:3000/api/customers \
+curl -X POST http://localhost:5000/api/customers \
   -H "Content-Type: application/json" \
   -d '{
     "serial_number": 1001,
@@ -400,7 +400,7 @@ curl -X POST http://localhost:3000/api/customers \
   }'
 
 # Get dashboard overview
-curl http://localhost:3000/api/dashboard/overview
+curl http://localhost:5000/api/dashboard/overview
 ```
 
 ### Error Testing

@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const API_URL = process.env.NODE_ENV === 'production'
   ? '/api'  // In production, use relative path
-  : 'http://localhost:3000/api';  // Backend runs on port 3000
+  : 'http://localhost:5000/api';  // Backend runs on port 3000
 
 const api = axios.create({
   baseURL: API_URL,

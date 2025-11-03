@@ -1,11 +1,12 @@
 import api from './api';
 
 const billService = {
-  getAll: (params) => api.get('/bills', { params }),
-  getById: (id) => api.get(`/bills/${id}`),
-  create: (data) => api.post('/bills', data),
-  update: (id, data) => api.put(`/bills/${id}`, data),
-  delete: (id) => api.delete(`/bills/${id}`),
+  getAllBills: (params) => api.get('/bills', { params }),
+  getBillById: (id) => api.get(`/bills/${id}`),
+  createBill: (data) => api.post('/bills', data),
+  updateBill: (id, data) => api.put(`/bills/${id}`, data),
+  deleteBill: (id) => api.delete(`/bills/${id}`),
 };
 
+export { billService };
 export default billService;

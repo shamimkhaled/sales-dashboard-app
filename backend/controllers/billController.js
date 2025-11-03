@@ -1,7 +1,7 @@
 // controllers/billController.js - Bill Controller
 const Bill = require('../models/Bill');
 
-// Get all bills
+// Get all bills with pagination support
 const getAllBills = async (req, res) => {
   try {
     const filters = {
@@ -9,14 +9,31 @@ const getAllBills = async (req, res) => {
       status: req.query.status,
       start_date: req.query.start_date,
       end_date: req.query.end_date,
-      limit: req.query.limit ? parseInt(req.query.limit) : null
+      page: req.query.page ? parseInt(req.query.page) : 1,
+      pageSize: req.query.pageSize ? parseInt(req.query.pageSize) : 10
     };
 
     const bills = await Bill.getAll(filters);
+    const totalCount = await Bill.getCount({
+      customer_id: filters.customer_id,
+      status: filters.status,
+      start_date: filters.start_date,
+      end_date: filters.end_date
+    });
+
+    const totalPages = Math.ceil(totalCount / filters.pageSize);
+
     res.json({
       success: true,
       data: bills,
-      count: bills.length
+      pagination: {
+        currentPage: filters.page,
+        pageSize: filters.pageSize,
+        totalCount: totalCount,
+        totalPages: totalPages,
+        hasNextPage: filters.page < totalPages,
+        hasPrevPage: filters.page > 1
+      }
     });
   } catch (error) {
     console.error('Error fetching bills:', error);
@@ -168,6 +185,38 @@ const getBillsByCustomer = async (req, res) => {
   }
 };
 
+// Partial update bill (PATCH)
+const patchBill = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const billData = req.body;
+
+    const existingBill = await Bill.getById(id);
+    if (!existingBill) {
+      return res.status(404).json({
+        success: false,
+        error: 'Bill not found'
+      });
+    }
+
+    // Merge existing data with new data (only update provided fields)
+    const mergedData = { ...existingBill, ...billData };
+    const updatedBill = await Bill.update(id, mergedData);
+
+    res.json({
+      success: true,
+      data: updatedBill,
+      message: 'Bill partially updated successfully'
+    });
+  } catch (error) {
+    console.error('Error patching bill:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to patch bill'
+    });
+  }
+};
+
 module.exports = {
   getAllBills,
   getBillById,
@@ -175,5 +224,6 @@ module.exports = {
   updateBill,
   deleteBill,
   getBillStats,
-  getBillsByCustomer
+  getBillsByCustomer,
+  patchBill
 };

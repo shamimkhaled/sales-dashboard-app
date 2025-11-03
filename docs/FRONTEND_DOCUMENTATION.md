@@ -264,7 +264,7 @@ const [calculatedDue, setCalculatedDue] = useState(0);
 ```javascript
 const API_URL = process.env.NODE_ENV === 'production'
   ? '/api'
-  : 'http://localhost:3000/api';
+  : 'http://localhost:5000/api';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -427,7 +427,7 @@ npm run lint
 ### Environment Variables
 ```env
 # .env.local
-VITE_API_URL=http://localhost:3000/api
+VITE_API_URL=http://localhost:5000/api
 VITE_APP_NAME=Sales Dashboard Analytics
 ```
 

@@ -36,6 +36,15 @@ class Customer {
 
   // Create new customer
   static async create(customerData) {
+    // Get the next serial number
+    let serialNumber = customerData.serial_number;
+    if (!serialNumber) {
+      const maxSerialResult = await db.getAsync(
+        `SELECT MAX(serial_number) as max_serial FROM customers`
+      );
+      serialNumber = (maxSerialResult?.max_serial || 0) + 1;
+    }
+
     const sql = `
       INSERT INTO customers (
         serial_number, name_of_party, address, email, proprietor_name,
@@ -43,7 +52,7 @@ class Customer {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     const params = [
-      customerData.serial_number,
+      serialNumber,
       customerData.name_of_party,
       customerData.address,
       customerData.email,
@@ -56,7 +65,19 @@ class Customer {
     ];
 
     const result = await db.runAsync(sql, params);
-    return { id: result.id, ...customerData };
+    return {
+      id: result.id,
+      serial_number: serialNumber,
+      name_of_party: customerData.name_of_party,
+      address: customerData.address,
+      email: customerData.email,
+      proprietor_name: customerData.proprietor_name,
+      phone_number: customerData.phone_number,
+      link_id: customerData.link_id,
+      remarks: customerData.remarks,
+      kam: customerData.kam,
+      status: customerData.status || 'Active'
+    };
   }
 
   // Update customer
