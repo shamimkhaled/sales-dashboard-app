@@ -2,15 +2,15 @@
 const db = require('../config/database');
 
 class Customer {
-  // Get all customers with optional filters
+  // Get all customers with optional filters and pagination
   static async getAll(filters = {}) {
     let sql = `SELECT * FROM customers WHERE 1=1`;
     const params = [];
 
     if (filters.search) {
-      sql += ` AND (name_of_party LIKE ? OR email LIKE ? OR phone_number LIKE ?)`;
+      sql += ` AND (name_of_party LIKE ? OR email LIKE ? OR phone_number LIKE ? OR serial_number LIKE ?)`;
       const searchTerm = `%${filters.search}%`;
-      params.push(searchTerm, searchTerm, searchTerm);
+      params.push(searchTerm, searchTerm, searchTerm, searchTerm);
     }
 
     if (filters.status) {
@@ -18,12 +18,15 @@ class Customer {
       params.push(filters.status);
     }
 
-    sql += ` ORDER BY created_at DESC`;
+    sql += ` ORDER BY serial_number ASC`;
 
-    if (filters.limit) {
-      sql += ` LIMIT ?`;
-      params.push(filters.limit);
-    }
+    // Pagination support
+    const page = filters.page || 1;
+    const pageSize = filters.pageSize || 10;
+    const offset = (page - 1) * pageSize;
+
+    sql += ` LIMIT ? OFFSET ?`;
+    params.push(pageSize, offset);
 
     return await db.allAsync(sql, params);
   }
@@ -114,10 +117,23 @@ class Customer {
     return { id };
   }
 
-  // Get customer count
-  static async getCount() {
-    const sql = `SELECT COUNT(*) as count FROM customers`;
-    const result = await db.getAsync(sql);
+  // Get customer count with optional filters
+  static async getCount(filters = {}) {
+    let sql = `SELECT COUNT(*) as count FROM customers WHERE 1=1`;
+    const params = [];
+
+    if (filters.search) {
+      sql += ` AND (name_of_party LIKE ? OR email LIKE ? OR phone_number LIKE ? OR serial_number LIKE ?)`;
+      const searchTerm = `%${filters.search}%`;
+      params.push(searchTerm, searchTerm, searchTerm, searchTerm);
+    }
+
+    if (filters.status) {
+      sql += ` AND status = ?`;
+      params.push(filters.status);
+    }
+
+    const result = await db.getAsync(sql, params);
     return result.count;
   }
 }

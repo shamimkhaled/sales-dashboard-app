@@ -8,6 +8,7 @@ import { useTheme } from '../context/ThemeContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorAlert from '../components/ErrorAlert';
 import KPICard from '../components/KPICard';
+import Pagination from '../components/Pagination';
 import { customerService } from '../services/customerService';
 
 export default function Customers() {
@@ -20,6 +21,12 @@ export default function Customers() {
   const [customers, setCustomers] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
   const [formData, setFormData] = useState({
     serial_number: '',
@@ -42,21 +49,39 @@ export default function Customers() {
 
   useEffect(() => {
     fetchCustomers();
-  }, []);
+  }, [currentPage, pageSize, searchTerm, filterStatus]);
+
+  // Reset to page 1 when search term or filter changes
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [searchTerm, filterStatus]);
 
   const fetchCustomers = async () => {
     try {
       setLoading(true);
-      const response = await customerService.getAllCustomers();
-      const data = response.data || response;
-      setCustomers(data);
+      const response = await customerService.getAllCustomers({
+        page: currentPage,
+        pageSize: pageSize,
+        search: searchTerm,
+        status: filterStatus === 'all' ? null : filterStatus
+      });
 
-      // Calculate stats
-      const active = data.filter(c => c.status === 'Active').length;
-      const inactive = data.length - active;
+      if (response.data) {
+        setCustomers(response.data);
+        if (response.pagination) {
+          setTotalCount(response.pagination.totalCount);
+          setTotalPages(response.pagination.totalPages);
+        }
+      }
+
+      // Calculate stats - Note: This is simplified, in production you might want separate API call for stats
+      const active = response.data.filter(c => c.status === 'Active').length;
+      const inactive = response.data.length - active;
 
       setStats({
-        totalCustomers: data.length,
+        totalCustomers: response.pagination?.totalCount || response.data.length,
         activeCustomers: active,
         inactiveCustomers: inactive,
       });
@@ -83,29 +108,36 @@ export default function Customers() {
         await customerService.updateCustomer(editingId, formData);
         setSuccess('Customer updated successfully');
       } else {
-        await customerService.createCustomer(formData);
+        // Remove serial_number from formData for new customers (auto-increment)
+        const { serial_number, ...customerData } = formData;
+        await customerService.createCustomer(customerData);
         setSuccess('Customer created successfully');
       }
-      setFormData({
-        serial_number: '',
-        name_of_party: '',
-        address: '',
-        email: '',
-        proprietor_name: '',
-        phone_number: '',
-        link_id: '',
-        remarks: '',
-        kam: '',
-        status: 'Active',
-      });
-      setEditingId(null);
-      setShowForm(false);
+      resetForm();
+      setCurrentPage(1); // Reset to first page after create/update
       fetchCustomers();
     } catch (err) {
       setError(err.message || 'Failed to save customer');
     } finally {
       setLoading(false);
     }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      serial_number: '',
+      name_of_party: '',
+      address: '',
+      email: '',
+      proprietor_name: '',
+      phone_number: '',
+      link_id: '',
+      remarks: '',
+      kam: '',
+      status: 'Active',
+    });
+    setEditingId(null);
+    setShowForm(false);
   };
 
   const handleEdit = (customer) => {
@@ -120,6 +152,7 @@ export default function Customers() {
         setLoading(true);
         await customerService.deleteCustomer(id);
         setSuccess('Customer deleted successfully');
+        setCurrentPage(1); // Reset to first page after delete
         fetchCustomers();
       } catch (err) {
         setError(err.message || 'Failed to delete customer');
@@ -179,15 +212,9 @@ export default function Customers() {
     }
   };
 
-  const filteredCustomers = customers.filter(customer => {
-    const matchesSearch = customer.name_of_party?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         customer.phone_number?.includes(searchTerm) ||
-                         customer.serial_number?.toString().includes(searchTerm);
-    const matchesFilter = filterStatus === 'all' ||
-                         customer.status === filterStatus;
-    return matchesSearch && matchesFilter;
-  });
+  // Note: Filtering is now handled on the backend, so we use the customers array directly
+  // The filteredCustomers variable is kept for compatibility but now just returns customers
+  const filteredCustomers = customers;
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -343,22 +370,7 @@ export default function Customers() {
                   {editingId ? 'Edit Customer' : 'New Customer'}
                 </h2>
                 <button
-                  onClick={() => {
-                    setShowForm(false);
-                    setEditingId(null);
-                    setFormData({
-                      serial_number: '',
-                      name_of_party: '',
-                      address: '',
-                      email: '',
-                      proprietor_name: '',
-                      phone_number: '',
-                      link_id: '',
-                      remarks: '',
-                      kam: '',
-                      status: 'Active',
-                    });
-                  }}
+                  onClick={resetForm}
                   className={`p-2 rounded-lg transition-all ${
                     isDark
                       ? 'bg-dark-700 text-gold-400 hover:bg-dark-600'
@@ -374,7 +386,7 @@ export default function Customers() {
                   <label className={`block text-sm font-medium mb-2 ${
                     isDark ? 'text-silver-300' : 'text-gray-700'
                   }`}>
-                    Serial Number
+                    Serial Number {editingId && '(Read-only)'}
                   </label>
                   <input
                     type="number"
@@ -382,12 +394,18 @@ export default function Customers() {
                     value={formData.serial_number}
                     onChange={handleInputChange}
                     required
+                    readOnly={!editingId} // Only editable when editing existing customer
                     className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
                       isDark
-                        ? 'bg-dark-700 border-dark-600 text-white focus:border-gold-500'
-                        : 'bg-white border-gold-200 text-dark-900 focus:border-gold-500'
+                        ? `bg-dark-700 border-dark-600 text-white focus:border-gold-500 ${!editingId ? 'opacity-60 cursor-not-allowed' : ''}`
+                        : `bg-white border-gold-200 text-dark-900 focus:border-gold-500 ${!editingId ? 'opacity-60 cursor-not-allowed' : ''}`
                     } focus:outline-none`}
                   />
+                  {!editingId && (
+                    <p className={`text-xs mt-1 ${isDark ? 'text-silver-400' : 'text-gray-500'}`}>
+                      Auto-generated for new customers
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -582,22 +600,7 @@ export default function Customers() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     type="button"
-                    onClick={() => {
-                      setShowForm(false);
-                      setEditingId(null);
-                      setFormData({
-                        serial_number: '',
-                        name_of_party: '',
-                        address: '',
-                        email: '',
-                        proprietor_name: '',
-                        phone_number: '',
-                        link_id: '',
-                        remarks: '',
-                        kam: '',
-                        status: 'Active',
-                      });
-                    }}
+                    onClick={resetForm}
                     className={`flex-1 px-6 py-2 rounded-lg font-medium transition-all duration-300 ${
                       isDark
                         ? 'bg-dark-700 text-gold-400 hover:bg-dark-600'
@@ -769,7 +772,21 @@ export default function Customers() {
           </div>
         </motion.div>
 
-        {filteredCustomers.length === 0 && (
+        {/* Pagination */}
+        {filteredCustomers.length > 0 && (
+          <div className="mt-6">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              pageSize={pageSize}
+              onPageSizeChange={setPageSize}
+              totalCount={totalCount}
+            />
+          </div>
+        )}
+
+        {filteredCustomers.length === 0 && !loading && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

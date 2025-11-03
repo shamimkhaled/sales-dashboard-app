@@ -1,20 +1,35 @@
 // controllers/customerController.js - Customer Controller
 const Customer = require('../models/Customer');
 
-// Get all customers
+// Get all customers with pagination support
 const getAllCustomers = async (req, res) => {
   try {
     const filters = {
       search: req.query.search,
       status: req.query.status,
-      limit: req.query.limit ? parseInt(req.query.limit) : null
+      page: req.query.page ? parseInt(req.query.page) : 1,
+      pageSize: req.query.pageSize ? parseInt(req.query.pageSize) : 10
     };
 
     const customers = await Customer.getAll(filters);
+    const totalCount = await Customer.getCount({
+      search: filters.search,
+      status: filters.status
+    });
+
+    const totalPages = Math.ceil(totalCount / filters.pageSize);
+
     res.json({
       success: true,
       data: customers,
-      count: customers.length
+      pagination: {
+        currentPage: filters.page,
+        pageSize: filters.pageSize,
+        totalCount: totalCount,
+        totalPages: totalPages,
+        hasNextPage: filters.page < totalPages,
+        hasPrevPage: filters.page > 1
+      }
     });
   } catch (error) {
     console.error('Error fetching customers:', error);
