@@ -1,0 +1,302 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom aristocratic theme variables */
+:root {
+  --primary-gold: #D4AF37;
+  --primary-gold-light: #E6C84A;
+  --primary-gold-dark: #B8860B;
+  --secondary-silver: #C0C0C0;
+  --accent-platinum: #E5E4E2;
+  --dark-ebony: #0C0C0C;
+  --dark-charcoal: #1A1A1A;
+  --dark-slate: #2D2D2D;
+  --text-light: #F8F9FA;
+  --text-muted: #ADB5BD;
+  --success-emerald: #10B981;
+  --danger-crimson: #EF4444;
+  --warning-amber: #F59E0B;
+  --info-sky: #3B82F6;
+  --shadow-luxury: 0 20px 60px rgba(0, 0, 0, 0.3);
+  --shadow-elegant: 0 10px 30px rgba(0, 0, 0, 0.2);
+  --border-radius-luxury: 16px;
+  --border-radius-elegant: 12px;
+}
+
+/* Import premium fonts */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* Base layer customizations */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply font-['Inter'] antialiased;
+    background: linear-gradient(135deg, var(--dark-ebony) 0%, var(--dark-charcoal) 50%, var(--dark-slate) 100%);
+    color: var(--text-light);
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-['Cormorant_Garamond'] font-semibold;
+    color: var(--text-light);
+  }
+
+  h1 {
+    @apply text-4xl md:text-5xl lg:text-6xl font-bold;
+    background: linear-gradient(135deg, var(--primary-gold), var(--secondary-silver));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.02em;
+  }
+
+  h2 {
+    @apply text-3xl md:text-4xl font-semibold;
+  }
+
+  h3 {
+    @apply text-2xl md:text-3xl font-medium;
+  }
+}
+
+/* Component layer customizations */
+@layer components {
+  /* Aristocratic Card */
+  .card-aristocratic {
+    @apply bg-gradient-to-br from-gray-800/90 to-gray-900/90 backdrop-blur-xl;
+    @apply border border-gold-500/20 rounded-2xl;
+    @apply shadow-luxury transition-all duration-500;
+    @apply hover:shadow-2xl hover:border-gold-400/40 hover:-translate-y-2;
+  }
+
+  .card-header-aristocratic {
+    @apply bg-gradient-to-r from-gray-800 to-gray-700;
+    @apply border-b border-gold-500/20 px-8 py-6;
+    @apply text-gold-400 font-semibold text-lg;
+  }
+
+  .card-body-aristocratic {
+    @apply p-8;
+  }
+
+  /* Luxury Button */
+  .btn-luxury {
+    @apply relative overflow-hidden;
+    @apply bg-gradient-to-r from-gold-500 to-gold-600;
+    @apply text-gray-900 font-semibold uppercase tracking-wide;
+    @apply px-8 py-4 rounded-xl;
+    @apply shadow-lg hover:shadow-xl;
+    @apply transform hover:-translate-y-1;
+    @apply transition-all duration-300;
+    @apply border-2 border-gold-400;
+  }
+
+  .btn-luxury::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent;
+    @apply -translate-x-full transition-transform duration-700;
+  }
+
+  .btn-luxury:hover::before {
+    @apply translate-x-full;
+  }
+
+  .btn-luxury-success {
+    @apply bg-gradient-to-r from-emerald-500 to-emerald-600 border-emerald-400;
+  }
+
+  .btn-luxury-danger {
+    @apply bg-gradient-to-r from-red-500 to-red-600 border-red-400;
+  }
+
+  /* Elegant Form Controls */
+  .form-control-aristocratic {
+    @apply bg-gray-800/50 backdrop-blur-sm;
+    @apply border-2 border-gold-500/20 rounded-xl;
+    @apply text-white placeholder-gray-400;
+    @apply px-4 py-3 transition-all duration-300;
+    @apply focus:bg-gray-700/50 focus:border-gold-400 focus:ring-2 focus:ring-gold-400/20;
+  }
+
+  .form-label-aristocratic {
+    @apply text-gold-400 font-semibold uppercase tracking-wide text-sm mb-2;
+  }
+
+  /* KPI Card Luxury */
+  .kpi-card-luxury {
+    @apply bg-gradient-to-br from-gray-800/80 to-gray-900/80 backdrop-blur-lg;
+    @apply border border-gold-500/20 rounded-2xl p-6;
+    @apply shadow-elegant hover:shadow-luxury;
+    @apply transition-all duration-500 hover:-translate-y-1;
+    @apply hover:border-gold-400/40;
+  }
+
+  .kpi-value-luxury {
+    @apply text-3xl font-bold text-gold-400 mb-2;
+  }
+
+  .kpi-label-luxury {
+    @apply text-gray-400 text-sm uppercase tracking-wide;
+  }
+
+  /* Navigation Luxury */
+  .navbar-luxury {
+    @apply bg-gradient-to-r from-gray-900/95 to-gray-800/95 backdrop-blur-2xl;
+    @apply border-b border-gold-500/20 shadow-luxury;
+  }
+
+  .navbar-brand-luxury {
+    @apply text-gold-400 font-bold text-2xl;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  }
+
+  .nav-link-luxury {
+    @apply text-gray-300 hover:text-gold-400 font-medium;
+    @apply px-4 py-2 rounded-lg transition-all duration-300;
+    @apply relative overflow-hidden;
+  }
+
+  .nav-link-luxury::after {
+    content: '';
+    @apply absolute bottom-0 left-1/2 w-0 h-0.5 bg-gold-400;
+    @apply transition-all duration-300 transform -translate-x-1/2;
+  }
+
+  .nav-link-luxury:hover::after {
+    @apply w-full;
+  }
+
+  /* Alert Luxury */
+  .alert-luxury {
+    @apply backdrop-blur-lg border-l-4 rounded-xl p-4;
+  }
+
+  .alert-success-luxury {
+    @apply bg-emerald-500/10 border-emerald-500 text-emerald-400;
+  }
+
+  .alert-danger-luxury {
+    @apply bg-red-500/10 border-red-500 text-red-400;
+  }
+
+  /* Loading Spinner Luxury */
+  .spinner-luxury {
+    @apply border-gold-400 border-t-transparent;
+  }
+
+  /* Glassmorphism Effect */
+  .glass-luxury {
+    @apply bg-white/5 backdrop-blur-xl border border-white/10;
+  }
+
+  /* Gradient Text */
+  .text-gradient-luxury {
+    background: linear-gradient(135deg, var(--primary-gold), var(--secondary-silver));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
+
+/* Utility layer customizations */
+@layer utilities {
+  .shadow-luxury {
+    box-shadow: var(--shadow-luxury);
+  }
+
+  .shadow-elegant {
+    box-shadow: var(--shadow-elegant);
+  }
+
+  .bg-gold-400 {
+    background-color: var(--primary-gold);
+  }
+
+  .bg-gold-500 {
+    background-color: var(--primary-gold-light);
+  }
+
+  .bg-gold-600 {
+    background-color: var(--primary-gold-dark);
+  }
+
+  .text-gold-400 {
+    color: var(--primary-gold);
+  }
+
+  .border-gold-400 {
+    border-color: var(--primary-gold);
+  }
+
+  .border-gold-500 {
+    border-color: var(--primary-gold-light);
+  }
+
+  /* Animation utilities */
+  .animate-fade-in-up {
+    animation: fadeInUp 0.6s ease-out;
+  }
+
+  .animate-slide-in-left {
+    animation: slideInLeft 0.6s ease-out;
+  }
+
+  .animate-slide-in-right {
+    animation: slideInRight 0.6s ease-out;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideInLeft {
+    from {
+      opacity: 0;
+      transform: translateX(-30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--dark-slate);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary-gold);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-gold-dark);
+}
