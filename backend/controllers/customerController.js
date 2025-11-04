@@ -1,4 +1,4 @@
-// controllers/customerController.js - Customer Controller
+// Customer Controller
 const Customer = require('../models/Customer');
 
 // Get all customers with pagination support
@@ -39,6 +39,8 @@ const getAllCustomers = async (req, res) => {
     });
   }
 };
+
+
 
 // Get customer by ID
 const getCustomerById = async (req, res) => {

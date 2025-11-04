@@ -1,4 +1,4 @@
-// controllers/dashboardController.js - Dashboard Controller
+// Dashboard Controller
 const db = require('../config/database');
 
 // Get dashboard overview
@@ -54,6 +54,9 @@ const getOverview = async (req, res) => {
     });
   }
 };
+
+
+
 
 // Get top customers by revenue
 const getTopCustomers = async (req, res) => {

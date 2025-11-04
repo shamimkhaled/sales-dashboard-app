@@ -1,4 +1,4 @@
-// routes/uploadRoutes.js - Upload Routes with Export
+// Upload Routes with Export
 const express = require('express');
 const router = express.Router();
 const {

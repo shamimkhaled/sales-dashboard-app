@@ -22,6 +22,8 @@ const options = {
         description: 'Alternative Development Server',
       },
     ],
+
+    
     components: {
       schemas: {
         Customer: {
@@ -86,6 +88,8 @@ const options = {
             },
           },
         },
+
+
         Bill: {
           type: 'object',
           required: ['customer_id'],

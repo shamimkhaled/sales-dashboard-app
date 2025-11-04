@@ -1,4 +1,4 @@
-// controllers/billController.js - Bill Controller
+
 const Bill = require('../models/Bill');
 
 // Get all bills with pagination support
@@ -44,6 +44,7 @@ const getAllBills = async (req, res) => {
   }
 };
 
+
 // Get bill by ID
 const getBillById = async (req, res) => {
   try {
@@ -70,6 +71,8 @@ const getBillById = async (req, res) => {
   }
 };
 
+
+
 // Create new bill
 const createBill = async (req, res) => {
   try {
@@ -89,6 +92,8 @@ const createBill = async (req, res) => {
     });
   }
 };
+
+
 
 // Update bill
 const updateBill = async (req, res) => {
@@ -120,6 +125,8 @@ const updateBill = async (req, res) => {
   }
 };
 
+
+
 // Delete bill
 const deleteBill = async (req, res) => {
   try {
@@ -148,6 +155,8 @@ const deleteBill = async (req, res) => {
   }
 };
 
+
+
 // Get bill statistics
 const getBillStats = async (req, res) => {
   try {
@@ -164,6 +173,8 @@ const getBillStats = async (req, res) => {
     });
   }
 };
+
+
 
 // Get bills by customer
 const getBillsByCustomer = async (req, res) => {
@@ -184,6 +195,8 @@ const getBillsByCustomer = async (req, res) => {
     });
   }
 };
+
+
 
 // Partial update bill (PATCH)
 const patchBill = async (req, res) => {

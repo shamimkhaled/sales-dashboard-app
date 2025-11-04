@@ -1,4 +1,4 @@
-// models/Customer.js - Customer Model
+// Customer Model
 const db = require('../config/database');
 
 class Customer {

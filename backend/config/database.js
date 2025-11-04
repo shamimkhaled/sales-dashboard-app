@@ -1,4 +1,4 @@
-// config/database.js - SQLite Database Setup
+// SQLite Database Setup
 // Creates tables automatically when server starts
 
 const sqlite3 = require('sqlite3').verbose();
@@ -40,6 +40,8 @@ function initializeTables() {
     else console.log('✓ Customers table ready');
   });
 
+
+
   // Create Bill Records Table
   db.run(`
     CREATE TABLE IF NOT EXISTS bill_records (
@@ -80,6 +82,9 @@ function initializeTables() {
     else console.log('✓ Bill Records table ready');
   });
 
+
+
+
   // Create Audit Log Table
   db.run(`
     CREATE TABLE IF NOT EXISTS audit_logs (
@@ -99,6 +104,10 @@ function initializeTables() {
   console.log('✓ Database initialization complete\n');
 }
 
+
+
+
+
 // Promisify database operations for easier use
 db.runAsync = function(sql, params = []) {
   return new Promise((resolve, reject) => {
@@ -109,6 +118,8 @@ db.runAsync = function(sql, params = []) {
   });
 };
 
+
+
 db.getAsync = function(sql, params = []) {
   return new Promise((resolve, reject) => {
     this.get(sql, params, (err, row) => {
@@ -117,6 +128,8 @@ db.getAsync = function(sql, params = []) {
     });
   });
 };
+
+
 
 db.allAsync = function(sql, params = []) {
   return new Promise((resolve, reject) => {

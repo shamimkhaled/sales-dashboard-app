@@ -1,4 +1,4 @@
-// models/Bill.js - Bill Model
+// Bill Model
 const db = require('../config/database');
 
 class Bill {

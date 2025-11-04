@@ -1,4 +1,4 @@
-// routes/billRoutes.js - Bill Routes
+// Bill Routes
 const express = require('express');
 const router = express.Router();
 const {
