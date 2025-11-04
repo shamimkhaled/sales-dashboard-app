@@ -266,7 +266,7 @@ export default function DataEntry() {
       isDark ? 'bg-dark-950' : 'bg-gray-50'
     }`}>
       {/* Header */}
-      <div className={`sticky top-16 z-40 backdrop-blur-md border-b transition-all duration-300 ${
+      <div className={`sticky top-0 z-40 backdrop-blur-md border-b transition-all duration-300 ${
         isDark
           ? 'bg-dark-900/80 border-dark-700'
           : 'bg-white/80 border-gold-100'

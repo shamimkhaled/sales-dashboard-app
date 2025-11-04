@@ -16,6 +16,11 @@ app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(path.join(__dirname, '..', 'frontend', 'dist')));
 
+// Security Middleware
+const { helmetConfig, sanitizeInput, corsOptions } = require('./middleware/security');
+app.use(helmetConfig);
+app.use(sanitizeInput);
+
 // Initialize Database
 const db = require('./config/database');
 
@@ -27,17 +32,31 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customCss: '.swagger-ui .topbar { display: none }',
 }));
 
+// API Routes (moved before static files to avoid conflicts)
+app.use('/api', (req, res, next) => {
+  // This ensures API routes are handled before static files
+  next();
+});
+
 // Import Routes
+const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
 const customerRoutes = require('./routes/customerRoutes');
 const billRoutes = require('./routes/billRoutes');
 const uploadRoutes = require('./routes/uploadRotues');
 const dashboardRoutes = require('./routes/dshboardRoutes');
+const activityLogRoutes = require('./routes/activityLogRoutes');
+const reportsRoutes = require('./routes/reportsRoutes');
 
 // Use Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/bills', billRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/activity-logs', activityLogRoutes);
+// app.use('/api/reports', reportsRoutes); // Commented out - reports routes not created yet
 
 // Root Route
 app.get('/', (req, res) => {

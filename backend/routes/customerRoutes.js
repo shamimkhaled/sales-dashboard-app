@@ -9,6 +9,11 @@ const {
   patchCustomer,
   deleteCustomer
 } = require('../controllers/customerController');
+const { authenticate, requirePermission, logActivity } = require('../middleware/auth');
+const { apiLimiter, validateCustomer, handleValidationErrors } = require('../middleware/security');
+
+// All customer routes require authentication
+router.use(authenticate);
 
 /**
  * @swagger
@@ -46,7 +51,7 @@ const {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/', getAllCustomers);
+router.get('/', apiLimiter, requirePermission('customers:read'), logActivity('view_customers', 'customer'), getAllCustomers);
 
 /**
  * @swagger
@@ -79,7 +84,7 @@ router.get('/', getAllCustomers);
  *       500:
  *         description: Server error
  */
-router.get('/:id', getCustomerById);
+router.get('/:id', apiLimiter, requirePermission('customers:read'), logActivity('view_customer', 'customer'), getCustomerById);
 
 /**
  * @swagger
@@ -143,7 +148,7 @@ router.get('/:id', getCustomerById);
  *       500:
  *         description: Server error
  */
-router.post('/', createCustomer);
+router.post('/', apiLimiter, requirePermission('customers:write'), validateCustomer, handleValidationErrors, logActivity('create_customer', 'customer'), createCustomer);
 
 /**
  * @swagger
@@ -198,7 +203,7 @@ router.post('/', createCustomer);
  *       500:
  *         description: Server error
  */
-router.put('/:id', updateCustomer);
+router.put('/:id', apiLimiter, requirePermission('customers:write'), validateCustomer, handleValidationErrors, logActivity('update_customer', 'customer'), updateCustomer);
 
 /**
  * @swagger
@@ -252,9 +257,9 @@ router.put('/:id', updateCustomer);
  *       500:
  *         description: Server error
  */
-router.patch('/:id', patchCustomer);
+router.patch('/:id', apiLimiter, requirePermission('customers:write'), logActivity('patch_customer', 'customer'), patchCustomer);
 
-router.put('/:id', updateCustomer);
+router.put('/:id', apiLimiter, requirePermission('customers:write'), validateCustomer, handleValidationErrors, logActivity('update_customer', 'customer'), updateCustomer);
 
 /**
  * @swagger
@@ -287,6 +292,6 @@ router.put('/:id', updateCustomer);
  *       500:
  *         description: Server error
  */
-router.delete('/:id', deleteCustomer);
+router.delete('/:id', apiLimiter, requirePermission('customers:write'), logActivity('delete_customer', 'customer'), deleteCustomer);
 
 module.exports = router;

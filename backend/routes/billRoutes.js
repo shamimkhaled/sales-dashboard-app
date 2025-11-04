@@ -11,6 +11,11 @@ const {
   getBillsByCustomer,
   patchBill
 } = require('../controllers/billController');
+const { authenticate, requirePermission, logActivity } = require('../middleware/auth');
+const { apiLimiter, validateBill, handleValidationErrors } = require('../middleware/security');
+
+// All bill routes require authentication
+router.use(authenticate);
 
 /**
  * @swagger
@@ -44,7 +49,7 @@ const {
  *       500:
  *         description: Server error
  */
-router.get('/', getAllBills);
+router.get('/', apiLimiter, requirePermission('bills:read'), logActivity('view_bills', 'bill'), getAllBills);
 
 /**
  * @swagger
@@ -75,7 +80,7 @@ router.get('/', getAllBills);
  *       500:
  *         description: Server error
  */
-router.get('/stats', getBillStats);
+router.get('/stats', apiLimiter, requirePermission('bills:read'), logActivity('view_bill_stats', 'bill'), getBillStats);
 
 /**
  * @swagger
@@ -106,7 +111,7 @@ router.get('/stats', getBillStats);
  *       500:
  *         description: Server error
  */
-router.get('/customer/:customerId', getBillsByCustomer);
+router.get('/customer/:customerId', apiLimiter, requirePermission('bills:read'), logActivity('view_customer_bills', 'bill'), getBillsByCustomer);
 
 /**
  * @swagger
@@ -135,7 +140,7 @@ router.get('/customer/:customerId', getBillsByCustomer);
  *       500:
  *         description: Server error
  */
-router.get('/:id', getBillById);
+router.get('/:id', apiLimiter, requirePermission('bills:read'), logActivity('view_bill', 'bill'), getBillById);
 
 /**
  * @swagger
@@ -241,7 +246,7 @@ router.get('/:id', getBillById);
  *       500:
  *         description: Server error
  */
-router.post('/', createBill);
+router.post('/', apiLimiter, requirePermission('bills:write'), validateBill, handleValidationErrors, logActivity('create_bill', 'bill'), createBill);
 
 /**
  * @swagger
@@ -327,7 +332,7 @@ router.post('/', createBill);
  *       500:
  *         description: Server error
  */
-router.put('/:id', updateBill);
+router.put('/:id', apiLimiter, requirePermission('bills:write'), validateBill, handleValidationErrors, logActivity('update_bill', 'bill'), updateBill);
 
 /**
  * @swagger
@@ -377,7 +382,7 @@ router.put('/:id', updateBill);
  *       500:
  *         description: Server error
  */
-router.patch('/:id', patchBill);
+router.patch('/:id', apiLimiter, requirePermission('bills:write'), logActivity('patch_bill', 'bill'), patchBill);
 
 /**
  * @swagger
@@ -410,6 +415,6 @@ router.patch('/:id', patchBill);
  *       500:
  *         description: Server error
  */
-router.delete('/:id', deleteBill);
+router.delete('/:id', apiLimiter, requirePermission('bills:write'), logActivity('delete_bill', 'bill'), deleteBill);
 
 module.exports = router;

@@ -1,5 +1,6 @@
 
 const Bill = require('../models/Bill');
+const { requirePermission } = require('../middleware/auth');
 
 // Get all bills with pagination support
 const getAllBills = async (req, res) => {
