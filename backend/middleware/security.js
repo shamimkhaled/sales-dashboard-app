@@ -149,6 +149,68 @@ const validateBill = [
     .withMessage('Discount must be a positive number'),
 ];
 
+const validateProspect = [
+  body('prospect_name')
+    .trim()
+    .isLength({ min: 1, max: 255 })
+    .withMessage('Prospect name is required and must be less than 255 characters'),
+  body('company_name')
+    .optional()
+    .trim()
+    .isLength({ max: 255 })
+    .withMessage('Company name must be less than 255 characters'),
+  body('email')
+    .optional()
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('Please provide a valid email address'),
+  body('phone_number')
+    .optional()
+    .matches(/^(\+880|880|0)?1[3-9]\d{8}$/)
+    .withMessage('Please provide a valid Bangladeshi phone number'),
+  body('address')
+    .optional()
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage('Address must be less than 500 characters'),
+  body('potential_revenue')
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage('Potential revenue must be a positive number'),
+  body('contact_person_name')
+    .optional()
+    .trim()
+    .isLength({ max: 255 })
+    .withMessage('Contact person name must be less than 255 characters'),
+  body('source')
+    .optional()
+    .isIn(['Website', 'Referral', 'Cold Call', 'Other'])
+    .withMessage('Invalid source specified'),
+  body('follow_up_date')
+    .optional()
+    .isISO8601()
+    .withMessage('Follow-up date must be a valid date'),
+  body('notes')
+    .optional()
+    .trim()
+    .isLength({ max: 1000 })
+    .withMessage('Notes must be less than 1000 characters'),
+  body('status')
+    .optional()
+    .isIn(['New', 'Contacted', 'Qualified', 'Lost', 'Converted'])
+    .withMessage('Invalid status specified'),
+  body('connection_type')
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Connection type must be less than 100 characters'),
+  body('area')
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Area must be less than 100 characters'),
+];
+
 // Validation error handler
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);

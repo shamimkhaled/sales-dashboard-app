@@ -18,6 +18,16 @@ class Customer {
       params.push(filters.status);
     }
 
+    if (filters.connection_type) {
+      sql += ` AND connection_type = ?`;
+      params.push(filters.connection_type);
+    }
+
+    if (filters.area) {
+      sql += ` AND area = ?`;
+      params.push(filters.area);
+    }
+
     sql += ` ORDER BY serial_number ASC`;
 
     // Pagination support
@@ -51,8 +61,8 @@ class Customer {
     const sql = `
       INSERT INTO customers (
         serial_number, name_of_party, address, email, proprietor_name,
-        phone_number, link_id, remarks, kam, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        phone_number, link_id, remarks, kam, status, connection_type, area
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     const params = [
       serialNumber,
@@ -64,7 +74,9 @@ class Customer {
       customerData.link_id,
       customerData.remarks,
       customerData.kam,
-      customerData.status || 'Active'
+      customerData.status || 'Active',
+      customerData.connection_type,
+      customerData.area
     ];
 
     const result = await db.runAsync(sql, params);
@@ -79,7 +91,9 @@ class Customer {
       link_id: customerData.link_id,
       remarks: customerData.remarks,
       kam: customerData.kam,
-      status: customerData.status || 'Active'
+      status: customerData.status || 'Active',
+      connection_type: customerData.connection_type,
+      area: customerData.area
     };
   }
 
@@ -89,7 +103,7 @@ class Customer {
       UPDATE customers SET
         serial_number = ?, name_of_party = ?, address = ?, email = ?,
         proprietor_name = ?, phone_number = ?, link_id = ?, remarks = ?,
-        kam = ?, status = ?, updated_at = CURRENT_TIMESTAMP
+        kam = ?, status = ?, connection_type = ?, area = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `;
     const params = [
@@ -103,6 +117,8 @@ class Customer {
       customerData.remarks,
       customerData.kam,
       customerData.status,
+      customerData.connection_type,
+      customerData.area,
       id
     ];
 
@@ -131,6 +147,16 @@ class Customer {
     if (filters.status) {
       sql += ` AND status = ?`;
       params.push(filters.status);
+    }
+
+    if (filters.connection_type) {
+      sql += ` AND connection_type = ?`;
+      params.push(filters.connection_type);
+    }
+
+    if (filters.area) {
+      sql += ` AND area = ?`;
+      params.push(filters.area);
     }
 
     const result = await db.getAsync(sql, params);

@@ -189,6 +189,90 @@ class Bill {
     return await db.getAsync(sql);
   }
 
+  // Get revenue calculations (monthly, weekly, yearly)
+  static async getRevenueCalculations(filters = {}) {
+    let sql = `
+      SELECT
+        DATE_FORMAT(billing_date, '%Y-%m') as month,
+        DATE_FORMAT(billing_date, '%Y-%U') as week,
+        DATE_FORMAT(billing_date, '%Y') as year,
+        SUM(total_bill) as monthly_revenue,
+        SUM(total_received) as monthly_received,
+        SUM(total_due) as monthly_due,
+        COUNT(*) as bill_count
+      FROM bill_records
+      WHERE status = 'Active'
+    `;
+    const params = [];
+
+    if (filters.start_date && filters.end_date) {
+      sql += ` AND billing_date BETWEEN ? AND ?`;
+      params.push(filters.start_date, filters.end_date);
+    }
+
+    if (filters.customer_id) {
+      sql += ` AND customer_id = ?`;
+      params.push(filters.customer_id);
+    }
+
+    sql += ` GROUP BY DATE_FORMAT(billing_date, '%Y-%m'), DATE_FORMAT(billing_date, '%Y-%U'), DATE_FORMAT(billing_date, '%Y')`;
+    sql += ` ORDER BY month DESC`;
+
+    return await db.allAsync(sql, params);
+  }
+
+  // Verify calculations (cross-check totals)
+  static async verifyCalculations(billId = null) {
+    let sql = `
+      SELECT
+        id,
+        customer_id,
+        iig_qt_price,
+        fna_price,
+        ggc_price,
+        cdn_price,
+        bdix_price,
+        baishan_price,
+        (iig_qt_price + fna_price + ggc_price + cdn_price + bdix_price + baishan_price) as calculated_total,
+        total_bill,
+        total_received,
+        total_due,
+        (total_received + total_due) as received_plus_due,
+        CASE
+          WHEN ABS((iig_qt_price + fna_price + ggc_price + cdn_price + bdix_price + baishan_price) - total_bill) < 0.01 THEN 'Valid'
+          ELSE 'Invalid'
+        END as total_calculation_status,
+        CASE
+          WHEN ABS((total_received + total_due) - total_bill) < 0.01 THEN 'Valid'
+          ELSE 'Invalid'
+        END as balance_calculation_status
+      FROM bill_records
+    `;
+    const params = [];
+
+    if (billId) {
+      sql += ` WHERE id = ?`;
+      params.push(billId);
+    }
+
+    return await db.allAsync(sql, params);
+  }
+
+  // Get calculation summary for verification
+  static async getCalculationSummary() {
+    const sql = `
+      SELECT
+        COUNT(*) as total_bills,
+        SUM(CASE WHEN ABS((iig_qt_price + fna_price + ggc_price + cdn_price + bdix_price + baishan_price) - total_bill) < 0.01 THEN 1 ELSE 0 END) as valid_calculations,
+        SUM(CASE WHEN ABS((total_received + total_due) - total_bill) < 0.01 THEN 1 ELSE 0 END) as valid_balances,
+        SUM(CASE WHEN ABS((iig_qt_price + fna_price + ggc_price + cdn_price + bdix_price + baishan_price) - total_bill) >= 0.01 THEN 1 ELSE 0 END) as invalid_calculations,
+        SUM(CASE WHEN ABS((total_received + total_due) - total_bill) >= 0.01 THEN 1 ELSE 0 END) as invalid_balances
+      FROM bill_records
+      WHERE status = 'Active'
+    `;
+    return await db.getAsync(sql);
+  }
+
   // Get bills by customer
   static async getByCustomer(customerId) {
     const sql = `

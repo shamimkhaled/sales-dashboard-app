@@ -257,6 +257,95 @@ const options = {
               enum: ['Active', 'Inactive', 'Suspended'],
               description: 'Customer status',
             },
+            connection_type: {
+              type: 'string',
+              description: 'Connection type (Fiber, Wireless, Cable, Satellite)',
+            },
+            area: {
+              type: 'string',
+              description: 'Service area/location',
+            },
+            created_at: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Creation timestamp',
+            },
+            updated_at: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Last update timestamp',
+            },
+          },
+        },
+        Prospect: {
+          type: 'object',
+          required: ['prospect_name'],
+          properties: {
+            id: {
+              type: 'integer',
+              description: 'Prospect ID',
+            },
+            prospect_name: {
+              type: 'string',
+              description: 'Prospect name',
+            },
+            company_name: {
+              type: 'string',
+              description: 'Company name',
+            },
+            email: {
+              type: 'string',
+              format: 'email',
+              description: 'Prospect email',
+            },
+            phone_number: {
+              type: 'string',
+              description: 'Contact phone number',
+            },
+            address: {
+              type: 'string',
+              description: 'Prospect address',
+            },
+            potential_revenue: {
+              type: 'number',
+              format: 'float',
+              description: 'Estimated potential revenue',
+            },
+            contact_person_name: {
+              type: 'string',
+              description: 'Contact person name',
+            },
+            source: {
+              type: 'string',
+              enum: ['Website', 'Referral', 'Cold Call', 'Other'],
+              description: 'Lead source',
+            },
+            follow_up_date: {
+              type: 'string',
+              format: 'date',
+              description: 'Follow-up date',
+            },
+            notes: {
+              type: 'string',
+              description: 'Additional notes',
+            },
+            status: {
+              type: 'string',
+              enum: ['New', 'Contacted', 'Qualified', 'Lost', 'Converted'],
+              description: 'Prospect status',
+            },
+            connection_type: {
+              type: 'string',
+              description: 'Preferred connection type',
+            },
+            area: {
+              type: 'string',
+              description: 'Service area',
+            },
+            created_by: {
+              type: 'integer',
+              description: 'User ID who created the prospect',
+            },
             created_at: {
               type: 'string',
               format: 'date-time',
@@ -478,13 +567,16 @@ const options = {
     },
   },
   apis: [
-    '../routes/authRoutes.js',
-    '../routes/userRoutes.js',
-    '../routes/activityLogRoutes.js',
-    '../routes/customerRoutes.js',
-    '../routes/billRoutes.js',
-    '../routes/dshboardRoutes.js',
-    '../routes/uploadRotues.js',
+    './routes/authRoutes.js',
+    './routes/userRoutes.js',
+    './routes/activityLogRoutes.js',
+    './routes/customerRoutes.js',
+    './routes/billRoutes.js',
+    './routes/prospectRoutes.js',
+    // './routes/calculationRoutes.js',
+    './routes/dshboardRoutes.js',
+    './routes/uploadRotues.js',
+    './models/Role.js',
   ],
 };
 

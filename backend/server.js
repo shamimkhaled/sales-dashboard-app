@@ -32,6 +32,20 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customCss: '.swagger-ui .topbar { display: none }',
 }));
 
+// Also serve at /api for backward compatibility
+app.use('/api', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  swaggerOptions: {
+    persistAuthorization: true,
+  },
+  customCss: '.swagger-ui .topbar { display: none }',
+}));
+
+// API Routes (moved before static files to avoid conflicts)
+app.use('/api', (req, res, next) => {
+  // This ensures API routes are handled before static files
+  next();
+});
+
 // API Routes (moved before static files to avoid conflicts)
 app.use('/api', (req, res, next) => {
   // This ensures API routes are handled before static files
@@ -43,6 +57,8 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const customerRoutes = require('./routes/customerRoutes');
 const billRoutes = require('./routes/billRoutes');
+const prospectRoutes = require('./routes/prospectRoutes');
+const calculationRoutes = require('./routes/calculationRoutes');
 const uploadRoutes = require('./routes/uploadRotues');
 const dashboardRoutes = require('./routes/dshboardRoutes');
 const activityLogRoutes = require('./routes/activityLogRoutes');
@@ -53,6 +69,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/bills', billRoutes);
+app.use('/api/prospects', prospectRoutes);
+app.use('/api/calculations', calculationRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/activity-logs', activityLogRoutes);

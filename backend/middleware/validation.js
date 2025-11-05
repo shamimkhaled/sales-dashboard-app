@@ -290,6 +290,141 @@ const validateCustomerData = async (req, res, next) => {
   }
 };
 
+// Prospect validation schema
+const prospectValidationSchema = Joi.object({
+  prospect_name: Joi.string().trim().min(1).max(255).required()
+    .messages({
+      'string.empty': 'Prospect name is required',
+      'string.max': 'Prospect name must be less than 255 characters'
+    }),
+  company_name: Joi.string().trim().max(255).optional()
+    .messages({
+      'string.max': 'Company name must be less than 255 characters'
+    }),
+  email: Joi.string().trim().email().optional()
+    .messages({
+      'string.email': 'Please provide a valid email address'
+    }),
+  phone_number: Joi.string().trim().regex(bdPhoneRegex).optional()
+    .messages({
+      'string.pattern.base': 'Please provide a valid Bangladeshi phone number'
+    }),
+  address: Joi.string().trim().max(500).optional()
+    .messages({
+      'string.max': 'Address must be less than 500 characters'
+    }),
+  potential_revenue: Joi.number().min(0).optional()
+    .messages({
+      'number.min': 'Potential revenue must be a positive number'
+    }),
+  contact_person_name: Joi.string().trim().max(255).optional()
+    .messages({
+      'string.max': 'Contact person name must be less than 255 characters'
+    }),
+  source: Joi.string().valid('Website', 'Referral', 'Cold Call', 'Other').optional()
+    .default('Other'),
+  follow_up_date: Joi.date().iso().optional().custom(validateDate)
+    .messages({
+      'date.format': 'Follow-up date must be in YYYY-MM-DD format',
+      'date.future': 'Follow-up date cannot be in the future'
+    }),
+  notes: Joi.string().trim().max(1000).optional()
+    .messages({
+      'string.max': 'Notes must be less than 1000 characters'
+    }),
+  status: Joi.string().valid('New', 'Contacted', 'Qualified', 'Lost', 'Converted').optional()
+    .default('New'),
+  connection_type: Joi.string().trim().max(100).optional()
+    .messages({
+      'string.max': 'Connection type must be less than 100 characters'
+    }),
+  area: Joi.string().trim().max(100).optional()
+    .messages({
+      'string.max': 'Area must be less than 100 characters'
+    })
+});
+
+// Cross-validation middleware for prospects
+const validateProspectData = async (req, res, next) => {
+  try {
+    // Validate basic structure
+    const { error, value } = prospectValidationSchema.validate(req.body, { abortEarly: false });
+
+    if (error) {
+      const errors = error.details.map(detail => ({
+        field: detail.path.join('.'),
+        message: detail.message
+      }));
+
+      return res.status(400).json({
+        error: 'Validation failed',
+        code: 'VALIDATION_ERROR',
+        details: errors
+      });
+    }
+
+    const prospectData = value;
+
+    // Check for duplicate email if provided
+    if (prospectData.email) {
+      const Prospect = require('../models/Prospect');
+      const existingProspects = await Prospect.getAll({ search: prospectData.email });
+      const duplicateProspect = existingProspects.find(p =>
+        p.email === prospectData.email &&
+        p.id !== req.params.id // Exclude current prospect when updating
+      );
+
+      if (duplicateProspect) {
+        return res.status(400).json({
+          error: 'Prospect with this email already exists',
+          code: 'DUPLICATE_EMAIL',
+          details: { email: prospectData.email }
+        });
+      }
+    }
+
+    // Check for duplicate phone number if provided
+    if (prospectData.phone_number) {
+      const Prospect = require('../models/Prospect');
+      const existingProspects = await Prospect.getAll({ search: prospectData.phone_number });
+      const duplicateProspect = existingProspects.find(p =>
+        p.phone_number === prospectData.phone_number &&
+        p.id !== req.params.id // Exclude current prospect when updating
+      );
+
+      if (duplicateProspect) {
+        return res.status(400).json({
+          error: 'Prospect with this phone number already exists',
+          code: 'DUPLICATE_PHONE',
+          details: { phone_number: prospectData.phone_number }
+        });
+      }
+    }
+
+    // Auto-calculate potential revenue if not provided and connection_type is available
+    if (!prospectData.potential_revenue && prospectData.connection_type) {
+      const revenueMap = {
+        'Fiber': 15000,
+        'Wireless': 8000,
+        'Cable': 12000,
+        'Satellite': 10000
+      };
+      prospectData.potential_revenue = revenueMap[prospectData.connection_type] || 10000;
+    }
+
+    // Attach validated data to request
+    req.validatedData = prospectData;
+    next();
+
+  } catch (error) {
+    console.error('Prospect validation error:', error);
+    res.status(500).json({
+      error: 'Validation failed',
+      code: 'VALIDATION_SYSTEM_ERROR'
+    });
+  }
+};
+
 // Commission calculation validation
 const validateCommissionCalculation = (req, res, next) => {
   const { total_bill, total_received, discount } = req.validatedData || req.body;
@@ -318,7 +453,9 @@ const validateCommissionCalculation = (req, res, next) => {
 module.exports = {
   validateBillData,
   validateCustomerData,
+  validateProspectData,
   validateCommissionCalculation,
   customerValidationSchema,
-  billValidationSchema
+  billValidationSchema,
+  prospectValidationSchema
 };
