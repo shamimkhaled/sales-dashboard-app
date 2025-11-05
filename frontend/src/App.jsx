@@ -71,7 +71,7 @@ const AppLayout = ({ children }) => {
       {/* Sidebar - Always visible on desktop, toggleable on mobile */}
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 
-      <div className="flex-1 lg:ml-64">
+      <div className="flex-1">
         {/* Mobile menu button */}
         {!sidebarOpen && (
           <div className="lg:hidden fixed top-4 left-4 z-50">

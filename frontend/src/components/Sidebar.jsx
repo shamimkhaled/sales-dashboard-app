@@ -148,22 +148,21 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           closed: { x: '-100%' }
         }}
         transition={{ duration: 0.3, ease: 'easeInOut' }}
-        className={`fixed left-0 top-0 z-50 h-full w-64 shadow-xl lg:static lg:z-auto lg:w-64 ${
+        className={`fixed left-0 top-0 z-50 h-screen w-64 shadow-xl lg:sticky lg:z-auto lg:h-screen lg:w-64 ${
           isDark ? 'bg-gray-800 border-r border-gray-700' : 'bg-white border-r border-gray-200'
         }`}
       >
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <Link to="/dashboard" className="flex items-center space-x-3 group">
-                <KTLLogo size="small" />
-                <div>
-                  <div className={`font-bold text-lg leading-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    KTL
-                  </div>
-                  <div className={`text-xs leading-tight ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                    Sales Dashboard
-                  </div>
+          <div className="flex items-center justify-between p-8 border-b border-gray-200 dark:border-gray-700">
+              <Link to="/dashboard" className="flex flex-col items-center space-y-2 group flex-1">
+                <img 
+                  src="https://kloud.com.bd/netband/assets/img/logo/kloud-logo1.png" 
+                  alt="Kloud Logo" 
+                  className="h-12 w-auto object-contain"
+                />
+                <div className={`font-bold text-sm text-center ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  Sales Dashboard
                 </div>
               </Link>
 
