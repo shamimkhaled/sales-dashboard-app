@@ -58,8 +58,8 @@ export default function Pagination({
                 ? 'bg-dark-700 text-silver-500 cursor-not-allowed opacity-50'
                 : 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-50'
               : isDark
-              ? 'bg-dark-700 text-gold-400 hover:bg-dark-600'
-              : 'bg-gold-50 text-gold-600 hover:bg-gold-100'
+              ? 'bg-dark-700 text-blue-400 hover:bg-dark-600'
+              : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
           }`}
         >
           <ChevronLeft size={18} />
@@ -86,8 +86,8 @@ export default function Pagination({
               className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-300 ${
                 currentPage === pageNum
                   ? isDark
-                    ? 'bg-gold-600 text-dark-900'
-                    : 'bg-gold-500 text-white'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-blue-600 text-white'
                   : isDark
                   ? 'bg-dark-700 text-silver-300 hover:bg-dark-600'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -107,8 +107,8 @@ export default function Pagination({
                 ? 'bg-dark-700 text-silver-500 cursor-not-allowed opacity-50'
                 : 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-50'
               : isDark
-              ? 'bg-dark-700 text-gold-400 hover:bg-dark-600'
-              : 'bg-gold-50 text-gold-600 hover:bg-gold-100'
+              ? 'bg-dark-700 text-blue-400 hover:bg-dark-600'
+              : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
           }`}
         >
           <ChevronRight size={18} />

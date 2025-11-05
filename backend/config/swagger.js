@@ -476,15 +476,21 @@ const options = {
         },
       },
     },
+    security: [
+      {
+        bearerAuth: [],
+      },
+    ],
   },
   apis: [
-    '../routes/authRoutes.js',
-    '../routes/userRoutes.js',
-    '../routes/activityLogRoutes.js',
-    '../routes/customerRoutes.js',
-    '../routes/billRoutes.js',
-    '../routes/dshboardRoutes.js',
-    '../routes/uploadRotues.js',
+    './routes/authRoutes.js',
+    './routes/userRoutes.js',
+    './routes/activityLogRoutes.js',
+    './routes/customerRoutes.js',
+    './routes/billRoutes.js',
+    './routes/dshboardRoutes.js',
+    './routes/uploadRotues.js',
+    './routes/reportsRoutes.js',
   ],
 };
 

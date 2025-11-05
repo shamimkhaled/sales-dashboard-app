@@ -35,7 +35,7 @@ export default function DataEntry() {
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(100);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
@@ -290,8 +290,8 @@ export default function DataEntry() {
                 onClick={() => setShowForm(!showForm)}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
                   isDark
-                    ? 'bg-gold-600 text-dark-900 hover:bg-gold-500'
-                    : 'bg-gold-500 text-white hover:bg-gold-600'
+                    ? 'bg-blue-600 text-white hover:bg-blue-500'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
                 }`}
               >
                 <Plus size={20} />
@@ -301,8 +301,8 @@ export default function DataEntry() {
               <div className="flex items-center space-x-2">
                 <label className={`relative cursor-pointer px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center space-x-2 ${
                   isDark
-                    ? 'bg-dark-800 text-gold-400 hover:bg-dark-700'
-                    : 'bg-gold-50 text-gold-600 hover:bg-gold-100'
+                    ? 'bg-blue-600 text-white hover:bg-blue-500'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
                 }`}>
                   <FileUp size={20} />
                   <span>Import</span>
@@ -320,8 +320,8 @@ export default function DataEntry() {
                     whileTap={{ scale: 0.95 }}
                     className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
                       isDark
-                        ? 'bg-dark-800 text-gold-400 hover:bg-dark-700'
-                        : 'bg-gold-50 text-gold-600 hover:bg-gold-100'
+                        ? 'bg-blue-600 text-white hover:bg-blue-500'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
                     }`}
                   >
                     <FileDown size={20} />
@@ -966,11 +966,11 @@ export default function DataEntry() {
               className={`p-2 rounded-lg transition-all duration-300 ${
                 viewMode === 'table'
                   ? isDark
-                    ? 'bg-gold-600 text-dark-900'
-                    : 'bg-gold-500 text-white'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-blue-600 text-white'
                   : isDark
-                  ? 'bg-dark-800 text-silver-400 hover:text-gold-400'
-                  : 'bg-gray-200 text-gray-600 hover:text-gold-600'
+                  ? 'bg-dark-800 text-silver-400 hover:text-blue-400'
+                  : 'bg-gray-200 text-gray-600 hover:text-blue-600'
               }`}
             >
               <List size={20} />
@@ -982,11 +982,11 @@ export default function DataEntry() {
               className={`p-2 rounded-lg transition-all duration-300 ${
                 viewMode === 'card'
                   ? isDark
-                    ? 'bg-gold-600 text-dark-900'
-                    : 'bg-gold-500 text-white'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-blue-600 text-white'
                   : isDark
-                  ? 'bg-dark-800 text-silver-400 hover:text-gold-400'
-                  : 'bg-gray-200 text-gray-600 hover:text-gold-600'
+                  ? 'bg-dark-800 text-silver-400 hover:text-blue-400'
+                  : 'bg-gray-200 text-gray-600 hover:text-blue-600'
               }`}
             >
               <Grid size={20} />
@@ -1113,15 +1113,15 @@ export default function DataEntry() {
                     <motion.tr
                       key={bill.id}
                       variants={itemVariants}
-                      className={`border-b transition-colors duration-300 hover:${isDark ? 'bg-dark-700' : 'bg-gold-50'} ${
-                        isDark ? 'border-dark-700' : 'border-gold-100'
+                      className={`border-b transition-colors duration-300 hover:${isDark ? 'bg-dark-700' : 'bg-gray-50'} ${
+                        isDark ? 'border-dark-700' : 'border-gray-100'
                       }`}
                     >
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
                         isDark ? 'text-silver-300' : 'text-gray-700'
                       }`}>{bill.serial_number || index + 1}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap ${
-                        isDark ? 'text-gold-400' : 'text-gold-600'
+                        isDark ? 'text-gray-100' : 'text-gray-900'
                       }`}>{bill.name_of_party}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
                         isDark ? 'text-silver-300' : 'text-gray-700'
@@ -1154,43 +1154,43 @@ export default function DataEntry() {
                         isDark ? 'text-silver-400' : 'text-gray-600'
                       }`}>{bill.termination_date ? new Date(bill.termination_date).toLocaleDateString() : '-'}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                        isDark ? 'text-gold-400' : 'text-gold-600'
+                        isDark ? 'text-gray-100' : 'text-gray-900'
                       }`}>{bill.iig_qt || '0'}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                        isDark ? 'text-gold-400' : 'text-gold-600'
+                        isDark ? 'text-gray-100' : 'text-gray-900'
                       }`}>{bill.iig_qt_price || '0'}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                        isDark ? 'text-gold-400' : 'text-gold-600'
+                        isDark ? 'text-gray-100' : 'text-gray-900'
                       }`}>{bill.fna || '0'}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                        isDark ? 'text-gold-400' : 'text-gold-600'
+                        isDark ? 'text-gray-100' : 'text-gray-900'
                       }`}>{bill.fna_price || '0'}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                        isDark ? 'text-gold-400' : 'text-gold-600'
+                        isDark ? 'text-gray-100' : 'text-gray-900'
                       }`}>{bill.ggc || '0'}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                        isDark ? 'text-gold-400' : 'text-gold-600'
+                        isDark ? 'text-gray-100' : 'text-gray-900'
                       }`}>{bill.ggc_price || '0'}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                        isDark ? 'text-gold-400' : 'text-gold-600'
+                        isDark ? 'text-gray-100' : 'text-gray-900'
                       }`}>{bill.cdn || '0'}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                        isDark ? 'text-gold-400' : 'text-gold-600'
+                        isDark ? 'text-gray-100' : 'text-gray-900'
                       }`}>{bill.cdn_price || '0'}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                        isDark ? 'text-gold-400' : 'text-gold-600'
+                        isDark ? 'text-gray-100' : 'text-gray-900'
                       }`}>{bill.bdix || '0'}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                        isDark ? 'text-gold-400' : 'text-gold-600'
+                        isDark ? 'text-gray-100' : 'text-gray-900'
                       }`}>{bill.bdix_price || '0'}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                        isDark ? 'text-gold-400' : 'text-gold-600'
+                        isDark ? 'text-gray-100' : 'text-gray-900'
                       }`}>{bill.baishan || '0'}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                        isDark ? 'text-gold-400' : 'text-gold-600'
+                        isDark ? 'text-gray-100' : 'text-gray-900'
                       }`}>{bill.baishan_price || '0'}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                        isDark ? 'text-gold-400' : 'text-gold-600'
+                        isDark ? 'text-gray-100' : 'text-gray-900'
                       }`}>{bill.total_bill?.toLocaleString() || '0'}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
                         isDark ? 'text-green-400' : 'text-green-600'
@@ -1284,15 +1284,15 @@ export default function DataEntry() {
                 variants={itemVariants}
                 className={`rounded-2xl p-6 transition-all duration-300 ${
                   isDark
-                    ? 'bg-dark-800 border border-dark-700 hover:border-gold-500'
-                    : 'bg-white border border-gold-100 hover:border-gold-500'
+                    ? 'bg-dark-800 border border-dark-700 hover:border-blue-500'
+                    : 'bg-white border border-gray-100 hover:border-blue-500'
                 }`}
               >
                 {/* Card Header */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <h3 className={`text-lg font-semibold ${
-                      isDark ? 'text-gold-400' : 'text-gold-600'
+                      isDark ? 'text-blue-400' : 'text-blue-600'
                     }`}>
                       {bill.name_of_party}
                     </h3>
@@ -1355,7 +1355,7 @@ export default function DataEntry() {
 
                   {/* Financial Summary */}
                   <div className={`rounded-lg p-3 ${
-                    isDark ? 'bg-dark-700' : 'bg-gold-50'
+                    isDark ? 'bg-dark-700' : 'bg-blue-50'
                   }`}>
                     <div className="grid grid-cols-3 gap-2 text-center">
                       <div>
@@ -1363,7 +1363,7 @@ export default function DataEntry() {
                           isDark ? 'text-silver-400' : 'text-gray-600'
                         }`}>Total Bill</p>
                         <p className={`text-sm font-semibold ${
-                          isDark ? 'text-gold-400' : 'text-gold-600'
+                          isDark ? 'text-blue-400' : 'text-blue-600'
                         }`}>{bill.total_bill?.toLocaleString() || '0'}</p>
                       </div>
                       <div>
