@@ -1,8 +1,6 @@
 import axios from 'axios';
 
-const API_URL = process.env.NODE_ENV === 'production'
-  ? '/api'  // In production, use relative path
-  : 'http://localhost:5000/api';  // Backend runs on port 3000
+const API_URL = '/api';  // Use proxy in development, relative path in production
 
 const api = axios.create({
   baseURL: API_URL,
@@ -12,10 +10,14 @@ const api = axios.create({
   timeout: 10000, // 10 second timeout
 });
 
-// Request interceptor for adding auth tokens if needed in future
+// Request interceptor for adding auth tokens
 api.interceptors.request.use(
   (config) => {
-    // Add any auth headers here if needed
+    // Get token from localStorage
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
   (error) => {

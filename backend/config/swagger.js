@@ -25,7 +25,188 @@ const options = {
 
     
     components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
+      },
       schemas: {
+        User: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'integer',
+              description: 'User ID',
+            },
+            username: {
+              type: 'string',
+              description: 'Username',
+            },
+            email: {
+              type: 'string',
+              format: 'email',
+              description: 'User email',
+            },
+            role: {
+              type: 'string',
+              enum: ['super_admin', 'admin', 'user'],
+              description: 'User role',
+            },
+            is_active: {
+              type: 'boolean',
+              description: 'User active status',
+            },
+            created_at: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Creation timestamp',
+            },
+            updated_at: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Last update timestamp',
+            },
+          },
+        },
+        LoginRequest: {
+          type: 'object',
+          required: ['email', 'password'],
+          properties: {
+            email: {
+              type: 'string',
+              format: 'email',
+              description: 'User email',
+            },
+            password: {
+              type: 'string',
+              description: 'User password',
+            },
+            rememberMe: {
+              type: 'boolean',
+              description: 'Remember me option',
+            },
+          },
+        },
+        LoginResponse: {
+          type: 'object',
+          properties: {
+            message: {
+              type: 'string',
+              description: 'Success message',
+            },
+            accessToken: {
+              type: 'string',
+              description: 'JWT access token',
+            },
+            refreshToken: {
+              type: 'string',
+              description: 'JWT refresh token',
+            },
+            user: {
+              $ref: '#/components/schemas/User',
+            },
+            expiresIn: {
+              type: 'string',
+              description: 'Token expiration time',
+            },
+          },
+        },
+        RegisterRequest: {
+          type: 'object',
+          required: ['username', 'email', 'password'],
+          properties: {
+            username: {
+              type: 'string',
+              description: 'Username',
+            },
+            email: {
+              type: 'string',
+              format: 'email',
+              description: 'User email',
+            },
+            password: {
+              type: 'string',
+              description: 'User password',
+            },
+            role: {
+              type: 'string',
+              enum: ['super_admin', 'admin', 'user'],
+              description: 'User role (optional, defaults to user)',
+            },
+          },
+        },
+        ActivityLog: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'integer',
+              description: 'Activity log ID',
+            },
+            user_id: {
+              type: 'integer',
+              description: 'User ID who performed the action',
+            },
+            username: {
+              type: 'string',
+              description: 'Username',
+            },
+            action: {
+              type: 'string',
+              description: 'Action performed',
+            },
+            resource: {
+              type: 'string',
+              description: 'Resource type affected',
+            },
+            resource_id: {
+              type: 'integer',
+              description: 'Resource ID affected',
+            },
+            details: {
+              type: 'string',
+              description: 'Action details in JSON format',
+            },
+            ip_address: {
+              type: 'string',
+              description: 'User IP address',
+            },
+            user_agent: {
+              type: 'string',
+              description: 'User agent string',
+            },
+            created_at: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Timestamp',
+            },
+          },
+        },
+        Role: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'integer',
+              description: 'Role ID',
+            },
+            name: {
+              type: 'string',
+              description: 'Role name',
+            },
+            description: {
+              type: 'string',
+              description: 'Role description',
+            },
+            permissions: {
+              type: 'array',
+              items: {
+                type: 'string',
+              },
+              description: 'Role permissions',
+            },
+          },
+        },
         Customer: {
           type: 'object',
           required: ['serial_number', 'name_of_party'],
@@ -297,10 +478,13 @@ const options = {
     },
   },
   apis: [
-    './routes/customerRoutes.js',
-    './routes/billRoutes.js',
-    './routes/dshboardRoutes.js',
-    './routes/uploadRotues.js',
+    '../routes/authRoutes.js',
+    '../routes/userRoutes.js',
+    '../routes/activityLogRoutes.js',
+    '../routes/customerRoutes.js',
+    '../routes/billRoutes.js',
+    '../routes/dshboardRoutes.js',
+    '../routes/uploadRotues.js',
   ],
 };
 

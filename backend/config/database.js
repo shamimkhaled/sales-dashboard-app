@@ -85,21 +85,88 @@ function initializeTables() {
 
 
 
+  // Create Users Table
+  db.run(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT UNIQUE NOT NULL,
+      email TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'user',
+      is_active BOOLEAN DEFAULT 1,
+      created_by INTEGER,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(created_by) REFERENCES users(id)
+    )
+  `, (err) => {
+    if (err) console.error('Error creating users table:', err);
+    else console.log('✓ Users table ready');
+  });
+
+  // Create Roles Table
+  db.run(`
+    CREATE TABLE IF NOT EXISTS roles (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT UNIQUE NOT NULL,
+      description TEXT,
+      permissions TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `, (err) => {
+    if (err) console.error('Error creating roles table:', err);
+    else console.log('✓ Roles table ready');
+  });
+
+  // Create User Activity Logs Table
+  db.run(`
+    CREATE TABLE IF NOT EXISTS user_activity_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      action TEXT NOT NULL,
+      resource TEXT,
+      resource_id INTEGER,
+      details TEXT,
+      ip_address TEXT,
+      user_agent TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `, (err) => {
+    if (err) console.error('Error creating user_activity_logs table:', err);
+    else console.log('✓ User Activity Logs table ready');
+  });
+
   // Create Audit Log Table
   db.run(`
     CREATE TABLE IF NOT EXISTS audit_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
       action TEXT,
       table_name TEXT,
       record_id INTEGER,
       old_values TEXT,
       new_values TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(user_id) REFERENCES users(id)
     )
   `, (err) => {
     if (err) console.error('Error creating audit_logs table:', err);
     else console.log('✓ Audit Logs table ready');
   });
+
+  // Insert default roles (with delay to ensure table is created)
+  setTimeout(() => {
+    db.run(`
+      INSERT OR IGNORE INTO roles (name, description, permissions) VALUES
+      ('super_admin', 'Super Administrator with full access', '["all"]'),
+      ('admin', 'Administrator with user management', '["users:read","users:write","customers:read","customers:write","bills:read","bills:write","reports:read","logs:read"]'),
+      ('user', 'Regular user with limited access', '["customers:read","bills:read","reports:read"]')
+    `, (err) => {
+      if (err) console.error('Error inserting default roles:', err);
+      else console.log('✓ Default roles inserted');
+    });
+  }, 500); // Increased delay to prevent database closed error
 
   console.log('✓ Database initialization complete\n');
 }

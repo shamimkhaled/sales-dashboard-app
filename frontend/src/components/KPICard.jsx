@@ -40,7 +40,7 @@ export default function KPICard({
       <div className={`absolute inset-0 bg-gradient-to-br ${bgColor} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
 
       {/* Content */}
-      <div className="relative p-6 sm:p-8">
+      <div className="relative p-4 sm:p-6 lg:p-8">
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
@@ -66,7 +66,7 @@ export default function KPICard({
 
         {/* Value */}
         <div className="mb-4">
-          <h3 className={`text-3xl sm:text-4xl font-bold font-serif ${
+          <h3 className={`text-2xl sm:text-3xl lg:text-4xl font-bold font-serif ${
             isDark ? 'text-white' : 'text-dark-900'
           }`}>
             {value}
