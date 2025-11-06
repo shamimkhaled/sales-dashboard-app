@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Upload, Download, Plus, Grid, List, Search,
-  X, Edit2, Trash2, Eye, FileUp, FileDown, ChevronDown
+  X, Edit2, Trash2, Eye, FileUp, FileDown, ChevronDown, AlertTriangle
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { useNotification } from '../context/NotificationContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorAlert from '../components/ErrorAlert';
 import Pagination from '../components/Pagination';
@@ -21,6 +22,7 @@ import { customerService } from '../services/customerService';
 
 export default function DataEntry() {
   const { isDark } = useTheme();
+  const { showSuccess, showError } = useNotification();
   const [viewMode, setViewMode] = useState('table');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -32,6 +34,8 @@ export default function DataEntry() {
   const [editingId, setEditingId] = useState(null);
   const [fileType, setFileType] = useState('excel');
   const [expandedRow, setExpandedRow] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [billToDelete, setBillToDelete] = useState(null);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -169,20 +173,56 @@ export default function DataEntry() {
     setShowForm(true);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this bill?')) {
-      try {
-        setLoading(true);
-        await billService.deleteBill(id);
-        setSuccess('Bill deleted successfully');
-        setCurrentPage(1);
-        fetchBills();
-      } catch (err) {
-        setError(err.message || 'Failed to delete bill');
-      } finally {
-        setLoading(false);
-      }
+  const handleDeleteClick = (bill) => {
+    setBillToDelete(bill);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!billToDelete || !billToDelete.id) {
+      setError('Invalid bill record');
+      setShowDeleteModal(false);
+      return;
     }
+
+    try {
+      setShowDeleteModal(false);
+      setBillToDelete(null);
+      
+      // Delete the bill
+      await billService.deleteBill(billToDelete.id);
+      
+      // Show success notification
+      showSuccess('Bill record has been deleted successfully');
+      
+      // Force refresh by updating the bills state immediately
+      setBills(prevBills => prevBills.filter(bill => bill.id !== billToDelete.id));
+      
+      // Update total count
+      setTotalCount(prevCount => prevCount - 1);
+      
+      // Recalculate total pages
+      const newTotalPages = Math.ceil((totalCount - 1) / pageSize);
+      setTotalPages(newTotalPages);
+      
+      // If current page is now beyond total pages, go to last page
+      if (currentPage > newTotalPages && newTotalPages > 0) {
+        setCurrentPage(newTotalPages);
+      } else {
+        // Refresh the current page data
+        fetchBills();
+      }
+    } catch (err) {
+      console.error('Delete error:', err);
+      setError(err.message || 'Failed to delete bill');
+      // Refresh on error to ensure data consistency
+      fetchBills();
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false);
+    setBillToDelete(null);
   };
 
   const handleImport = async (e) => {
@@ -293,11 +333,7 @@ export default function DataEntry() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setShowForm(!showForm)}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
-                  isDark
-                    ? 'bg-blue-600 text-white hover:bg-blue-500'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                }`}
+                className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 shadow-lg"
               >
                 <Plus size={20} />
                 <span>New Bill</span>
@@ -1244,7 +1280,7 @@ export default function DataEntry() {
                           <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.95 }}
-                            onClick={() => handleDelete(bill.id)}
+                            onClick={() => handleDeleteClick(bill)}
                             className={`p-1 sm:p-2 rounded-lg transition-all ${
                               isDark
                                 ? 'bg-dark-700 text-red-400 hover:bg-dark-600'
@@ -1279,13 +1315,14 @@ export default function DataEntry() {
 
         {/* Grid View */}
         {viewMode === 'card' && (
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-          >
-            {bills.map((bill) => (
+          <div className="overflow-x-auto overflow-y-auto max-h-[65vh]">
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 min-w-max"
+            >
+              {bills.map((bill) => (
               <motion.div
                 key={bill.id}
                 variants={itemVariants}
@@ -1393,7 +1430,7 @@ export default function DataEntry() {
                   </div>
 
                   {/* Services */}
-                  {(bill.iig_qt_price || bill.fna_price || bill.ggc_price || bill.cdn_price || bill.bdix_price || bill.baishan_price) && (
+                  {(bill.iig_qt_price > 0 || bill.fna_price > 0 || bill.ggc_price > 0 || bill.cdn_price > 0 || bill.bdix_price > 0 || bill.baishan_price > 0) && (
                     <div>
                       <p className={`text-xs font-medium mb-2 ${
                         isDark ? 'text-silver-400' : 'text-gray-600'
@@ -1454,7 +1491,7 @@ export default function DataEntry() {
                   <motion.button
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => handleDelete(bill.id)}
+                    onClick={() => handleDeleteClick(bill)}
                     className={`flex-1 flex items-center justify-center space-x-1 px-3 py-2 rounded-lg transition-all text-sm ${
                       isDark
                         ? 'bg-dark-700 text-red-400 hover:bg-dark-600'
@@ -1467,7 +1504,8 @@ export default function DataEntry() {
                 </div>
               </motion.div>
             ))}
-          </motion.div>
+            </motion.div>
+          </div>
         )}
 
         {/* Pagination for Card View */}
@@ -1503,6 +1541,83 @@ export default function DataEntry() {
         )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteModal && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={handleDeleteCancel}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+            />
+
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            >
+              <div className={`w-full max-w-md rounded-2xl p-6 shadow-2xl ${
+                isDark ? 'bg-dark-800 border border-dark-700' : 'bg-white border border-gray-200'
+              }`}>
+                {/* Warning Icon */}
+                <div className="flex items-center justify-center mb-4">
+                  <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
+                    isDark ? 'bg-red-900/30' : 'bg-red-100'
+                  }`}>
+                    <AlertTriangle className={`w-8 h-8 ${
+                      isDark ? 'text-red-400' : 'text-red-600'
+                    }`} />
+                  </div>
+                </div>
+
+                {/* Title */}
+                <h3 className={`text-xl font-bold text-center mb-2 ${
+                  isDark ? 'text-white' : 'text-gray-900'
+                }`}>
+                  Delete Bill Record
+                </h3>
+
+                {/* Message */}
+                <p className={`text-center mb-6 ${
+                  isDark ? 'text-silver-400' : 'text-gray-600'
+                }`}>
+                  Are you sure you want to delete the bill record for <span className="font-semibold text-red-500">"{billToDelete?.name_of_party}"</span>? This action cannot be undone.
+                </p>
+
+                {/* Buttons */}
+                <div className="flex space-x-3">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleDeleteCancel}
+                    className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all duration-300 ${
+                      isDark
+                        ? 'bg-dark-700 text-white hover:bg-dark-600'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    Cancel
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleDeleteConfirm}
+                    className="flex-1 px-4 py-3 rounded-lg font-medium transition-all duration-300 bg-red-600 text-white hover:bg-red-700"
+                  >
+                    Delete
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
