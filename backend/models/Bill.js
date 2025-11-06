@@ -38,6 +38,31 @@ class Bill {
       params.push(filters.start_date, filters.end_date);
     }
 
+    // Search across all relevant columns
+    if (filters.search) {
+      const searchPattern = `%${filters.search}%`;
+      sql += ` AND (
+        c.name_of_party LIKE ? OR
+        c.address LIKE ? OR
+        c.email LIKE ? OR
+        c.proprietor_name LIKE ? OR
+        c.phone_number LIKE ? OR
+        c.link_id LIKE ? OR
+        c.serial_number LIKE ? OR
+        c.kam LIKE ? OR
+        br.nttn_cap LIKE ? OR
+        br.nttn_com LIKE ? OR
+        br.status LIKE ? OR
+        CAST(br.total_bill AS TEXT) LIKE ? OR
+        CAST(br.total_received AS TEXT) LIKE ? OR
+        CAST(br.total_due AS TEXT) LIKE ?
+      )`;
+      // Push the same search pattern 14 times for all the LIKE clauses
+      for (let i = 0; i < 14; i++) {
+        params.push(searchPattern);
+      }
+    }
+
     sql += ` ORDER BY br.created_at DESC`;
 
     // Pagination support
@@ -53,22 +78,52 @@ class Bill {
 
   // Get total count of bills with optional filters
   static async getCount(filters = {}) {
-    let sql = `SELECT COUNT(*) as count FROM bill_records WHERE 1=1`;
+    let sql = `
+      SELECT COUNT(*) as count 
+      FROM bill_records br
+      LEFT JOIN customers c ON br.customer_id = c.id
+      WHERE 1=1
+    `;
     const params = [];
 
     if (filters.customer_id) {
-      sql += ` AND customer_id = ?`;
+      sql += ` AND br.customer_id = ?`;
       params.push(filters.customer_id);
     }
 
     if (filters.status) {
-      sql += ` AND status = ?`;
+      sql += ` AND br.status = ?`;
       params.push(filters.status);
     }
 
     if (filters.start_date && filters.end_date) {
-      sql += ` AND billing_date BETWEEN ? AND ?`;
+      sql += ` AND br.billing_date BETWEEN ? AND ?`;
       params.push(filters.start_date, filters.end_date);
+    }
+
+    // Search across all relevant columns (same as getAll)
+    if (filters.search) {
+      const searchPattern = `%${filters.search}%`;
+      sql += ` AND (
+        c.name_of_party LIKE ? OR
+        c.address LIKE ? OR
+        c.email LIKE ? OR
+        c.proprietor_name LIKE ? OR
+        c.phone_number LIKE ? OR
+        c.link_id LIKE ? OR
+        c.serial_number LIKE ? OR
+        c.kam LIKE ? OR
+        br.nttn_cap LIKE ? OR
+        br.nttn_com LIKE ? OR
+        br.status LIKE ? OR
+        CAST(br.total_bill AS TEXT) LIKE ? OR
+        CAST(br.total_received AS TEXT) LIKE ? OR
+        CAST(br.total_due AS TEXT) LIKE ?
+      )`;
+      // Push the same search pattern 14 times for all the LIKE clauses
+      for (let i = 0; i < 14; i++) {
+        params.push(searchPattern);
+      }
     }
 
     const result = await db.getAsync(sql, params);

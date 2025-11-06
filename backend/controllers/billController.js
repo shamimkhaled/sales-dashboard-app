@@ -10,6 +10,7 @@ const getAllBills = async (req, res) => {
       status: req.query.status,
       start_date: req.query.start_date,
       end_date: req.query.end_date,
+      search: req.query.search,
       page: req.query.page ? parseInt(req.query.page) : 1,
       pageSize: req.query.pageSize ? parseInt(req.query.pageSize) : 10
     };
@@ -19,7 +20,8 @@ const getAllBills = async (req, res) => {
       customer_id: filters.customer_id,
       status: filters.status,
       start_date: filters.start_date,
-      end_date: filters.end_date
+      end_date: filters.end_date,
+      search: filters.search
     });
 
     const totalPages = Math.ceil(totalCount / filters.pageSize);

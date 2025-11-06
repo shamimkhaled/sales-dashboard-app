@@ -82,7 +82,7 @@ const AdminDashboard = () => {
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${
+    <div className={`h-screen flex flex-col overflow-hidden transition-colors duration-300 ${
       isDark ? 'bg-gray-900' : 'bg-gray-50'
     }`}>
       {/* Header */}
@@ -117,8 +117,9 @@ const AdminDashboard = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {error && <ErrorAlert message={error} onClose={() => setError(null)} />}
+      <div className="flex-1 overflow-hidden">
+        <div className="h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-y-hidden">
+          {error && <ErrorAlert message={error} onClose={() => setError(null)} />}
 
         {/* KPI Cards */}
         <motion.div
@@ -286,6 +287,7 @@ const AdminDashboard = () => {
             </button>
           </div>
         </motion.div>
+        </div>
       </div>
     </div>
   );

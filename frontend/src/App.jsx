@@ -67,7 +67,7 @@ const AppLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen flex overflow-x-auto">
+    <div className="min-h-screen flex overflow-x-hidden">
       {/* Sidebar - Always visible on desktop, toggleable on mobile */}
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 

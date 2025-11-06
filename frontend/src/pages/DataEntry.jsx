@@ -246,6 +246,11 @@ export default function DataEntry() {
     return customer?.name_of_party || `Customer #${customerId}`;
   };
 
+  const handlePageSizeChange = (newPageSize) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1); // Reset to first page when changing page size
+  };
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -262,7 +267,7 @@ export default function DataEntry() {
   if (loading && bills.length === 0) return <LoadingSpinner />;
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${
+    <div className={`h-screen flex flex-col overflow-hidden transition-colors duration-300 ${
       isDark ? 'bg-dark-950' : 'bg-gray-50'
     }`}>
       {/* Header */}
@@ -359,8 +364,9 @@ export default function DataEntry() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {error && <ErrorAlert message={error} onClose={() => setError(null)} />}
+      <div className="flex-1 overflow-hidden">
+        <div className="h-full max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-y-hidden">
+          {error && <ErrorAlert message={error} onClose={() => setError(null)} />}
         {success && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -997,6 +1003,7 @@ export default function DataEntry() {
         {/* Table View */}
         {viewMode === 'table' && (
           <motion.div
+            key={`table-${currentPage}`}
             variants={containerVariants}
             initial="hidden"
             animate="visible"
@@ -1006,9 +1013,10 @@ export default function DataEntry() {
                 : 'bg-white border border-gold-100'
             }`}
           >
-            <div className="overflow-x-auto max-w-full">
+            {/* Constrain list to its own scrollable area */}
+            <div className="overflow-x-auto overflow-y-auto max-w-full max-h-[65vh]">
               <table className="min-w-[2000px] text-xs sm:text-sm">
-                <thead>
+                <thead className="sticky top-0 z-10 bg-white dark:bg-dark-800">
                   <tr className={`border-b ${isDark ? 'border-dark-700' : 'border-gold-100'}`}>
                     <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
                       isDark ? 'text-silver-300' : 'text-gray-700'
@@ -1108,11 +1116,10 @@ export default function DataEntry() {
                     }`}>Actions</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className={isDark ? 'bg-dark-800' : 'bg-white'}>
                   {bills.map((bill, index) => (
-                    <motion.tr
+                    <tr
                       key={bill.id}
-                      variants={itemVariants}
                       className={`border-b transition-colors duration-300 hover:${isDark ? 'bg-dark-700' : 'bg-gray-50'} ${
                         isDark ? 'border-dark-700' : 'border-gray-100'
                       }`}
@@ -1248,7 +1255,7 @@ export default function DataEntry() {
                           </motion.button>
                         </div>
                       </td>
-                    </motion.tr>
+                    </tr>
                   ))}
                 </tbody>
               </table>
@@ -1264,7 +1271,7 @@ export default function DataEntry() {
               totalPages={totalPages}
               onPageChange={setCurrentPage}
               pageSize={pageSize}
-              onPageSizeChange={setPageSize}
+              onPageSizeChange={handlePageSizeChange}
               totalCount={totalCount}
             />
           </div>
@@ -1471,7 +1478,7 @@ export default function DataEntry() {
               totalPages={totalPages}
               onPageChange={setCurrentPage}
               pageSize={pageSize}
-              onPageSizeChange={setPageSize}
+              onPageSizeChange={handlePageSizeChange}
               totalCount={totalCount}
             />
           </div>
@@ -1494,6 +1501,7 @@ export default function DataEntry() {
             </p>
           </motion.div>
         )}
+        </div>
       </div>
     </div>
   );
