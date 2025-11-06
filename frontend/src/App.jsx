@@ -67,11 +67,11 @@ const AppLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen flex overflow-x-hidden">
+    <div className="h-screen flex overflow-hidden">
       {/* Sidebar - Always visible on desktop, toggleable on mobile */}
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Mobile menu button */}
         {!sidebarOpen && (
           <div className="lg:hidden fixed top-4 left-4 z-50">
@@ -85,7 +85,7 @@ const AppLayout = ({ children }) => {
             </button>
           </div>
         )}
-        <main className="flex-1">
+        <main className="flex-1 overflow-y-auto">
           {children}
         </main>
       </div>

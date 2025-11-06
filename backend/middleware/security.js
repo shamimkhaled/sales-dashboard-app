@@ -130,23 +130,89 @@ const validateCustomer = [
 
 const validateBill = [
   body('customer_id')
+    .toInt()
     .isInt({ min: 1 })
     .withMessage('Valid customer ID is required'),
   body('billing_date')
+    .optional({ checkFalsy: true })
     .isISO8601()
     .withMessage('Valid billing date is required'),
+  body('active_date')
+    .optional({ checkFalsy: true })
+    .isISO8601()
+    .withMessage('Valid active date format required'),
+  body('termination_date')
+    .optional({ checkFalsy: true })
+    .isISO8601()
+    .withMessage('Valid termination date format required'),
   body('total_bill')
-    .optional()
+    .optional({ checkFalsy: true })
     .isFloat({ min: 0 })
     .withMessage('Total bill must be a positive number'),
   body('total_received')
-    .optional()
+    .optional({ checkFalsy: true })
     .isFloat({ min: 0 })
     .withMessage('Total received must be a positive number'),
+  body('total_due')
+    .optional({ checkFalsy: true })
+    .isFloat({ min: 0 })
+    .withMessage('Total due must be a positive number'),
   body('discount')
-    .optional()
+    .optional({ checkFalsy: true })
     .isFloat({ min: 0 })
     .withMessage('Discount must be a positive number'),
+  body('iig_qt')
+    .optional({ checkFalsy: true })
+    .isFloat({ min: 0 })
+    .withMessage('IIG-QT must be a positive number'),
+  body('iig_qt_price')
+    .optional({ checkFalsy: true })
+    .isFloat({ min: 0 })
+    .withMessage('IIG-QT price must be a positive number'),
+  body('fna')
+    .optional({ checkFalsy: true })
+    .isFloat({ min: 0 })
+    .withMessage('FNA must be a positive number'),
+  body('fna_price')
+    .optional({ checkFalsy: true })
+    .isFloat({ min: 0 })
+    .withMessage('FNA price must be a positive number'),
+  body('ggc')
+    .optional({ checkFalsy: true })
+    .isFloat({ min: 0 })
+    .withMessage('GGC must be a positive number'),
+  body('ggc_price')
+    .optional({ checkFalsy: true })
+    .isFloat({ min: 0 })
+    .withMessage('GGC price must be a positive number'),
+  body('cdn')
+    .optional({ checkFalsy: true })
+    .isFloat({ min: 0 })
+    .withMessage('CDN must be a positive number'),
+  body('cdn_price')
+    .optional({ checkFalsy: true })
+    .isFloat({ min: 0 })
+    .withMessage('CDN price must be a positive number'),
+  body('bdix')
+    .optional({ checkFalsy: true })
+    .isFloat({ min: 0 })
+    .withMessage('BDIX must be a positive number'),
+  body('bdix_price')
+    .optional({ checkFalsy: true })
+    .isFloat({ min: 0 })
+    .withMessage('BDIX price must be a positive number'),
+  body('baishan')
+    .optional({ checkFalsy: true })
+    .isFloat({ min: 0 })
+    .withMessage('BAISHAN must be a positive number'),
+  body('baishan_price')
+    .optional({ checkFalsy: true })
+    .isFloat({ min: 0 })
+    .withMessage('BAISHAN price must be a positive number'),
+  body('status')
+    .optional()
+    .isIn(['Active', 'Inactive'])
+    .withMessage('Status must be either Active or Inactive'),
 ];
 
 // Validation error handler

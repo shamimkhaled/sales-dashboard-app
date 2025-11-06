@@ -157,10 +157,10 @@ class Bill {
     const sql = `
       INSERT INTO bill_records (
         customer_id, nttn_cap, nttn_com, active_date, billing_date,
-        termination_date, iig_qt_price, fna_price, ggc_price, cdn_price,
-        bdix_price, baishan_price, total_bill, total_received, total_due,
-        discount, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        termination_date, iig_qt, iig_qt_price, fna, fna_price, ggc, ggc_price, 
+        cdn, cdn_price, bdix, bdix_price, baishan, baishan_price,
+        total_bill, total_received, total_due, discount, remarks, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     const params = [
       billData.customer_id,
@@ -169,16 +169,23 @@ class Bill {
       billData.active_date,
       billData.billing_date,
       billData.termination_date,
+      billData.iig_qt || 0,
       billData.iig_qt_price || 0,
+      billData.fna || 0,
       billData.fna_price || 0,
+      billData.ggc || 0,
       billData.ggc_price || 0,
+      billData.cdn || 0,
       billData.cdn_price || 0,
+      billData.bdix || 0,
       billData.bdix_price || 0,
+      billData.baishan || 0,
       billData.baishan_price || 0,
       billData.total_bill || 0,
       billData.total_received || 0,
       billData.total_due || 0,
       billData.discount || 0,
+      billData.remarks || '',
       billData.status || 'Active'
     ];
 
@@ -191,10 +198,11 @@ class Bill {
     const sql = `
       UPDATE bill_records SET
         customer_id = ?, nttn_cap = ?, nttn_com = ?, active_date = ?,
-        billing_date = ?, termination_date = ?, iig_qt_price = ?,
-        fna_price = ?, ggc_price = ?, cdn_price = ?, bdix_price = ?,
-        baishan_price = ?, total_bill = ?, total_received = ?,
-        total_due = ?, discount = ?, status = ?, updated_at = CURRENT_TIMESTAMP
+        billing_date = ?, termination_date = ?, iig_qt = ?, iig_qt_price = ?,
+        fna = ?, fna_price = ?, ggc = ?, ggc_price = ?, cdn = ?, cdn_price = ?, 
+        bdix = ?, bdix_price = ?, baishan = ?, baishan_price = ?,
+        total_bill = ?, total_received = ?, total_due = ?, discount = ?, 
+        remarks = ?, status = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `;
     const params = [
@@ -204,17 +212,24 @@ class Bill {
       billData.active_date,
       billData.billing_date,
       billData.termination_date,
-      billData.iig_qt_price,
-      billData.fna_price,
-      billData.ggc_price,
-      billData.cdn_price,
-      billData.bdix_price,
-      billData.baishan_price,
-      billData.total_bill,
-      billData.total_received,
-      billData.total_due,
-      billData.discount,
-      billData.status,
+      billData.iig_qt || 0,
+      billData.iig_qt_price || 0,
+      billData.fna || 0,
+      billData.fna_price || 0,
+      billData.ggc || 0,
+      billData.ggc_price || 0,
+      billData.cdn || 0,
+      billData.cdn_price || 0,
+      billData.bdix || 0,
+      billData.bdix_price || 0,
+      billData.baishan || 0,
+      billData.baishan_price || 0,
+      billData.total_bill || 0,
+      billData.total_received || 0,
+      billData.total_due || 0,
+      billData.discount || 0,
+      billData.remarks || '',
+      billData.status || 'Active',
       id
     ];
 

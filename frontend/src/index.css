@@ -52,11 +52,7 @@
   }
 
   a {
-    @apply text-gold-600 hover:text-gold-700 transition-colors duration-300;
-  }
-
-  .dark a {
-    @apply text-gold-400 hover:text-gold-300;
+    @apply transition-colors duration-300;
   }
 
   button {

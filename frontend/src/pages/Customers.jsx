@@ -254,11 +254,7 @@ export default function Customers() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-               <label className={`relative cursor-pointer px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center space-x-2 ${
-                 isDark
-                   ? 'bg-dark-800 text-gold-400 hover:bg-dark-700'
-                   : 'bg-gold-50 text-gold-600 hover:bg-gold-100'
-               }`}>
+               <label className="relative cursor-pointer px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center space-x-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl">
                  <FileUp size={20} />
                  <span>Import</span>
                  <input
@@ -272,11 +268,7 @@ export default function Customers() {
                  whileHover={{ scale: 1.05 }}
                  whileTap={{ scale: 0.95 }}
                  onClick={handleExport}
-                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
-                   isDark
-                     ? 'bg-dark-800 text-gold-400 hover:bg-dark-700'
-                     : 'bg-gold-50 text-gold-600 hover:bg-gold-100'
-                 }`}
+                 className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl"
                >
                  <Download size={20} />
                  <span>Export</span>
@@ -285,11 +277,7 @@ export default function Customers() {
                  whileHover={{ scale: 1.05 }}
                  whileTap={{ scale: 0.95 }}
                  onClick={() => setShowForm(!showForm)}
-                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
-                   isDark
-                     ? 'bg-gold-600 text-dark-900 hover:bg-gold-500'
-                     : 'bg-gold-500 text-white hover:bg-gold-600'
-                 }`}
+                 className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl"
                >
                  <Plus size={20} />
                  <span>New Customer</span>
@@ -663,10 +651,7 @@ export default function Customers() {
         </div>
 
         {/* Customers Table */}
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
+        <div
           className={`rounded-2xl overflow-hidden transition-all duration-300 ${
             isDark
               ? 'bg-dark-800 border border-dark-700'
@@ -700,11 +685,10 @@ export default function Customers() {
                   }`}>Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className={isDark ? 'bg-dark-800' : 'bg-white'}>
                 {filteredCustomers.map((customer) => (
-                  <motion.tr
+                  <tr
                     key={customer.id}
-                    variants={itemVariants}
                     className={`border-b transition-colors duration-300 hover:${isDark ? 'bg-dark-700' : 'bg-gold-50'} ${
                       isDark ? 'border-dark-700' : 'border-gold-100'
                     }`}
@@ -765,12 +749,12 @@ export default function Customers() {
                         </motion.button>
                       </div>
                     </td>
-                  </motion.tr>
+                  </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </motion.div>
+        </div>
 
         {/* Pagination */}
         {filteredCustomers.length > 0 && (

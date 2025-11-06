@@ -119,18 +119,47 @@ export default function DataEntry() {
     e.preventDefault();
     try {
       setLoading(true);
+      
+      // Filter out only the bill-specific fields (exclude customer fields from joins)
+      const billData = {
+        customer_id: formData.customer_id,
+        nttn_cap: formData.nttn_cap,
+        nttn_com: formData.nttn_com,
+        active_date: formData.active_date,
+        billing_date: formData.billing_date,
+        termination_date: formData.termination_date,
+        iig_qt: formData.iig_qt,
+        iig_qt_price: formData.iig_qt_price,
+        fna: formData.fna,
+        fna_price: formData.fna_price,
+        ggc: formData.ggc,
+        ggc_price: formData.ggc_price,
+        cdn: formData.cdn,
+        cdn_price: formData.cdn_price,
+        bdix: formData.bdix,
+        bdix_price: formData.bdix_price,
+        baishan: formData.baishan,
+        baishan_price: formData.baishan_price,
+        total_bill: formData.total_bill,
+        total_received: formData.total_received,
+        total_due: formData.total_due,
+        discount: formData.discount,
+        remarks: formData.remarks,
+        status: formData.status,
+      };
+      
       if (editingId) {
-        await billService.updateBill(editingId, formData);
-        setSuccess('Bill updated successfully');
+        await billService.updateBill(editingId, billData);
+        showSuccess('Bill updated successfully');
       } else {
-        await billService.createBill(formData);
-        setSuccess('Bill created successfully');
+        await billService.createBill(billData);
+        showSuccess('Bill created successfully');
       }
       resetForm();
       setCurrentPage(1);
       fetchBills();
     } catch (err) {
-      setError(err.message || 'Failed to save bill');
+      showError(err.message || 'Failed to save bill');
     } finally {
       setLoading(false);
     }
@@ -340,11 +369,7 @@ export default function DataEntry() {
               </motion.button>
 
               <div className="flex items-center space-x-2">
-                <label className={`relative cursor-pointer px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center space-x-2 ${
-                  isDark
-                    ? 'bg-blue-600 text-white hover:bg-blue-500'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                }`}>
+                <label className="relative cursor-pointer px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 shadow-lg">
                   <FileUp size={20} />
                   <span>Import</span>
                   <input
@@ -359,11 +384,7 @@ export default function DataEntry() {
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
-                      isDark
-                        ? 'bg-blue-600 text-white hover:bg-blue-500'
-                        : 'bg-blue-600 text-white hover:bg-blue-700'
-                    }`}
+                    className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 shadow-lg"
                   >
                     <FileDown size={20} />
                     <span>Export</span>
@@ -425,31 +446,32 @@ export default function DataEntry() {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className={`mb-8 rounded-2xl p-6 transition-all duration-300 ${
+              className={`mb-8 rounded-2xl transition-all duration-300 overflow-hidden ${
                 isDark
                   ? 'bg-dark-800 border border-dark-700'
                   : 'bg-white border border-gold-100'
               }`}
             >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className={`text-2xl font-serif font-bold ${
-                  isDark ? 'text-white' : 'text-dark-900'
-                }`}>
-                  {editingId ? 'Edit Bill' : 'New Bill Record'}
-                </h2>
-                <button
-                  onClick={resetForm}
-                  className={`p-2 rounded-lg transition-all ${
-                    isDark
-                      ? 'bg-dark-700 text-gold-400 hover:bg-dark-600'
-                      : 'bg-gold-50 text-gold-600 hover:bg-gold-100'
-                  }`}
-                >
-                  <X size={24} />
-                </button>
+              <div className={`sticky top-0 z-10 p-6 pb-4 ${
+                isDark ? 'bg-dark-800' : 'bg-white'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <h2 className={`text-2xl font-serif font-bold ${
+                    isDark ? 'text-white' : 'text-dark-900'
+                  }`}>
+                    {editingId ? 'Edit Bill' : 'New Bill Record'}
+                  </h2>
+                  <button
+                    onClick={resetForm}
+                    className="p-2 rounded-lg transition-all bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 shadow-md"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
               </div>
 
-              <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="px-6 pb-6 max-h-[70vh] overflow-y-auto">
+                <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {/* Customer Selection */}
                 <div>
                   <label className={`block text-sm font-medium mb-2 ${
@@ -948,7 +970,9 @@ export default function DataEntry() {
                     type="submit"
                     disabled={loading}
                     className={`flex-1 px-6 py-2 rounded-lg font-medium transition-all duration-300 ${
-                      isDark
+                      editingId
+                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 disabled:opacity-50 shadow-lg'
+                        : isDark
                         ? 'bg-gold-600 text-dark-900 hover:bg-gold-500 disabled:opacity-50'
                         : 'bg-gold-500 text-white hover:bg-gold-600 disabled:opacity-50'
                     }`}
@@ -970,74 +994,73 @@ export default function DataEntry() {
                   </motion.button>
                 </div>
               </form>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Search and View Toggle */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
-          <div className={`flex-1 relative ${
-            isDark ? 'bg-dark-800' : 'bg-white'
-          } rounded-lg border transition-all duration-300 ${
-            isDark ? 'border-dark-700' : 'border-gold-200'
-          }`}>
-            <Search className={`absolute left-3 top-3 ${
-              isDark ? 'text-silver-500' : 'text-gray-400'
-            }`} size={20} />
-            <input
-              type="text"
-              placeholder="Search by customer, NTTN CAP..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
-              className={`w-full pl-10 pr-4 py-2 rounded-lg transition-all duration-300 ${
-                isDark
-                  ? 'bg-dark-800 text-white placeholder-silver-500 focus:outline-none'
-                  : 'bg-white text-dark-900 placeholder-gray-400 focus:outline-none'
-              }`}
-            />
-          </div>
+        {/* Search and View Toggle - Hidden when editing */}
+        {!editingId && (
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
+            <div className={`flex-1 relative ${
+              isDark ? 'bg-dark-800' : 'bg-white'
+            } rounded-lg border transition-all duration-300 ${
+              isDark ? 'border-dark-700' : 'border-gold-200'
+            }`}>
+              <Search className={`absolute left-3 top-3 ${
+                isDark ? 'text-silver-500' : 'text-gray-400'
+              }`} size={20} />
+              <input
+                type="text"
+                placeholder="Search by customer, NTTN CAP..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className={`w-full pl-10 pr-4 py-2 rounded-lg transition-all duration-300 ${
+                  isDark
+                    ? 'bg-dark-800 text-white placeholder-silver-500 focus:outline-none'
+                    : 'bg-white text-dark-900 placeholder-gray-400 focus:outline-none'
+                }`}
+              />
+            </div>
 
-          <div className="flex items-center space-x-2">
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setViewMode('table')}
-              className={`p-2 rounded-lg transition-all duration-300 ${
-                viewMode === 'table'
-                  ? isDark
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-blue-600 text-white'
-                  : isDark
-                  ? 'bg-dark-800 text-silver-400 hover:text-blue-400'
-                  : 'bg-gray-200 text-gray-600 hover:text-blue-600'
-              }`}
-            >
-              <List size={20} />
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setViewMode('card')}
-              className={`p-2 rounded-lg transition-all duration-300 ${
-                viewMode === 'card'
-                  ? isDark
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-blue-600 text-white'
-                  : isDark
-                  ? 'bg-dark-800 text-silver-400 hover:text-blue-400'
-                  : 'bg-gray-200 text-gray-600 hover:text-blue-600'
-              }`}
-            >
-              <Grid size={20} />
-            </motion.button>
+            <div className="flex items-center space-x-2">
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setViewMode('table')}
+                className={`p-2 rounded-lg transition-all duration-300 ${
+                  viewMode === 'table'
+                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
+                    : isDark
+                    ? 'bg-dark-800 text-silver-400 hover:text-blue-400'
+                    : 'bg-gray-200 text-gray-600 hover:text-blue-600'
+                }`}
+              >
+                <List size={20} />
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setViewMode('card')}
+                className={`p-2 rounded-lg transition-all duration-300 ${
+                  viewMode === 'card'
+                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
+                    : isDark
+                    ? 'bg-dark-800 text-silver-400 hover:text-blue-400'
+                    : 'bg-gray-200 text-gray-600 hover:text-blue-600'
+                }`}
+              >
+                <Grid size={20} />
+              </motion.button>
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Table View */}
-        {viewMode === 'table' && (
+        {/* Table View - Hidden when editing */}
+        {!editingId && viewMode === 'table' && (
           <motion.div
             key={`table-${currentPage}`}
             variants={containerVariants}
@@ -1271,8 +1294,8 @@ export default function DataEntry() {
                             onClick={() => handleEdit(bill)}
                             className={`p-1 sm:p-2 rounded-lg transition-all ${
                               isDark
-                                ? 'bg-dark-700 text-blue-400 hover:bg-dark-600'
-                                : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                                ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500'
+                                : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500'
                             }`}
                           >
                             <Edit2 size={14} />
@@ -1300,7 +1323,7 @@ export default function DataEntry() {
         )}
 
         {/* Pagination */}
-        {viewMode === 'table' && bills.length > 0 && (
+        {!editingId && viewMode === 'table' && bills.length > 0 && (
           <div className="mt-6">
             <Pagination
               currentPage={currentPage}
@@ -1313,8 +1336,8 @@ export default function DataEntry() {
           </div>
         )}
 
-        {/* Grid View */}
-        {viewMode === 'card' && (
+        {/* Grid View - Hidden when editing */}
+        {!editingId && viewMode === 'card' && (
           <div className="overflow-x-auto overflow-y-auto max-h-[65vh]">
             <motion.div
               variants={containerVariants}
@@ -1479,11 +1502,7 @@ export default function DataEntry() {
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => handleEdit(bill)}
-                    className={`flex-1 flex items-center justify-center space-x-1 px-3 py-2 rounded-lg transition-all text-sm ${
-                      isDark
-                        ? 'bg-dark-700 text-blue-400 hover:bg-dark-600'
-                        : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
-                    }`}
+                    className="flex-1 flex items-center justify-center space-x-1 px-3 py-2 rounded-lg transition-all text-sm bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 shadow-md"
                   >
                     <Edit2 size={14} />
                     <span>Edit</span>
@@ -1509,7 +1528,7 @@ export default function DataEntry() {
         )}
 
         {/* Pagination for Card View */}
-        {viewMode === 'card' && bills.length > 0 && (
+        {!editingId && viewMode === 'card' && bills.length > 0 && (
           <div className="mt-6">
             <Pagination
               currentPage={currentPage}
@@ -1522,7 +1541,7 @@ export default function DataEntry() {
           </div>
         )}
 
-        {bills.length === 0 && (
+        {!editingId && bills.length === 0 && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
