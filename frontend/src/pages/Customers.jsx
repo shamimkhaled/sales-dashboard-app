@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, Plus, Search, Edit2, Trash2, Download,
-  X, TrendingUp, Calendar, DollarSign, Filter, FileUp
+  X, TrendingUp, Calendar, DollarSign, Filter, FileUp, AlertTriangle
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useNotification } from '../context/NotificationContext';
@@ -23,6 +23,10 @@ export default function Customers() {
   const [customers, setCustomers] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  
+  // Delete modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [customerToDelete, setCustomerToDelete] = useState(null);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -78,15 +82,23 @@ export default function Customers() {
         }
       }
 
-      // Calculate stats - Note: This is simplified, in production you might want separate API call for stats
-      const active = response.data.filter(c => c.status === 'Active').length;
-      const inactive = response.data.length - active;
-
-      setStats({
-        totalCustomers: response.pagination?.totalCount || response.data.length,
-        activeCustomers: active,
-        inactiveCustomers: inactive,
-      });
+      // Use stats from API response if available, otherwise calculate from current page
+      if (response.stats) {
+        setStats({
+          totalCustomers: response.stats.totalCustomers,
+          activeCustomers: response.stats.activeCustomers,
+          inactiveCustomers: response.stats.inactiveCustomers,
+        });
+      } else {
+        // Fallback: Calculate stats from current page data
+        const active = response.data.filter(c => c.status === 'Active').length;
+        const inactive = response.data.length - active;
+        setStats({
+          totalCustomers: response.pagination?.totalCount || response.data.length,
+          activeCustomers: active,
+          inactiveCustomers: inactive,
+        });
+      }
     } catch (err) {
       setError(err.message || 'Failed to fetch customers');
     } finally {
@@ -170,20 +182,32 @@ export default function Customers() {
     setShowForm(true);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this customer?')) {
-      try {
-        setLoading(true);
-        await customerService.deleteCustomer(id);
-        showSuccess('Customer deleted successfully');
-        setCurrentPage(1); // Reset to first page after delete
-        fetchCustomers();
-      } catch (err) {
-        showError(err.message || 'Failed to delete customer');
-      } finally {
-        setLoading(false);
-      }
+  const handleDeleteClick = (customer) => {
+    setCustomerToDelete(customer);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!customerToDelete) return;
+
+    try {
+      setLoading(true);
+      await customerService.deleteCustomer(customerToDelete.id);
+      showSuccess('Customer deleted successfully');
+      setShowDeleteModal(false);
+      setCustomerToDelete(null);
+      setCurrentPage(1);
+      fetchCustomers();
+    } catch (err) {
+      showError(err.message || 'Failed to delete customer');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false);
+    setCustomerToDelete(null);
   };
 
   const handleImport = async (e) => {
@@ -383,12 +407,11 @@ export default function Customers() {
                 </h2>
                 <button
                   onClick={resetForm}
-                  className={`p-2 rounded-lg transition-all ${
-                    isDark
-                      ? 'bg-dark-700 text-gold-400 hover:bg-dark-600'
-                      : 'bg-gold-50 text-gold-600 hover:bg-gold-100'
-                  }`}
-                >
+                  className={`p-2 rounded-lg transition-all duration-300 ${
+                  isDark
+                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}>
                   <X size={24} />
                 </button>
               </div>
@@ -601,7 +624,9 @@ export default function Customers() {
                     type="submit"
                     disabled={loading}
                     className={`flex-1 px-6 py-2 rounded-lg font-medium transition-all duration-300 ${
-                      isDark
+                      editingId
+                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 disabled:opacity-50'
+                        : isDark
                         ? 'bg-gold-600 text-dark-900 hover:bg-gold-500 disabled:opacity-50'
                         : 'bg-gold-500 text-white hover:bg-gold-600 disabled:opacity-50'
                     }`}
@@ -627,61 +652,65 @@ export default function Customers() {
           )}
         </AnimatePresence>
 
-        {/* Search and Filter */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <div className={`flex-1 relative ${
-            isDark ? 'bg-dark-800' : 'bg-white'
-          } rounded-lg border transition-all duration-300 ${
-            isDark ? 'border-dark-700' : 'border-gold-200'
-          }`}>
-            <Search className={`absolute left-3 top-3 ${
-              isDark ? 'text-silver-500' : 'text-gray-400'
-            }`} size={20} />
-            <input
-              type="text"
-              placeholder="Search customers..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full pl-10 pr-4 py-2 rounded-lg transition-all duration-300 ${
-                isDark
-                  ? 'bg-dark-800 text-white placeholder-silver-500 focus:outline-none'
-                  : 'bg-white text-dark-900 placeholder-gray-400 focus:outline-none'
-              }`}
-            />
-          </div>
+        {/* Search and Filter - Hidden when editing */}
+        {!editingId && (
+          <div className="flex flex-col sm:flex-row gap-4 mb-6">
+            <div className={`flex-1 relative ${
+              isDark ? 'bg-dark-800' : 'bg-white'
+            } rounded-lg border transition-all duration-300 ${
+              isDark ? 'border-dark-700' : 'border-gold-200'
+            }`}>
+              <Search className={`absolute left-3 top-3 ${
+                isDark ? 'text-silver-500' : 'text-gray-400'
+              }`} size={20} />
+              <input
+                type="text"
+                placeholder="Search customers..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className={`w-full pl-10 pr-4 py-2 rounded-lg transition-all duration-300 ${
+                  isDark
+                    ? 'bg-dark-800 text-white placeholder-silver-500 focus:outline-none'
+                    : 'bg-white text-dark-900 placeholder-gray-400 focus:outline-none'
+                }`}
+              />
+            </div>
 
-          <div className={`relative ${
-            isDark ? 'bg-dark-800' : 'bg-white'
-          } rounded-lg border transition-all duration-300 ${
-            isDark ? 'border-dark-700' : 'border-gold-200'
-          }`}>
-            <Filter className={`absolute left-3 top-3 ${
-              isDark ? 'text-silver-500' : 'text-gray-400'
-            }`} size={20} />
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className={`pl-10 pr-4 py-2 rounded-lg transition-all duration-300 ${
+            <div className={`relative ${
+              isDark ? 'bg-dark-800' : 'bg-white'
+            } rounded-lg border transition-all duration-300 ${
+              isDark ? 'border-dark-700' : 'border-gold-200'
+            }`}>
+              <Filter className={`absolute left-3 top-3 ${
+                isDark ? 'text-silver-500' : 'text-gray-400'
+              }`} size={20} />
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className={`pl-10 pr-4 py-2 rounded-lg transition-all duration-300 ${
+                  isDark
+                    ? 'bg-dark-800 text-white focus:outline-none'
+                    : 'bg-white text-dark-900 focus:outline-none'
+                }`}
+              >
+                <option value="all">All Customers</option>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+        )}
+
+        {/* Customers Table - Hidden when editing */}
+        {!editingId && (
+          <>
+            <div
+              className={`rounded-2xl overflow-hidden transition-all duration-300 ${
                 isDark
-                  ? 'bg-dark-800 text-white focus:outline-none'
-                  : 'bg-white text-dark-900 focus:outline-none'
+                  ? 'bg-dark-800 border border-dark-700'
+                  : 'bg-white border border-gold-100'
               }`}
             >
-              <option value="all">All Customers</option>
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Customers Table */}
-        <div
-          className={`rounded-2xl overflow-hidden transition-all duration-300 ${
-            isDark
-              ? 'bg-dark-800 border border-dark-700'
-              : 'bg-white border border-gold-100'
-          }`}
-        >
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -762,7 +791,7 @@ export default function Customers() {
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.95 }}
-                          onClick={() => handleDelete(customer.id)}
+                          onClick={() => handleDeleteClick(customer)}
                           className={`p-2 rounded-lg transition-all ${
                             isDark
                               ? 'bg-dark-700 text-red-400 hover:bg-dark-600'
@@ -778,40 +807,119 @@ export default function Customers() {
               </tbody>
             </table>
           </div>
-        </div>
+            </div>
 
-        {/* Pagination */}
-        {filteredCustomers.length > 0 && (
-          <div className="mt-6">
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-              pageSize={pageSize}
-              onPageSizeChange={setPageSize}
-              totalCount={totalCount}
-            />
-          </div>
-        )}
+            {/* Pagination */}
+            {filteredCustomers.length > 0 && (
+              <div className="mt-6">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                  pageSize={pageSize}
+                  onPageSizeChange={setPageSize}
+                  totalCount={totalCount}
+                />
+              </div>
+            )}
 
-        {filteredCustomers.length === 0 && !loading && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className={`text-center py-12 rounded-2xl ${
-              isDark
-                ? 'bg-dark-800 border border-dark-700'
-                : 'bg-white border border-gold-100'
-            }`}
-          >
-            <p className={`text-lg ${
-              isDark ? 'text-silver-400' : 'text-gray-600'
-            }`}>
-              No customers found. Create one to get started!
-            </p>
-          </motion.div>
+            {filteredCustomers.length === 0 && !loading && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className={`text-center py-12 rounded-2xl ${
+                  isDark
+                    ? 'bg-dark-800 border border-dark-700'
+                    : 'bg-white border border-gold-100'
+                }`}
+              >
+                <p className={`text-lg ${
+                  isDark ? 'text-silver-400' : 'text-gray-600'
+                }`}>
+                  No customers found. Create one to get started!
+                </p>
+              </motion.div>
+            )}
+          </>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteModal && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={handleDeleteCancel}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+            />
+
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            >
+              <div className={`w-full max-w-md rounded-2xl p-6 shadow-2xl ${
+                isDark ? 'bg-dark-800 border border-dark-700' : 'bg-white border border-gray-200'
+              }`}>
+                {/* Warning Icon */}
+                <div className="flex items-center justify-center mb-4">
+                  <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
+                    isDark ? 'bg-red-900/30' : 'bg-red-100'
+                  }`}>
+                    <AlertTriangle className={`w-8 h-8 ${
+                      isDark ? 'text-red-400' : 'text-red-600'
+                    }`} />
+                  </div>
+                </div>
+
+                {/* Title */}
+                <h3 className={`text-xl font-bold text-center mb-2 ${
+                  isDark ? 'text-white' : 'text-gray-900'
+                }`}>
+                  Delete Customer
+                </h3>
+
+                {/* Message */}
+                <p className={`text-center mb-6 ${
+                  isDark ? 'text-silver-400' : 'text-gray-600'
+                }`}>
+                  Are you sure you want to delete the customer <span className="font-semibold text-red-500">"{customerToDelete?.name_of_party}"</span>? This action cannot be undone.
+                </p>
+
+                {/* Buttons */}
+                <div className="flex space-x-3">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleDeleteCancel}
+                    className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all duration-300 ${
+                      isDark
+                        ? 'bg-dark-700 text-white hover:bg-dark-600'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    Cancel
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleDeleteConfirm}
+                    className="flex-1 px-4 py-3 rounded-lg font-medium transition-all duration-300 bg-red-600 text-white hover:bg-red-700"
+                  >
+                    Delete
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

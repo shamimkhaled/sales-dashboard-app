@@ -17,6 +17,10 @@ const getAllCustomers = async (req, res) => {
       status: filters.status
     });
 
+    // Get active and inactive counts (without search filter for stats)
+    const activeCount = await Customer.getCount({ status: 'Active' });
+    const inactiveCount = await Customer.getCount({ status: 'Inactive' });
+
     const totalPages = Math.ceil(totalCount / filters.pageSize);
 
     res.json({
@@ -29,6 +33,11 @@ const getAllCustomers = async (req, res) => {
         totalPages: totalPages,
         hasNextPage: filters.page < totalPages,
         hasPrevPage: filters.page > 1
+      },
+      stats: {
+        activeCustomers: activeCount,
+        inactiveCustomers: inactiveCount,
+        totalCustomers: activeCount + inactiveCount
       }
     });
   } catch (error) {

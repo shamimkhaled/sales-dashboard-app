@@ -114,111 +114,49 @@ const validateCustomer = [
     .isLength({ min: 1, max: 255 })
     .withMessage('Name of party is required and must be less than 255 characters'),
   body('email')
-    .optional()
+    .optional({ checkFalsy: true })
     .isEmail()
     .normalizeEmail()
     .withMessage('Please provide a valid email address'),
   body('phone_number')
-    .optional()
-    .matches(/^(\+880|880|0)?1[3-9]\d{8}$/)
-    .withMessage('Please provide a valid Bangladeshi phone number'),
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ min: 1 })
+    .withMessage('Phone number cannot be empty if provided'),
   body('serial_number')
-    .optional()
+    .optional({ checkFalsy: true })
+    .toInt()
     .isInt({ min: 1 })
     .withMessage('Serial number must be a positive integer'),
 ];
 
 const validateBill = [
   body('customer_id')
-    .toInt()
     .isInt({ min: 1 })
     .withMessage('Valid customer ID is required'),
   body('billing_date')
-    .optional({ checkFalsy: true })
     .isISO8601()
     .withMessage('Valid billing date is required'),
-  body('active_date')
-    .optional({ checkFalsy: true })
-    .isISO8601()
-    .withMessage('Valid active date format required'),
-  body('termination_date')
-    .optional({ checkFalsy: true })
-    .isISO8601()
-    .withMessage('Valid termination date format required'),
   body('total_bill')
-    .optional({ checkFalsy: true })
+    .optional()
     .isFloat({ min: 0 })
     .withMessage('Total bill must be a positive number'),
   body('total_received')
-    .optional({ checkFalsy: true })
+    .optional()
     .isFloat({ min: 0 })
     .withMessage('Total received must be a positive number'),
-  body('total_due')
-    .optional({ checkFalsy: true })
-    .isFloat({ min: 0 })
-    .withMessage('Total due must be a positive number'),
   body('discount')
-    .optional({ checkFalsy: true })
+    .optional()
     .isFloat({ min: 0 })
     .withMessage('Discount must be a positive number'),
-  body('iig_qt')
-    .optional({ checkFalsy: true })
-    .isFloat({ min: 0 })
-    .withMessage('IIG-QT must be a positive number'),
-  body('iig_qt_price')
-    .optional({ checkFalsy: true })
-    .isFloat({ min: 0 })
-    .withMessage('IIG-QT price must be a positive number'),
-  body('fna')
-    .optional({ checkFalsy: true })
-    .isFloat({ min: 0 })
-    .withMessage('FNA must be a positive number'),
-  body('fna_price')
-    .optional({ checkFalsy: true })
-    .isFloat({ min: 0 })
-    .withMessage('FNA price must be a positive number'),
-  body('ggc')
-    .optional({ checkFalsy: true })
-    .isFloat({ min: 0 })
-    .withMessage('GGC must be a positive number'),
-  body('ggc_price')
-    .optional({ checkFalsy: true })
-    .isFloat({ min: 0 })
-    .withMessage('GGC price must be a positive number'),
-  body('cdn')
-    .optional({ checkFalsy: true })
-    .isFloat({ min: 0 })
-    .withMessage('CDN must be a positive number'),
-  body('cdn_price')
-    .optional({ checkFalsy: true })
-    .isFloat({ min: 0 })
-    .withMessage('CDN price must be a positive number'),
-  body('bdix')
-    .optional({ checkFalsy: true })
-    .isFloat({ min: 0 })
-    .withMessage('BDIX must be a positive number'),
-  body('bdix_price')
-    .optional({ checkFalsy: true })
-    .isFloat({ min: 0 })
-    .withMessage('BDIX price must be a positive number'),
-  body('baishan')
-    .optional({ checkFalsy: true })
-    .isFloat({ min: 0 })
-    .withMessage('BAISHAN must be a positive number'),
-  body('baishan_price')
-    .optional({ checkFalsy: true })
-    .isFloat({ min: 0 })
-    .withMessage('BAISHAN price must be a positive number'),
-  body('status')
-    .optional()
-    .isIn(['Active', 'Inactive'])
-    .withMessage('Status must be either Active or Inactive'),
 ];
 
 // Validation error handler
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    console.error('Validation errors:', JSON.stringify(errors.array(), null, 2));
+    console.error('Request body:', JSON.stringify(req.body, null, 2));
     return res.status(400).json({
       error: 'Validation failed',
       code: 'VALIDATION_ERROR',
