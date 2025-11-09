@@ -5,6 +5,7 @@ import {
   X, TrendingUp, Calendar, DollarSign, Filter, FileUp
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { useNotification } from '../context/NotificationContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorAlert from '../components/ErrorAlert';
 import KPICard from '../components/KPICard';
@@ -13,6 +14,7 @@ import { customerService } from '../services/customerService';
 
 export default function Customers() {
   const { isDark } = useTheme();
+  const { showSuccess, showError } = useNotification();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -104,20 +106,42 @@ export default function Customers() {
     e.preventDefault();
     try {
       setLoading(true);
+      setError(null);
+      setSuccess(null);
+      
       if (editingId) {
-        await customerService.updateCustomer(editingId, formData);
-        setSuccess('Customer updated successfully');
+        // Filter to only include customer-specific fields for update
+        const customerData = {
+          serial_number: formData.serial_number,
+          name_of_party: formData.name_of_party,
+          address: formData.address || '',
+          email: formData.email || '',
+          proprietor_name: formData.proprietor_name || '',
+          phone_number: formData.phone_number || '',
+          link_id: formData.link_id || '',
+          remarks: formData.remarks || '',
+          kam: formData.kam || '',
+          status: formData.status || 'Active',
+        };
+        console.log('Updating customer:', editingId, customerData);
+        const response = await customerService.updateCustomer(editingId, customerData);
+        console.log('Update response:', response);
+        showSuccess('Customer updated successfully');
+        resetForm();
+        setCurrentPage(1);
+        fetchCustomers();
       } else {
         // Remove serial_number from formData for new customers (auto-increment)
         const { serial_number, ...customerData } = formData;
         await customerService.createCustomer(customerData);
-        setSuccess('Customer created successfully');
+        showSuccess('Customer created successfully');
+        resetForm();
+        setCurrentPage(1);
+        fetchCustomers();
       }
-      resetForm();
-      setCurrentPage(1); // Reset to first page after create/update
-      fetchCustomers();
     } catch (err) {
-      setError(err.message || 'Failed to save customer');
+      console.error('Submit error:', err);
+      showError(err.message || 'Failed to save customer');
     } finally {
       setLoading(false);
     }
@@ -151,11 +175,11 @@ export default function Customers() {
       try {
         setLoading(true);
         await customerService.deleteCustomer(id);
-        setSuccess('Customer deleted successfully');
+        showSuccess('Customer deleted successfully');
         setCurrentPage(1); // Reset to first page after delete
         fetchCustomers();
       } catch (err) {
-        setError(err.message || 'Failed to delete customer');
+        showError(err.message || 'Failed to delete customer');
       } finally {
         setLoading(false);
       }
@@ -182,13 +206,13 @@ export default function Customers() {
         throw new Error(data.error || data.details || 'Import failed');
       }
       
-      setSuccess(`Customers imported successfully! ${data.data.success} imported, ${data.data.failed} failed.`);
+      showSuccess(`Customers imported successfully! ${data.data.success} imported, ${data.data.failed} failed.`);
       if (data.data.errors && data.data.errors.length > 0) {
         console.error('Import errors:', data.data.errors);
       }
       fetchCustomers();
     } catch (err) {
-      setError(err.message || 'Failed to import customers');
+      showError(err.message || 'Failed to import customers');
     } finally {
       setLoading(false);
     }
@@ -204,9 +228,9 @@ export default function Customers() {
       a.href = url;
       a.download = 'customers.xlsx';
       a.click();
-      setSuccess('Customers exported successfully');
+      showSuccess('Customers exported successfully');
     } catch (err) {
-      setError(err.message || 'Failed to export customers');
+      showError(err.message || 'Failed to export customers');
     } finally {
       setLoading(false);
     }
