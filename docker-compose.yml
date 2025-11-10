@@ -28,6 +28,7 @@ services:
   # Django Backend
   backend:
     build: ./backend-api
+    privileged: true
     container_name: sales-dashboard-backend
     env_file:
       - ./backend-api/.env
