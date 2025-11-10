@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  db:
+    image: mysql:8.0
+    container_name: sales-dashboard-db
+    env_file:
+      - ./backend-api/.env
+    environment:
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: root_password_123
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${DB_USER}", "-p${DB_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sales-network
+
+  # Django Backend
+  backend:
+    build: ./backend-api
+    container_name: sales-dashboard-backend
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn --bind 0.0.0.0:8000 --workers 4 config.wsgi:application"
+    environment:
+      DEBUG: "False"
+      ALLOWED_HOSTS: "localhost,127.0.0.1,172.31.82.254,yourdomain.com"
+   
+      CORS_ALLOWED_ORIGINS: "http://localhost:3000,http://172.31.82.254"
+    volumes:
+      - ./backend:/app
+      - backend_static:/app/staticfiles
+      - backend_media:/app/media
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - sales-network
+    restart: unless-stopped
+
+  # React Frontend
+  frontend:
+    build: ./frontend
+    container_name: sales-dashboard-frontend
+    environment:
+      VITE_API_URL: "http://localhost:8000"
+      VITE_APP_NAME: "Sales Dashboard"
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+    networks:
+      - sales-network
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+  backend_static:
+  backend_media:
+
+networks:
+  sales-network:
+    driver: bridge

@@ -1,0 +1,45 @@
+name: Deploy to VM
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy to VM via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          password: ${{ secrets.VM_PASSWORD }}
+          script: |
+            cd /var/www/sales-dashboard
+            
+            # Pull latest code
+            git pull origin main
+            
+            # Backend deployment
+            cd backend
+            source venv/bin/activate
+            pip install -r requirements.txt
+            python manage.py migrate
+            python manage.py collectstatic --noinput
+            sudo systemctl restart gunicorn-sales-dashboard
+            
+            # Frontend deployment
+            cd ../frontend
+            npm install
+            npm run build
+            
+            # Restart Nginx
+            sudo systemctl restart nginx
+            
+            echo "Deployment completed successfully!"
