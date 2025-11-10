@@ -11,34 +11,36 @@ services:
       MYSQL_DATABASE: ${DB_NAME}
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
-      MYSQL_ROOT_PASSWORD: root_password_123
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     volumes:
       - mysql_data:/var/lib/mysql
     ports:
-      - "3306:3306"
+      - "3306:3306"  # Optional: Remove in prod for security
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${DB_USER}", "-p${DB_PASSWORD}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "$$ {DB_USER}", "-p $${DB_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
       - sales-network
+    restart: unless-stopped
 
   # Django Backend
   backend:
     build: ./backend-api
     container_name: sales-dashboard-backend
+    env_file:
+      - ./backend-api/.env
     command: >
       sh -c "python manage.py migrate &&
              python manage.py collectstatic --noinput &&
              gunicorn --bind 0.0.0.0:8000 --workers 4 config.wsgi:application"
     environment:
       DEBUG: "False"
-      ALLOWED_HOSTS: "localhost,127.0.0.1,172.31.82.254,yourdomain.com"
-   
-      CORS_ALLOWED_ORIGINS: "http://localhost:3000,http://172.31.82.254"
+      ALLOWED_HOSTS: "localhost,127.0.0.1,172.31.82.254"
+      CORS_ALLOWED_ORIGINS: "http://172.31.82.254,http://localhost:3000"
     volumes:
-      - ./backend:/app
+      - ./backend-api:/app
       - backend_static:/app/staticfiles
       - backend_media:/app/media
     ports:
@@ -49,19 +51,36 @@ services:
     networks:
       - sales-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/admin/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-  # React Frontend
+  # React Frontend Build (static only)
   frontend:
     build: ./frontend
-    container_name: sales-dashboard-frontend
+    container_name: sales-dashboard-frontend-build
     environment:
-      VITE_API_URL: "http://localhost:8000"
-      VITE_APP_NAME: "Sales Dashboard"
+      VITE_API_URL: "http://172.31.82.254"
+    volumes:
+      - frontend_build:/app/dist
+    # No ports; builds once
+
+  # Nginx (serves frontend + proxies)
+  nginx:
+    image: nginx:alpine
+    container_name: sales-dashboard-nginx
     ports:
       - "80:80"
-      - "443:443"
+      - "443:443"  # For HTTPS later
+    volumes:
+      - frontend_build:/usr/share/nginx/html
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - backend_static:/usr/share/nginx/html/static
     depends_on:
       - backend
+      - frontend
     networks:
       - sales-network
     restart: unless-stopped
@@ -70,6 +89,7 @@ volumes:
   mysql_data:
   backend_static:
   backend_media:
+  frontend_build:
 
 networks:
   sales-network:
