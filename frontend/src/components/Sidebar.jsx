@@ -53,13 +53,13 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       name: 'Dashboard',
       path: '/dashboard',
       icon: LayoutDashboard,
-      permission: 'dashboard:read'
+      permission: null // Dashboard is always visible to authenticated users
     },
     {
       name: 'Data Entry',
       path: '/data-entry',
       icon: FileText,
-      permission: 'bills:write'
+      permission: 'bills:create' // Changed from bills:write to bills:create
     },
     {
       name: 'Customers',
@@ -101,15 +101,15 @@ export default function Sidebar({ isOpen, setIsOpen }) {
 
   // Filter navigation items based on permissions
   const visibleNavItems = baseNavItems.filter(item =>
-    hasPermission(item.permission) || hasPermission('all') || item.permission === 'dashboard:read'
+    !item.permission || hasPermission(item.permission) || hasPermission('all')
   );
 
   const visibleAdminItems = isAdmin() ? adminNavItems.filter(item =>
-    hasPermission(item.permission) || hasPermission('all') || item.permission === 'users:read' || item.permission === 'logs:read'
+    !item.permission || hasPermission(item.permission) || hasPermission('all')
   ) : [];
 
   const visibleReportsItems = reportsItems.filter(item =>
-    hasPermission(item.permission) || hasPermission('all') || item.permission === 'reports:read'
+    !item.permission || hasPermission(item.permission) || hasPermission('all')
   );
 
   const NavItem = ({ item, isSubmenu = false }) => (
