@@ -15,7 +15,7 @@ export const activityLogService = {
       if (filters.page) queryParams.append('page', filters.page);
       if (filters.pageSize) queryParams.append('pageSize', filters.pageSize);
 
-      const response = await api.get(`/activity-logs?${queryParams}`);
+      const response = await api.get(`/activity-logs/?${queryParams}`);
       return response;
     } catch (error) {
       throw error;
@@ -25,7 +25,7 @@ export const activityLogService = {
   // Get activity log by ID
   async getActivityLogById(id) {
     try {
-      const response = await api.get(`/activity-logs/${id}`);
+      const response = await api.get(`/activity-logs/${id}/`);
       return response;
     } catch (error) {
       throw error;
@@ -40,7 +40,7 @@ export const activityLogService = {
       if (filters.start_date) queryParams.append('start_date', filters.start_date);
       if (filters.end_date) queryParams.append('end_date', filters.end_date);
 
-      const response = await api.get(`/activity-logs/stats/summary?${queryParams}`);
+      const response = await api.get(`/activity-logs/stats/summary/?${queryParams}`);
       return response;
     } catch (error) {
       throw error;
@@ -54,7 +54,7 @@ export const activityLogService = {
 
       if (filters.days) queryParams.append('days', filters.days);
 
-      const response = await api.get(`/activity-logs/user/${userId}/summary?${queryParams}`);
+      const response = await api.get(`/activity-logs/user/${userId}/summary/?${queryParams}`);
       return response;
     } catch (error) {
       throw error;
@@ -64,7 +64,7 @@ export const activityLogService = {
   // Clean old logs (super admin only)
   async cleanOldLogs(daysToKeep = 90) {
     try {
-      const response = await api.post('/activity-logs/clean', { daysToKeep });
+      const response = await api.post('/activity-logs/clean/', { daysToKeep });
       return response;
     } catch (error) {
       throw error;

@@ -30,8 +30,8 @@ export const AuthProvider = ({ children }) => {
           axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
           // Verify token by getting user profile
-          const response = await api.get('/auth/profile');
-          setUser(response.user);
+          const response = await api.get('/users/me/');
+          setUser(response);
           setIsAuthenticated(true);
         } catch (error) {
           console.error('Token verification failed:', error);
@@ -39,17 +39,19 @@ export const AuthProvider = ({ children }) => {
           // Try to refresh token
           if (refreshToken) {
             try {
-              const refreshResponse = await api.post('/auth/refresh-token', {
-                refreshToken
+              const refreshResponse = await api.post('/auth/refresh/', {
+                refresh: refreshToken
               });
 
-              const { accessToken, refreshToken: newRefreshToken, user: userData } = refreshResponse;
+              const { access, refresh: newRefreshToken } = refreshResponse;
 
-              localStorage.setItem('accessToken', accessToken);
+              localStorage.setItem('accessToken', access);
               localStorage.setItem('refreshToken', newRefreshToken);
-              axios.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+              axios.defaults.headers.common['Authorization'] = `Bearer ${access}`;
 
-              setUser(userData);
+              // Get user profile after refresh
+              const profileResponse = await api.get('/users/me/');
+              setUser(profileResponse);
               setIsAuthenticated(true);
             } catch (refreshError) {
               console.error('Token refresh failed:', refreshError);
@@ -70,20 +72,20 @@ export const AuthProvider = ({ children }) => {
   // Login function
   const login = async (email, password, rememberMe = false) => {
     try {
-      const response = await api.post('/auth/login', {
+      const response = await api.post('/auth/login/', {
         email,
         password,
         rememberMe
       });
 
-      const { accessToken, refreshToken, user: userData } = response;
+      const { access, refresh, user: userData } = response;
 
       // Store tokens
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
+      localStorage.setItem('accessToken', access);
+      localStorage.setItem('refreshToken', refresh);
 
       // Set axios default header
-      axios.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+      axios.defaults.headers.common['Authorization'] = `Bearer ${access}`;
 
       setUser(userData);
       setIsAuthenticated(true);
@@ -101,7 +103,7 @@ export const AuthProvider = ({ children }) => {
   // Register function (for admins)
   const register = async (userData) => {
     try {
-      const response = await api.post('/auth/register', userData);
+      const response = await api.post('/auth/register/', userData);
 
       return {
         success: true,
@@ -133,10 +135,11 @@ export const AuthProvider = ({ children }) => {
   // Update profile function
   const updateProfile = async (profileData) => {
     try {
-      const response = await api.put('/auth/profile', profileData);
+      // Update user profile using the users endpoint with current user ID
+      const response = await api.put(`/users/${user.id}/`, profileData);
 
-      setUser(response.user);
-      return { success: true, message: response.message };
+      setUser(response);
+      return { success: true, message: 'Profile updated successfully' };
     } catch (error) {
       console.error('Profile update failed:', error);
       return {
@@ -164,7 +167,7 @@ export const AuthProvider = ({ children }) => {
 
   // Check if user is super admin
   const isSuperAdmin = () => {
-    return user && user.role === 'super_admin';
+    return user && user.role === 'super_admin'
   };
 
   const value = {

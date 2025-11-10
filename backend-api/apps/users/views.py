@@ -19,6 +19,7 @@ class MeView(APIView):
             'email': user.email,
             'username': user.username,
             'role': user.role.name if getattr(user, 'role', None) else None,
+
         })
 
 
