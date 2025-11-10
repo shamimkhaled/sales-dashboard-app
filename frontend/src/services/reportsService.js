@@ -10,7 +10,7 @@ export const reportsService = {
       if (filters.start_date) queryParams.append('start_date', filters.start_date);
       if (filters.end_date) queryParams.append('end_date', filters.end_date);
 
-      const response = await api.get(`/reports/company?${queryParams}`);
+      const response = await api.get(`/reports/company/?${queryParams}`);
       return response;
     } catch (error) {
       throw error;
@@ -26,7 +26,7 @@ export const reportsService = {
       if (filters.end_date) queryParams.append('end_date', filters.end_date);
       if (filters.user_id) queryParams.append('user_id', filters.user_id);
 
-      const response = await api.get(`/reports/performance?${queryParams}`);
+      const response = await api.get(`/reports/performance/?${queryParams}`);
       return response;
     } catch (error) {
       throw error;

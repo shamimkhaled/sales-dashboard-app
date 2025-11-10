@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Upload, Download, Plus, Grid, List, Search,
-  X, Edit2, Trash2, Eye, FileUp, FileDown, ChevronDown
+  X, Edit2, Trash2, Eye, FileUp, FileDown, ChevronDown, AlertTriangle
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { useNotification } from '../context/NotificationContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorAlert from '../components/ErrorAlert';
 import Pagination from '../components/Pagination';
@@ -21,6 +22,7 @@ import { customerService } from '../services/customerService';
 
 export default function DataEntry() {
   const { isDark } = useTheme();
+  const { showSuccess, showError } = useNotification();
   const [viewMode, setViewMode] = useState('table');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -32,10 +34,12 @@ export default function DataEntry() {
   const [editingId, setEditingId] = useState(null);
   const [fileType, setFileType] = useState('excel');
   const [expandedRow, setExpandedRow] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [billToDelete, setBillToDelete] = useState(null);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(100);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
@@ -115,18 +119,47 @@ export default function DataEntry() {
     e.preventDefault();
     try {
       setLoading(true);
+      
+      // Filter out only the bill-specific fields (exclude customer fields from joins)
+      const billData = {
+        customer_id: formData.customer_id,
+        nttn_cap: formData.nttn_cap,
+        nttn_com: formData.nttn_com,
+        active_date: formData.active_date,
+        billing_date: formData.billing_date,
+        termination_date: formData.termination_date,
+        iig_qt: formData.iig_qt,
+        iig_qt_price: formData.iig_qt_price,
+        fna: formData.fna,
+        fna_price: formData.fna_price,
+        ggc: formData.ggc,
+        ggc_price: formData.ggc_price,
+        cdn: formData.cdn,
+        cdn_price: formData.cdn_price,
+        bdix: formData.bdix,
+        bdix_price: formData.bdix_price,
+        baishan: formData.baishan,
+        baishan_price: formData.baishan_price,
+        total_bill: formData.total_bill,
+        total_received: formData.total_received,
+        total_due: formData.total_due,
+        discount: formData.discount,
+        remarks: formData.remarks,
+        status: formData.status,
+      };
+      
       if (editingId) {
-        await billService.updateBill(editingId, formData);
-        setSuccess('Bill updated successfully');
+        await billService.updateBill(editingId, billData);
+        showSuccess('Bill updated successfully');
       } else {
-        await billService.createBill(formData);
-        setSuccess('Bill created successfully');
+        await billService.createBill(billData);
+        showSuccess('Bill created successfully');
       }
       resetForm();
       setCurrentPage(1);
       fetchBills();
     } catch (err) {
-      setError(err.message || 'Failed to save bill');
+      showError(err.message || 'Failed to save bill');
     } finally {
       setLoading(false);
     }
@@ -169,20 +202,56 @@ export default function DataEntry() {
     setShowForm(true);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this bill?')) {
-      try {
-        setLoading(true);
-        await billService.deleteBill(id);
-        setSuccess('Bill deleted successfully');
-        setCurrentPage(1);
-        fetchBills();
-      } catch (err) {
-        setError(err.message || 'Failed to delete bill');
-      } finally {
-        setLoading(false);
-      }
+  const handleDeleteClick = (bill) => {
+    setBillToDelete(bill);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!billToDelete || !billToDelete.id) {
+      setError('Invalid bill record');
+      setShowDeleteModal(false);
+      return;
     }
+
+    try {
+      setShowDeleteModal(false);
+      setBillToDelete(null);
+      
+      // Delete the bill
+      await billService.deleteBill(billToDelete.id);
+      
+      // Show success notification
+      showSuccess('Bill record has been deleted successfully');
+      
+      // Force refresh by updating the bills state immediately
+      setBills(prevBills => prevBills.filter(bill => bill.id !== billToDelete.id));
+      
+      // Update total count
+      setTotalCount(prevCount => prevCount - 1);
+      
+      // Recalculate total pages
+      const newTotalPages = Math.ceil((totalCount - 1) / pageSize);
+      setTotalPages(newTotalPages);
+      
+      // If current page is now beyond total pages, go to last page
+      if (currentPage > newTotalPages && newTotalPages > 0) {
+        setCurrentPage(newTotalPages);
+      } else {
+        // Refresh the current page data
+        fetchBills();
+      }
+    } catch (err) {
+      console.error('Delete error:', err);
+      setError(err.message || 'Failed to delete bill');
+      // Refresh on error to ensure data consistency
+      fetchBills();
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false);
+    setBillToDelete(null);
   };
 
   const handleImport = async (e) => {
@@ -246,6 +315,11 @@ export default function DataEntry() {
     return customer?.name_of_party || `Customer #${customerId}`;
   };
 
+  const handlePageSizeChange = (newPageSize) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1); // Reset to first page when changing page size
+  };
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -262,7 +336,7 @@ export default function DataEntry() {
   if (loading && bills.length === 0) return <LoadingSpinner />;
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${
+    <div className={`h-screen flex flex-col overflow-hidden transition-colors duration-300 ${
       isDark ? 'bg-dark-950' : 'bg-gray-50'
     }`}>
       {/* Header */}
@@ -288,22 +362,14 @@ export default function DataEntry() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setShowForm(!showForm)}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
-                  isDark
-                    ? 'bg-gold-600 text-dark-900 hover:bg-gold-500'
-                    : 'bg-gold-500 text-white hover:bg-gold-600'
-                }`}
+                className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 shadow-lg"
               >
                 <Plus size={20} />
                 <span>New Bill</span>
               </motion.button>
 
               <div className="flex items-center space-x-2">
-                <label className={`relative cursor-pointer px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center space-x-2 ${
-                  isDark
-                    ? 'bg-dark-800 text-gold-400 hover:bg-dark-700'
-                    : 'bg-gold-50 text-gold-600 hover:bg-gold-100'
-                }`}>
+                <label className="relative cursor-pointer px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 shadow-lg">
                   <FileUp size={20} />
                   <span>Import</span>
                   <input
@@ -318,11 +384,7 @@ export default function DataEntry() {
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
-                      isDark
-                        ? 'bg-dark-800 text-gold-400 hover:bg-dark-700'
-                        : 'bg-gold-50 text-gold-600 hover:bg-gold-100'
-                    }`}
+                    className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 shadow-lg"
                   >
                     <FileDown size={20} />
                     <span>Export</span>
@@ -359,8 +421,9 @@ export default function DataEntry() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {error && <ErrorAlert message={error} onClose={() => setError(null)} />}
+      <div className="flex-1 overflow-hidden">
+        <div className="h-full max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-y-hidden">
+          {error && <ErrorAlert message={error} onClose={() => setError(null)} />}
         {success && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -383,31 +446,32 @@ export default function DataEntry() {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className={`mb-8 rounded-2xl p-6 transition-all duration-300 ${
+              className={`mb-8 rounded-2xl transition-all duration-300 overflow-hidden ${
                 isDark
                   ? 'bg-dark-800 border border-dark-700'
                   : 'bg-white border border-gold-100'
               }`}
             >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className={`text-2xl font-serif font-bold ${
-                  isDark ? 'text-white' : 'text-dark-900'
-                }`}>
-                  {editingId ? 'Edit Bill' : 'New Bill Record'}
-                </h2>
-                <button
-                  onClick={resetForm}
-                  className={`p-2 rounded-lg transition-all ${
-                    isDark
-                      ? 'bg-dark-700 text-gold-400 hover:bg-dark-600'
-                      : 'bg-gold-50 text-gold-600 hover:bg-gold-100'
-                  }`}
-                >
-                  <X size={24} />
-                </button>
+              <div className={`sticky top-0 z-10 p-6 pb-4 ${
+                isDark ? 'bg-dark-800' : 'bg-white'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <h2 className={`text-2xl font-serif font-bold ${
+                    isDark ? 'text-white' : 'text-dark-900'
+                  }`}>
+                    {editingId ? 'Edit Bill' : 'New Bill Record'}
+                  </h2>
+                  <button
+                    onClick={resetForm}
+                    className="p-2 rounded-lg transition-all bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 shadow-md"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
               </div>
 
-              <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="px-6 pb-6 max-h-[70vh] overflow-y-auto">
+                <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {/* Customer Selection */}
                 <div>
                   <label className={`block text-sm font-medium mb-2 ${
@@ -906,7 +970,9 @@ export default function DataEntry() {
                     type="submit"
                     disabled={loading}
                     className={`flex-1 px-6 py-2 rounded-lg font-medium transition-all duration-300 ${
-                      isDark
+                      editingId
+                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 disabled:opacity-50 shadow-lg'
+                        : isDark
                         ? 'bg-gold-600 text-dark-900 hover:bg-gold-500 disabled:opacity-50'
                         : 'bg-gold-500 text-white hover:bg-gold-600 disabled:opacity-50'
                     }`}
@@ -928,75 +994,75 @@ export default function DataEntry() {
                   </motion.button>
                 </div>
               </form>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Search and View Toggle */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
-          <div className={`flex-1 relative ${
-            isDark ? 'bg-dark-800' : 'bg-white'
-          } rounded-lg border transition-all duration-300 ${
-            isDark ? 'border-dark-700' : 'border-gold-200'
-          }`}>
-            <Search className={`absolute left-3 top-3 ${
-              isDark ? 'text-silver-500' : 'text-gray-400'
-            }`} size={20} />
-            <input
-              type="text"
-              placeholder="Search by customer, NTTN CAP..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
-              className={`w-full pl-10 pr-4 py-2 rounded-lg transition-all duration-300 ${
-                isDark
-                  ? 'bg-dark-800 text-white placeholder-silver-500 focus:outline-none'
-                  : 'bg-white text-dark-900 placeholder-gray-400 focus:outline-none'
-              }`}
-            />
-          </div>
+        {/* Search and View Toggle - Hidden when editing */}
+        {!editingId && (
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
+            <div className={`flex-1 relative ${
+              isDark ? 'bg-dark-800' : 'bg-white'
+            } rounded-lg border transition-all duration-300 ${
+              isDark ? 'border-dark-700' : 'border-gold-200'
+            }`}>
+              <Search className={`absolute left-3 top-3 ${
+                isDark ? 'text-silver-500' : 'text-gray-400'
+              }`} size={20} />
+              <input
+                type="text"
+                placeholder="Search by customer, NTTN CAP..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className={`w-full pl-10 pr-4 py-2 rounded-lg transition-all duration-300 ${
+                  isDark
+                    ? 'bg-dark-800 text-white placeholder-silver-500 focus:outline-none'
+                    : 'bg-white text-dark-900 placeholder-gray-400 focus:outline-none'
+                }`}
+              />
+            </div>
 
-          <div className="flex items-center space-x-2">
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setViewMode('table')}
-              className={`p-2 rounded-lg transition-all duration-300 ${
-                viewMode === 'table'
-                  ? isDark
-                    ? 'bg-gold-600 text-dark-900'
-                    : 'bg-gold-500 text-white'
-                  : isDark
-                  ? 'bg-dark-800 text-silver-400 hover:text-gold-400'
-                  : 'bg-gray-200 text-gray-600 hover:text-gold-600'
-              }`}
-            >
-              <List size={20} />
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setViewMode('card')}
-              className={`p-2 rounded-lg transition-all duration-300 ${
-                viewMode === 'card'
-                  ? isDark
-                    ? 'bg-gold-600 text-dark-900'
-                    : 'bg-gold-500 text-white'
-                  : isDark
-                  ? 'bg-dark-800 text-silver-400 hover:text-gold-400'
-                  : 'bg-gray-200 text-gray-600 hover:text-gold-600'
-              }`}
-            >
-              <Grid size={20} />
-            </motion.button>
+            <div className="flex items-center space-x-2">
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setViewMode('table')}
+                className={`p-2 rounded-lg transition-all duration-300 ${
+                  viewMode === 'table'
+                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
+                    : isDark
+                    ? 'bg-dark-800 text-silver-400 hover:text-blue-400'
+                    : 'bg-gray-200 text-gray-600 hover:text-blue-600'
+                }`}
+              >
+                <List size={20} />
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setViewMode('card')}
+                className={`p-2 rounded-lg transition-all duration-300 ${
+                  viewMode === 'card'
+                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
+                    : isDark
+                    ? 'bg-dark-800 text-silver-400 hover:text-blue-400'
+                    : 'bg-gray-200 text-gray-600 hover:text-blue-600'
+                }`}
+              >
+                <Grid size={20} />
+              </motion.button>
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Table View */}
-        {viewMode === 'table' && (
+        {/* Table View - Hidden when editing */}
+        {!editingId && viewMode === 'table' && (
           <motion.div
+            key={`table-${currentPage}`}
             variants={containerVariants}
             initial="hidden"
             animate="visible"
@@ -1006,9 +1072,10 @@ export default function DataEntry() {
                 : 'bg-white border border-gold-100'
             }`}
           >
-            <div className="overflow-x-auto max-w-full">
+            {/* Constrain list to its own scrollable area */}
+            <div className="overflow-x-auto overflow-y-auto max-w-full max-h-[65vh]">
               <table className="min-w-[2000px] text-xs sm:text-sm">
-                <thead>
+                <thead className="sticky top-0 z-10 bg-white dark:bg-dark-800">
                   <tr className={`border-b ${isDark ? 'border-dark-700' : 'border-gold-100'}`}>
                     <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
                       isDark ? 'text-silver-300' : 'text-gray-700'
@@ -1108,20 +1175,19 @@ export default function DataEntry() {
                     }`}>Actions</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className={isDark ? 'bg-dark-800' : 'bg-white'}>
                   {bills.map((bill, index) => (
-                    <motion.tr
+                    <tr
                       key={bill.id}
-                      variants={itemVariants}
-                      className={`border-b transition-colors duration-300 hover:${isDark ? 'bg-dark-700' : 'bg-gold-50'} ${
-                        isDark ? 'border-dark-700' : 'border-gold-100'
+                      className={`border-b transition-colors duration-300 hover:${isDark ? 'bg-dark-700' : 'bg-gray-50'} ${
+                        isDark ? 'border-dark-700' : 'border-gray-100'
                       }`}
                     >
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
                         isDark ? 'text-silver-300' : 'text-gray-700'
                       }`}>{bill.serial_number || index + 1}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap ${
-                        isDark ? 'text-gold-400' : 'text-gold-600'
+                        isDark ? 'text-gray-100' : 'text-gray-900'
                       }`}>{bill.name_of_party}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
                         isDark ? 'text-silver-300' : 'text-gray-700'
@@ -1154,43 +1220,43 @@ export default function DataEntry() {
                         isDark ? 'text-silver-400' : 'text-gray-600'
                       }`}>{bill.termination_date ? new Date(bill.termination_date).toLocaleDateString() : '-'}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                        isDark ? 'text-gold-400' : 'text-gold-600'
+                        isDark ? 'text-gray-100' : 'text-gray-900'
                       }`}>{bill.iig_qt || '0'}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                        isDark ? 'text-gold-400' : 'text-gold-600'
+                        isDark ? 'text-gray-100' : 'text-gray-900'
                       }`}>{bill.iig_qt_price || '0'}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                        isDark ? 'text-gold-400' : 'text-gold-600'
+                        isDark ? 'text-gray-100' : 'text-gray-900'
                       }`}>{bill.fna || '0'}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                        isDark ? 'text-gold-400' : 'text-gold-600'
+                        isDark ? 'text-gray-100' : 'text-gray-900'
                       }`}>{bill.fna_price || '0'}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                        isDark ? 'text-gold-400' : 'text-gold-600'
+                        isDark ? 'text-gray-100' : 'text-gray-900'
                       }`}>{bill.ggc || '0'}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                        isDark ? 'text-gold-400' : 'text-gold-600'
+                        isDark ? 'text-gray-100' : 'text-gray-900'
                       }`}>{bill.ggc_price || '0'}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                        isDark ? 'text-gold-400' : 'text-gold-600'
+                        isDark ? 'text-gray-100' : 'text-gray-900'
                       }`}>{bill.cdn || '0'}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                        isDark ? 'text-gold-400' : 'text-gold-600'
+                        isDark ? 'text-gray-100' : 'text-gray-900'
                       }`}>{bill.cdn_price || '0'}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                        isDark ? 'text-gold-400' : 'text-gold-600'
+                        isDark ? 'text-gray-100' : 'text-gray-900'
                       }`}>{bill.bdix || '0'}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                        isDark ? 'text-gold-400' : 'text-gold-600'
+                        isDark ? 'text-gray-100' : 'text-gray-900'
                       }`}>{bill.bdix_price || '0'}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                        isDark ? 'text-gold-400' : 'text-gold-600'
+                        isDark ? 'text-gray-100' : 'text-gray-900'
                       }`}>{bill.baishan || '0'}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                        isDark ? 'text-gold-400' : 'text-gold-600'
+                        isDark ? 'text-gray-100' : 'text-gray-900'
                       }`}>{bill.baishan_price || '0'}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                        isDark ? 'text-gold-400' : 'text-gold-600'
+                        isDark ? 'text-gray-100' : 'text-gray-900'
                       }`}>{bill.total_bill?.toLocaleString() || '0'}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
                         isDark ? 'text-green-400' : 'text-green-600'
@@ -1228,8 +1294,8 @@ export default function DataEntry() {
                             onClick={() => handleEdit(bill)}
                             className={`p-1 sm:p-2 rounded-lg transition-all ${
                               isDark
-                                ? 'bg-dark-700 text-blue-400 hover:bg-dark-600'
-                                : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                                ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500'
+                                : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500'
                             }`}
                           >
                             <Edit2 size={14} />
@@ -1237,7 +1303,7 @@ export default function DataEntry() {
                           <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.95 }}
-                            onClick={() => handleDelete(bill.id)}
+                            onClick={() => handleDeleteClick(bill)}
                             className={`p-1 sm:p-2 rounded-lg transition-all ${
                               isDark
                                 ? 'bg-dark-700 text-red-400 hover:bg-dark-600'
@@ -1248,7 +1314,7 @@ export default function DataEntry() {
                           </motion.button>
                         </div>
                       </td>
-                    </motion.tr>
+                    </tr>
                   ))}
                 </tbody>
               </table>
@@ -1257,42 +1323,43 @@ export default function DataEntry() {
         )}
 
         {/* Pagination */}
-        {viewMode === 'table' && bills.length > 0 && (
+        {!editingId && viewMode === 'table' && bills.length > 0 && (
           <div className="mt-6">
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
               onPageChange={setCurrentPage}
               pageSize={pageSize}
-              onPageSizeChange={setPageSize}
+              onPageSizeChange={handlePageSizeChange}
               totalCount={totalCount}
             />
           </div>
         )}
 
-        {/* Grid View */}
-        {viewMode === 'card' && (
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-          >
-            {bills.map((bill) => (
+        {/* Grid View - Hidden when editing */}
+        {!editingId && viewMode === 'card' && (
+          <div className="overflow-x-auto overflow-y-auto max-h-[65vh]">
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 min-w-max"
+            >
+              {bills.map((bill) => (
               <motion.div
                 key={bill.id}
                 variants={itemVariants}
                 className={`rounded-2xl p-6 transition-all duration-300 ${
                   isDark
-                    ? 'bg-dark-800 border border-dark-700 hover:border-gold-500'
-                    : 'bg-white border border-gold-100 hover:border-gold-500'
+                    ? 'bg-dark-800 border border-dark-700 hover:border-blue-500'
+                    : 'bg-white border border-gray-100 hover:border-blue-500'
                 }`}
               >
                 {/* Card Header */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <h3 className={`text-lg font-semibold ${
-                      isDark ? 'text-gold-400' : 'text-gold-600'
+                      isDark ? 'text-blue-400' : 'text-blue-600'
                     }`}>
                       {bill.name_of_party}
                     </h3>
@@ -1355,7 +1422,7 @@ export default function DataEntry() {
 
                   {/* Financial Summary */}
                   <div className={`rounded-lg p-3 ${
-                    isDark ? 'bg-dark-700' : 'bg-gold-50'
+                    isDark ? 'bg-dark-700' : 'bg-blue-50'
                   }`}>
                     <div className="grid grid-cols-3 gap-2 text-center">
                       <div>
@@ -1363,7 +1430,7 @@ export default function DataEntry() {
                           isDark ? 'text-silver-400' : 'text-gray-600'
                         }`}>Total Bill</p>
                         <p className={`text-sm font-semibold ${
-                          isDark ? 'text-gold-400' : 'text-gold-600'
+                          isDark ? 'text-blue-400' : 'text-blue-600'
                         }`}>{bill.total_bill?.toLocaleString() || '0'}</p>
                       </div>
                       <div>
@@ -1386,7 +1453,7 @@ export default function DataEntry() {
                   </div>
 
                   {/* Services */}
-                  {(bill.iig_qt_price || bill.fna_price || bill.ggc_price || bill.cdn_price || bill.bdix_price || bill.baishan_price) && (
+                  {(bill.iig_qt_price > 0 || bill.fna_price > 0 || bill.ggc_price > 0 || bill.cdn_price > 0 || bill.bdix_price > 0 || bill.baishan_price > 0) && (
                     <div>
                       <p className={`text-xs font-medium mb-2 ${
                         isDark ? 'text-silver-400' : 'text-gray-600'
@@ -1435,11 +1502,7 @@ export default function DataEntry() {
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => handleEdit(bill)}
-                    className={`flex-1 flex items-center justify-center space-x-1 px-3 py-2 rounded-lg transition-all text-sm ${
-                      isDark
-                        ? 'bg-dark-700 text-blue-400 hover:bg-dark-600'
-                        : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
-                    }`}
+                    className="flex-1 flex items-center justify-center space-x-1 px-3 py-2 rounded-lg transition-all text-sm bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 shadow-md"
                   >
                     <Edit2 size={14} />
                     <span>Edit</span>
@@ -1447,7 +1510,7 @@ export default function DataEntry() {
                   <motion.button
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => handleDelete(bill.id)}
+                    onClick={() => handleDeleteClick(bill)}
                     className={`flex-1 flex items-center justify-center space-x-1 px-3 py-2 rounded-lg transition-all text-sm ${
                       isDark
                         ? 'bg-dark-700 text-red-400 hover:bg-dark-600'
@@ -1460,24 +1523,25 @@ export default function DataEntry() {
                 </div>
               </motion.div>
             ))}
-          </motion.div>
+            </motion.div>
+          </div>
         )}
 
         {/* Pagination for Card View */}
-        {viewMode === 'card' && bills.length > 0 && (
+        {!editingId && viewMode === 'card' && bills.length > 0 && (
           <div className="mt-6">
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
               onPageChange={setCurrentPage}
               pageSize={pageSize}
-              onPageSizeChange={setPageSize}
+              onPageSizeChange={handlePageSizeChange}
               totalCount={totalCount}
             />
           </div>
         )}
 
-        {bills.length === 0 && (
+        {!editingId && bills.length === 0 && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -1494,7 +1558,85 @@ export default function DataEntry() {
             </p>
           </motion.div>
         )}
+        </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteModal && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={handleDeleteCancel}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+            />
+
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            >
+              <div className={`w-full max-w-md rounded-2xl p-6 shadow-2xl ${
+                isDark ? 'bg-dark-800 border border-dark-700' : 'bg-white border border-gray-200'
+              }`}>
+                {/* Warning Icon */}
+                <div className="flex items-center justify-center mb-4">
+                  <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
+                    isDark ? 'bg-red-900/30' : 'bg-red-100'
+                  }`}>
+                    <AlertTriangle className={`w-8 h-8 ${
+                      isDark ? 'text-red-400' : 'text-red-600'
+                    }`} />
+                  </div>
+                </div>
+
+                {/* Title */}
+                <h3 className={`text-xl font-bold text-center mb-2 ${
+                  isDark ? 'text-white' : 'text-gray-900'
+                }`}>
+                  Delete Bill Record
+                </h3>
+
+                {/* Message */}
+                <p className={`text-center mb-6 ${
+                  isDark ? 'text-silver-400' : 'text-gray-600'
+                }`}>
+                  Are you sure you want to delete the bill record for <span className="font-semibold text-red-500">"{billToDelete?.name_of_party}"</span>? This action cannot be undone.
+                </p>
+
+                {/* Buttons */}
+                <div className="flex space-x-3">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleDeleteCancel}
+                    className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all duration-300 ${
+                      isDark
+                        ? 'bg-dark-700 text-white hover:bg-dark-600'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    Cancel
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleDeleteConfirm}
+                    className="flex-1 px-4 py-3 rounded-lg font-medium transition-all duration-300 bg-red-600 text-white hover:bg-red-700"
+                  >
+                    Delete
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

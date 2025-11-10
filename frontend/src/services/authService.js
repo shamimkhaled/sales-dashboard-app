@@ -5,7 +5,7 @@ export const authService = {
   // Login user
   async login(credentials) {
     try {
-      const response = await api.post('/auth/login', credentials);
+      const response = await api.post('/auth/login/', credentials);
       return response;
     } catch (error) {
       throw error;
@@ -15,7 +15,7 @@ export const authService = {
   // Register new user (admin only)
   async register(userData) {
     try {
-      const response = await api.post('/auth/register', userData);
+      const response = await api.post('/auth/register/', userData);
       return response;
     } catch (error) {
       throw error;
@@ -25,7 +25,7 @@ export const authService = {
   // Refresh access token
   async refreshToken(refreshToken) {
     try {
-      const response = await api.post('/auth/refresh-token', { refreshToken });
+      const response = await api.post('/auth/refresh/', { refreshToken });
       return response;
     } catch (error) {
       throw error;
@@ -35,7 +35,7 @@ export const authService = {
   // Get user profile
   async getProfile() {
     try {
-      const response = await api.get('/auth/profile');
+      const response = await api.get('/auth/profile/');
       return response;
     } catch (error) {
       throw error;
@@ -45,7 +45,7 @@ export const authService = {
   // Update user profile
   async updateProfile(userData) {
     try {
-      const response = await api.put('/auth/profile', userData);
+      const response = await api.put('/auth/profile/', userData);
       return response;
     } catch (error) {
       throw error;
@@ -55,7 +55,7 @@ export const authService = {
   // Logout user
   async logout() {
     try {
-      const response = await api.post('/auth/logout');
+      const response = await api.post('/auth/logout/');
       return response;
     } catch (error) {
       throw error;
@@ -65,7 +65,7 @@ export const authService = {
   // Change password
   async changePassword(passwordData) {
     try {
-      const response = await api.post('/auth/change-password', passwordData);
+      const response = await api.post('/auth/change-password/', passwordData);
       return response;
     } catch (error) {
       throw error;
