@@ -118,14 +118,14 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       onClick={() => setIsOpen(false)}
       className={`flex items-center px-3 sm:px-4 py-3 rounded-lg font-medium transition-all duration-300 group ${
         isActive(item.path)
-          ? 'bg-blue-600 text-white shadow-lg'
+          ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:text-white shadow-lg'
           : isDark
-          ? 'text-gray-300 hover:text-white hover:bg-gray-700'
-          : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'
+          ? 'text-gray-300 hover:text-gray-300'
+          : 'text-gray-700 hover:text-gray-700'
       } ${isSubmenu ? 'ml-4 sm:ml-6 text-sm' : ''}`}
     >
       <item.icon className={`h-5 w-5 mr-3 ${isActive(item.path) ? 'text-white' : ''}`} />
-      <span className="text-sm sm:text-base">{item.name}</span>
+      <span className={`text-sm sm:text-base ${!isActive(item.path) ? 'group-hover:underline' : ''}`}>{item.name}</span>
     </Link>
   );
 
@@ -208,12 +208,12 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                   onClick={() => setReportsOpen(!reportsOpen)}
                   className={`flex items-center w-full px-4 py-3 rounded-lg font-medium transition-all duration-300 group ${
                     isDark
-                      ? 'text-gray-300 hover:text-white hover:bg-gray-700'
-                      : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'
+                      ? 'text-gray-300 hover:text-gray-300'
+                      : 'text-gray-700 hover:text-gray-700'
                   }`}
                 >
                   <BarChart3 className="h-5 w-5 mr-3" />
-                  <span>Reports</span>
+                  <span className="group-hover:underline">Reports</span>
                   {reportsOpen ? (
                     <ChevronDown className="h-4 w-4 ml-auto" />
                   ) : (
@@ -258,42 +258,42 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
-              className={`flex items-center w-full px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+              className={`flex items-center w-full px-4 py-2 rounded-lg font-medium transition-all duration-300 group ${
                 isDark
-                  ? 'text-gray-300 hover:text-white hover:bg-gray-700'
-                  : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'
+                  ? 'text-gray-300 hover:text-gray-300'
+                  : 'text-gray-700 hover:text-gray-700'
               }`}
             >
               {isDark ? <Sun className="h-5 w-5 mr-3" /> : <Moon className="h-5 w-5 mr-3" />}
-              <span>{isDark ? 'Light Mode' : 'Dark Mode'}</span>
+              <span className="group-hover:underline">{isDark ? 'Light Mode' : 'Dark Mode'}</span>
             </button>
 
             {/* Settings (placeholder) */}
             <Link
               to="/settings"
-              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all duration-300 group ${
                 isActive('/settings')
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:text-white shadow-lg'
                   : isDark
-                  ? 'text-gray-300 hover:text-white hover:bg-gray-700'
-                  : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'
+                  ? 'text-gray-300 hover:text-gray-300'
+                  : 'text-gray-700 hover:text-gray-700'
               }`}
             >
               <Settings className="h-5 w-5 mr-3" />
-              <span>Settings</span>
+              <span className={`${!isActive('/settings') ? 'group-hover:underline' : ''}`}>Settings</span>
             </Link>
 
             {/* Logout */}
             <button
               onClick={handleLogout}
-              className={`flex items-center w-full px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+              className={`flex items-center w-full px-4 py-2 rounded-lg font-medium transition-all duration-300 group ${
                 isDark
-                  ? 'text-gray-300 hover:text-white hover:bg-red-700'
-                  : 'text-gray-700 hover:text-red-600 hover:bg-red-50'
+                  ? 'text-gray-300 hover:text-gray-300'
+                  : 'text-gray-700 hover:text-gray-700'
               }`}
             >
               <LogOut className="h-5 w-5 mr-3" />
-              <span>Logout</span>
+              <span className="group-hover:underline">Logout</span>
             </button>
           </div>
         </div>

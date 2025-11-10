@@ -140,24 +140,24 @@ export default function Dashboard() {
       isDark ? 'bg-dark-950' : 'bg-gray-50'
     }`}>
       {/* Header */}
-      <div className={`sticky top-0 z-40 backdrop-blur-md border-b transition-all duration-300 ${
+      <div className={`sticky top-16 z-40 backdrop-blur-md border-b transition-all duration-300 ${
         isDark
           ? 'bg-dark-900/80 border-dark-700'
           : 'bg-white/80 border-gold-100'
       }`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className={`text-2xl sm:text-3xl lg:text-4xl font-serif font-bold ${
+              <h1 className={`text-3xl sm:text-4xl font-serif font-bold ${
                 isDark ? 'text-white' : 'text-dark-900'
               }`}>
                 Sales Dashboard
               </h1>
-              <p className={`mt-1 sm:mt-2 text-sm sm:text-base ${isDark ? 'text-silver-400' : 'text-gray-600'}`}>
+              <p className={`mt-2 ${isDark ? 'text-silver-400' : 'text-gray-600'}`}>
                 ISP Company Revenue Analytics & Insights
               </p>
             </div>
-            <div className="flex items-center space-x-2 sm:space-x-3">
+            <div className="flex items-center space-x-3">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -173,7 +173,7 @@ export default function Dashboard() {
               <select
                 value={dateRange}
                 onChange={(e) => setDateRange(e.target.value)}
-                className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-all duration-300 border text-sm sm:text-base ${
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 border ${
                   isDark
                     ? 'bg-dark-800 border-dark-700 text-gold-400 hover:border-gold-500'
                     : 'bg-white border-gold-200 text-gold-600 hover:border-gold-400'
@@ -189,7 +189,7 @@ export default function Dashboard() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {error && <ErrorAlert message={error} onClose={() => setError(null)} />}
 
         {/* KPI Cards */}
@@ -197,7 +197,7 @@ export default function Dashboard() {
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
         >
           <motion.div variants={itemVariants}>
             <KPICard
@@ -246,7 +246,7 @@ export default function Dashboard() {
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8"
+          className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8"
         >
           {/* Weekly Revenue Chart */}
           <motion.div
@@ -257,7 +257,7 @@ export default function Dashboard() {
                 : 'bg-white border border-gold-100'
             }`}
           >
-            <h3 className={`text-base sm:text-lg font-semibold mb-4 ${
+            <h3 className={`text-lg font-semibold mb-4 ${
               isDark ? 'text-white' : 'text-dark-900'
             }`}>
               Weekly Revenue
@@ -289,7 +289,7 @@ export default function Dashboard() {
           {/* Monthly Revenue Chart */}
           <motion.div
             variants={itemVariants}
-            className={`rounded-2xl p-4 sm:p-6 transition-all duration-300 ${
+            className={`rounded-2xl p-6 transition-all duration-300 ${
               isDark
                 ? 'bg-dark-800 border border-dark-700'
                 : 'bg-white border border-gold-100'
@@ -300,7 +300,7 @@ export default function Dashboard() {
             }`}>
               Monthly Revenue
             </h3>
-            <ResponsiveContainer width="100%" height={250} className="sm:h-[300px]">
+            <ResponsiveContainer width="100%" height={300}>
               <BarChart data={monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
                 <XAxis stroke={isDark ? '#9ca3af' : '#6b7280'} />
@@ -431,7 +431,7 @@ export default function Dashboard() {
         {/* Customer Wise Revenue Table */}
         <motion.div
           variants={itemVariants}
-          className={`rounded-2xl p-4 sm:p-6 transition-all duration-300 ${
+          className={`rounded-2xl p-6 transition-all duration-300 ${
             isDark
               ? 'bg-dark-800 border border-dark-700'
               : 'bg-white border border-gold-100'
@@ -520,7 +520,7 @@ export default function Dashboard() {
          {/* KAM Performance Table */}
          <motion.div
            variants={itemVariants}
-           className={`rounded-2xl p-4 sm:p-6 transition-all duration-300 ${
+           className={`rounded-2xl p-6 transition-all duration-300 ${
              isDark
                ? 'bg-dark-800 border border-dark-700'
                : 'bg-white border border-gold-100'
