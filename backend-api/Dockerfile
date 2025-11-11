@@ -1,4 +1,3 @@
-# Use official Python runtime as base image
 FROM python:3.10-slim
 
 # Set environment variables
@@ -6,16 +5,15 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1
 
-# Set work directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y gcc python3-dev && rm -rf /var/lib/apt/lists/*
+# Install system dependencies (NO sysctl calls)
+RUN apt-get update && \
+    apt-get install -y gcc python3-dev && \
+    rm -rf /var/lib/apt/lists/*
 
-# Copy requirements.txt
+# Copy and install Python dependencies
 COPY requirements.txt /app/
-
-# Install Python dependencies
 RUN pip install --upgrade pip && \
     pip install -r requirements.txt && \
     pip install gunicorn
@@ -23,12 +21,14 @@ RUN pip install --upgrade pip && \
 # Copy project
 COPY . /app/
 
-# Create static files directory
-RUN mkdir -p /app/staticfiles && \
+# Create required directories
+RUN mkdir -p /app/staticfiles /app/media
+
+# Run migrations and collect static files
+RUN python manage.py migrate --noinput || true && \
     python manage.py collectstatic --noinput || true
 
-# Expose port
 EXPOSE 8000
 
-# Run Gunicorn
+# Run application
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "4", "config.wsgi:application"]
