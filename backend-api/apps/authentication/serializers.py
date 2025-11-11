@@ -52,6 +52,8 @@ class LoginSerializer(TokenObtainPairSerializer):
 
     def validate(self, attrs):
         data = super().validate(attrs)
+<<<<<<< HEAD
+=======
         
         # Get user permissions
         user_permissions = []
@@ -61,13 +63,17 @@ class LoginSerializer(TokenObtainPairSerializer):
             # Get permissions from role
             user_permissions = list(self.user.role.permissions.values_list('codename', flat=True))
         
+>>>>>>> arman
         data['user'] = {
             'id': self.user.id,
             'email': self.user.email,
             'username': self.user.username,
+<<<<<<< HEAD
+=======
             'role': self.user.role.name if hasattr(self.user, 'role') and self.user.role else None,
             'is_superuser': self.user.is_superuser,
             'permissions': user_permissions,
+>>>>>>> arman
         }
         return data
 

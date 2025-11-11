@@ -1,20 +1,27 @@
-import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider } from './context/ThemeContext';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import { NotificationProvider } from './context/NotificationContext';
-import Sidebar from './components/Sidebar';
-import NotificationContainer from './components/NotificationContainer';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
-import AdminDashboard from './pages/AdminDashboard';
-import ActivityLogs from './pages/ActivityLogs';
-import CompanyReports from './pages/CompanyReports';
-import DataEntryPerformance from './pages/DataEntryPerformance';
-import DataEntry from './pages/DataEntry';
-import Customers from './pages/Customers';
-import './App.css';
+import React, { useState } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { ThemeProvider } from "./context/ThemeContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import { NotificationProvider } from "./context/NotificationContext";
+import Sidebar from "./components/Sidebar";
+import NotificationContainer from "./components/NotificationContainer";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Dashboard from "./pages/Dashboard";
+import AdminDashboard from "./pages/AdminDashboard";
+import ActivityLogs from "./pages/ActivityLogs";
+import CompanyReports from "./pages/CompanyReports";
+import DataEntryPerformance from "./pages/DataEntryPerformance";
+import DataEntry from "./pages/DataEntry";
+import Customers from "./pages/Customers";
+import Users from "./pages/Users";
+import Prospects from "./pages/Prospects";
+import "./App.css";
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requiredPermission }) => {
@@ -79,15 +86,29 @@ const AppLayout = ({ children }) => {
               onClick={() => setSidebarOpen(true)}
               className="p-2 rounded-md bg-gray-800 text-white shadow-lg"
             >
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
               </svg>
             </button>
           </div>
         )}
+<<<<<<< HEAD
         <main className="flex-1 overflow-y-auto">
           {children}
         </main>
+=======
+        <main className="flex-1 overflow-y-auto">{children}</main>
+>>>>>>> arman
       </div>
       <NotificationContainer />
     </div>
@@ -142,16 +163,24 @@ const AppRoutes = () => {
         }
       />
 
+      <Route
+        path="/prospects"
+        element={
+          <ProtectedRoute requiredPermission="customers:read">
+            <AppLayout>
+              <Prospects />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+
       {/* Admin Routes */}
       <Route
         path="/users"
         element={
           <AdminRoute>
             <AppLayout>
-              <div className="p-6">
-                <h1 className="text-2xl font-bold">User Management</h1>
-                <p className="text-gray-600 dark:text-gray-400">Manage system users</p>
-              </div>
+              <Users />
             </AppLayout>
           </AdminRoute>
         }
@@ -208,7 +237,9 @@ const AppRoutes = () => {
         element={
           <div className="min-h-screen flex items-center justify-center">
             <div className="text-center">
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-white">404</h1>
+              <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
+                404
+              </h1>
               <p className="text-gray-600 dark:text-gray-400">Page not found</p>
             </div>
           </div>
