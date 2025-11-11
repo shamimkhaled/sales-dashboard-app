@@ -69,10 +69,14 @@ const Login = () => {
         {/* Header */}
         <div className="text-center">
           <div className="flex justify-center mb-4">
-            <KTLLogo />
+            <img 
+                  src="https://kloud.com.bd/netband/assets/img/logo/kloud-logo1.png" 
+                  alt="Kloud Logo" 
+                  className="h-12 w-auto object-contain"
+                />
           </div>
           <h2 className="mt-4 sm:mt-6 text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white">
-            Sign in to your account
+            Sales Dashboard
           </h2>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
             Welcome back! Please sign in to continue.
@@ -179,8 +183,7 @@ const Login = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
+                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl">
                 {isLoading ? (
                   <div className="flex items-center">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>

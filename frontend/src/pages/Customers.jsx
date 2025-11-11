@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useNotification } from '../context/NotificationContext';
+import { useAuth } from '../context/AuthContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorAlert from '../components/ErrorAlert';
 import KPICard from '../components/KPICard';
@@ -15,6 +16,7 @@ import { customerService } from '../services/customerService';
 export default function Customers() {
   const { isDark } = useTheme();
   const { showSuccess, showError } = useNotification();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -35,16 +37,14 @@ export default function Customers() {
   const [totalPages, setTotalPages] = useState(0);
 
   const [formData, setFormData] = useState({
-    serial_number: '',
-    name_of_party: '',
-    address: '',
+    name: '',
+    company_name: '',
     email: '',
-    proprietor_name: '',
-    phone_number: '',
-    link_id: '',
-    remarks: '',
-    kam: '',
-    status: 'Active',
+    phone: '',
+    address: '',
+    potential_revenue: 0,
+    monthly_revenue: 0,
+    assigned_sales_person: user?.id || 0,
   });
 
   const [stats, setStats] = useState({
@@ -74,12 +74,18 @@ export default function Customers() {
         status: filterStatus === 'all' ? null : filterStatus
       });
 
-      if (response.data) {
-        setCustomers(response.data);
-        if (response.pagination) {
-          setTotalCount(response.pagination.totalCount);
-          setTotalPages(response.pagination.totalPages);
-        }
+      // Django REST Framework pagination returns: {count, next, previous, results}
+      const customerData = response.results || response.data || [];
+      setCustomers(customerData);
+      
+      // Set pagination from DRF response
+      if (response.count !== undefined) {
+        setTotalCount(response.count);
+        const pages = Math.ceil(response.count / pageSize);
+        setTotalPages(pages);
+      } else if (response.pagination) {
+        setTotalCount(response.pagination.totalCount);
+        setTotalPages(response.pagination.totalPages);
       }
 
       // Use stats from API response if available, otherwise calculate from current page
@@ -91,10 +97,10 @@ export default function Customers() {
         });
       } else {
         // Fallback: Calculate stats from current page data
-        const active = response.data.filter(c => c.status === 'Active').length;
-        const inactive = response.data.length - active;
+        const active = customerData.filter(c => c.status === 'Active').length;
+        const inactive = customerData.length - active;
         setStats({
-          totalCustomers: response.pagination?.totalCount || response.data.length,
+          totalCustomers: response.count || customerData.length,
           activeCustomers: active,
           inactiveCustomers: inactive,
         });
@@ -122,34 +128,45 @@ export default function Customers() {
       setSuccess(null);
       
       if (editingId) {
-        // Filter to only include customer-specific fields for update
+        // Update existing customer
         const customerData = {
-          serial_number: formData.serial_number,
-          name_of_party: formData.name_of_party,
-          address: formData.address || '',
+          name: formData.name,
+          company_name: formData.company_name,
           email: formData.email || '',
-          proprietor_name: formData.proprietor_name || '',
-          phone_number: formData.phone_number || '',
-          link_id: formData.link_id || '',
-          remarks: formData.remarks || '',
-          kam: formData.kam || '',
-          status: formData.status || 'Active',
+          phone: formData.phone || '',
+          address: formData.address || '',
+          potential_revenue: parseFloat(formData.potential_revenue) || 0,
+          monthly_revenue: parseFloat(formData.monthly_revenue) || 0,
+          assigned_sales_person: formData.assigned_sales_person || user?.id,
         };
         console.log('Updating customer:', editingId, customerData);
         const response = await customerService.updateCustomer(editingId, customerData);
         console.log('Update response:', response);
         showSuccess('Customer updated successfully');
         resetForm();
-        setCurrentPage(1);
-        fetchCustomers();
+        // Refresh the list by re-fetching
+        await fetchCustomers();
       } else {
-        // Remove serial_number from formData for new customers (auto-increment)
-        const { serial_number, ...customerData } = formData;
+        // Create new customer
+        const customerData = {
+          name: formData.name,
+          company_name: formData.company_name,
+          email: formData.email || '',
+          phone: formData.phone || '',
+          address: formData.address || '',
+          potential_revenue: parseFloat(formData.potential_revenue) || 0,
+          monthly_revenue: parseFloat(formData.monthly_revenue) || 0,
+          assigned_sales_person: user?.id, // Auto-set to current user
+        };
         await customerService.createCustomer(customerData);
         showSuccess('Customer created successfully');
         resetForm();
-        setCurrentPage(1);
-        fetchCustomers();
+        // If not on page 1, go to page 1, otherwise refresh current page
+        if (currentPage !== 1) {
+          setCurrentPage(1); // This will trigger useEffect to fetch
+        } else {
+          await fetchCustomers(); // Manually refresh if already on page 1
+        }
       }
     } catch (err) {
       console.error('Submit error:', err);
@@ -161,16 +178,14 @@ export default function Customers() {
 
   const resetForm = () => {
     setFormData({
-      serial_number: '',
-      name_of_party: '',
-      address: '',
+      name: '',
+      company_name: '',
       email: '',
-      proprietor_name: '',
-      phone_number: '',
-      link_id: '',
-      remarks: '',
-      kam: '',
-      status: 'Active',
+      phone: '',
+      address: '',
+      potential_revenue: 0,
+      monthly_revenue: 0,
+      assigned_sales_person: user?.id || 0,
     });
     setEditingId(null);
     setShowForm(false);
@@ -417,42 +432,17 @@ export default function Customers() {
               </div>
 
               <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Name */}
                 <div>
                   <label className={`block text-sm font-medium mb-2 ${
                     isDark ? 'text-silver-300' : 'text-gray-700'
                   }`}>
-                    Serial Number {editingId && '(Read-only)'}
-                  </label>
-                  <input
-                    type="number"
-                    name="serial_number"
-                    value={formData.serial_number}
-                    onChange={handleInputChange}
-                    required
-                    readOnly={!editingId} // Only editable when editing existing customer
-                    className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                      isDark
-                        ? `bg-dark-700 border-dark-600 text-white focus:border-gold-500 ${!editingId ? 'opacity-60 cursor-not-allowed' : ''}`
-                        : `bg-white border-gold-200 text-dark-900 focus:border-gold-500 ${!editingId ? 'opacity-60 cursor-not-allowed' : ''}`
-                    } focus:outline-none`}
-                  />
-                  {!editingId && (
-                    <p className={`text-xs mt-1 ${isDark ? 'text-silver-400' : 'text-gray-500'}`}>
-                      Auto-generated for new customers
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className={`block text-sm font-medium mb-2 ${
-                    isDark ? 'text-silver-300' : 'text-gray-700'
-                  }`}>
-                    Name of Party
+                    Name *
                   </label>
                   <input
                     type="text"
-                    name="name_of_party"
-                    value={formData.name_of_party}
+                    name="name"
+                    value={formData.name}
                     onChange={handleInputChange}
                     required
                     className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
@@ -463,6 +453,28 @@ export default function Customers() {
                   />
                 </div>
 
+                {/* Company Name */}
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${
+                    isDark ? 'text-silver-300' : 'text-gray-700'
+                  }`}>
+                    Company Name *
+                  </label>
+                  <input
+                    type="text"
+                    name="company_name"
+                    value={formData.company_name}
+                    onChange={handleInputChange}
+                    required
+                    className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                      isDark
+                        ? 'bg-dark-700 border-dark-600 text-white focus:border-gold-500'
+                        : 'bg-white border-gold-200 text-dark-900 focus:border-gold-500'
+                    } focus:outline-none`}
+                  />
+                </div>
+
+                {/* Email */}
                 <div>
                   <label className={`block text-sm font-medium mb-2 ${
                     isDark ? 'text-silver-300' : 'text-gray-700'
@@ -482,17 +494,19 @@ export default function Customers() {
                   />
                 </div>
 
+                {/* Phone */}
                 <div>
                   <label className={`block text-sm font-medium mb-2 ${
                     isDark ? 'text-silver-300' : 'text-gray-700'
                   }`}>
-                    Phone Number
+                    Phone
                   </label>
                   <input
                     type="tel"
-                    name="phone_number"
-                    value={formData.phone_number}
+                    name="phone"
+                    value={formData.phone}
                     onChange={handleInputChange}
+                    placeholder="+4867096587 4-5 35"
                     className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
                       isDark
                         ? 'bg-dark-700 border-dark-600 text-white focus:border-gold-500'
@@ -501,17 +515,20 @@ export default function Customers() {
                   />
                 </div>
 
+                {/* Potential Revenue */}
                 <div>
                   <label className={`block text-sm font-medium mb-2 ${
                     isDark ? 'text-silver-300' : 'text-gray-700'
                   }`}>
-                    Proprietor Name
+                    Potential Revenue
                   </label>
                   <input
-                    type="text"
-                    name="proprietor_name"
-                    value={formData.proprietor_name}
+                    type="number"
+                    name="potential_revenue"
+                    value={formData.potential_revenue}
                     onChange={handleInputChange}
+                    step="0.01"
+                    min="0"
                     className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
                       isDark
                         ? 'bg-dark-700 border-dark-600 text-white focus:border-gold-500'
@@ -520,17 +537,20 @@ export default function Customers() {
                   />
                 </div>
 
+                {/* Monthly Revenue */}
                 <div>
                   <label className={`block text-sm font-medium mb-2 ${
                     isDark ? 'text-silver-300' : 'text-gray-700'
                   }`}>
-                    Link ID
+                    Monthly Revenue
                   </label>
                   <input
-                    type="text"
-                    name="link_id"
-                    value={formData.link_id}
+                    type="number"
+                    name="monthly_revenue"
+                    value={formData.monthly_revenue}
                     onChange={handleInputChange}
+                    step="0.01"
+                    min="0"
                     className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
                       isDark
                         ? 'bg-dark-700 border-dark-600 text-white focus:border-gold-500'
@@ -539,6 +559,7 @@ export default function Customers() {
                   />
                 </div>
 
+                {/* CAM (Assigned Sales Person - readonly, auto-set to current user) */}
                 <div>
                   <label className={`block text-sm font-medium mb-2 ${
                     isDark ? 'text-silver-300' : 'text-gray-700'
@@ -547,38 +568,20 @@ export default function Customers() {
                   </label>
                   <input
                     type="text"
-                    name="kam"
-                    value={formData.kam}
-                    onChange={handleInputChange}
-                    className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                    value={user?.username || user?.email || 'Current User'}
+                    readOnly
+                    className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 opacity-60 cursor-not-allowed ${
                       isDark
-                        ? 'bg-dark-700 border-dark-600 text-white focus:border-gold-500'
-                        : 'bg-white border-gold-200 text-dark-900 focus:border-gold-500'
-                    } focus:outline-none`}
+                        ? 'bg-dark-700 border-dark-600 text-white'
+                        : 'bg-gray-100 border-gold-200 text-dark-900'
+                    }`}
                   />
+                  <p className={`text-xs mt-1 ${isDark ? 'text-silver-400' : 'text-gray-500'}`}>
+                    Auto-assigned to you
+                  </p>
                 </div>
 
-                <div>
-                  <label className={`block text-sm font-medium mb-2 ${
-                    isDark ? 'text-silver-300' : 'text-gray-700'
-                  }`}>
-                    Status
-                  </label>
-                  <select
-                    name="status"
-                    value={formData.status}
-                    onChange={handleInputChange}
-                    className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                      isDark
-                        ? 'bg-dark-700 border-dark-600 text-white focus:border-gold-500'
-                        : 'bg-white border-gold-200 text-dark-900 focus:border-gold-500'
-                    } focus:outline-none`}
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                  </select>
-                </div>
-
+                {/* Address */}
                 <div className="md:col-span-2">
                   <label className={`block text-sm font-medium mb-2 ${
                     isDark ? 'text-silver-300' : 'text-gray-700'
@@ -598,39 +601,14 @@ export default function Customers() {
                   />
                 </div>
 
-                <div className="md:col-span-2">
-                  <label className={`block text-sm font-medium mb-2 ${
-                    isDark ? 'text-silver-300' : 'text-gray-700'
-                  }`}>
-                    Remarks
-                  </label>
-                  <textarea
-                    name="remarks"
-                    value={formData.remarks}
-                    onChange={handleInputChange}
-                    rows="3"
-                    className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                      isDark
-                        ? 'bg-dark-700 border-dark-600 text-white focus:border-gold-500'
-                        : 'bg-white border-gold-200 text-dark-900 focus:border-gold-500'
-                    } focus:outline-none`}
-                  />
-                </div>
-
+                {/* Submit Buttons */}
                 <div className="md:col-span-2 flex gap-3">
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     type="submit"
                     disabled={loading}
-                    className={`flex-1 px-6 py-2 rounded-lg font-medium transition-all duration-300 ${
-                      editingId
-                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 disabled:opacity-50'
-                        : isDark
-                        ? 'bg-gold-600 text-dark-900 hover:bg-gold-500 disabled:opacity-50'
-                        : 'bg-gold-500 text-white hover:bg-gold-600 disabled:opacity-50'
-                    }`}
-                  >
+                    className={`flex-1 px-6 py-2 rounded-lg font-medium transition-all duration-300 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl`}>
                     {loading ? 'Saving...' : editingId ? 'Update Customer' : 'Create Customer'}
                   </motion.button>
                   <motion.button
@@ -717,10 +695,10 @@ export default function Customers() {
                 <tr className={`border-b ${isDark ? 'border-dark-700' : 'border-gold-100'}`}>
                   <th className={`px-6 py-4 text-left text-sm font-semibold ${
                     isDark ? 'text-silver-300' : 'text-gray-700'
-                  }`}>Serial #</th>
+                  }`}>Name</th>
                   <th className={`px-6 py-4 text-left text-sm font-semibold ${
                     isDark ? 'text-silver-300' : 'text-gray-700'
-                  }`}>Name</th>
+                  }`}>Company</th>
                   <th className={`px-6 py-4 text-left text-sm font-semibold ${
                     isDark ? 'text-silver-300' : 'text-gray-700'
                   }`}>Email</th>
@@ -729,10 +707,13 @@ export default function Customers() {
                   }`}>Phone</th>
                   <th className={`px-6 py-4 text-left text-sm font-semibold ${
                     isDark ? 'text-silver-300' : 'text-gray-700'
-                  }`}>Proprietor</th>
+                  }`}>KAM</th>
                   <th className={`px-6 py-4 text-left text-sm font-semibold ${
                     isDark ? 'text-silver-300' : 'text-gray-700'
-                  }`}>Status</th>
+                  }`}>Potential Revenue</th>
+                  <th className={`px-6 py-4 text-left text-sm font-semibold ${
+                    isDark ? 'text-silver-300' : 'text-gray-700'
+                  }`}>Monthly Revenue</th>
                   <th className={`px-6 py-4 text-left text-sm font-semibold ${
                     isDark ? 'text-silver-300' : 'text-gray-700'
                   }`}>Actions</th>
@@ -748,32 +729,25 @@ export default function Customers() {
                   >
                     <td className={`px-6 py-4 text-sm font-medium ${
                       isDark ? 'text-white' : 'text-dark-900'
-                    }`}>{customer.serial_number}</td>
+                    }`}>{customer.name}</td>
                     <td className={`px-6 py-4 text-sm font-medium ${
                       isDark ? 'text-white' : 'text-dark-900'
-                    }`}>{customer.name_of_party}</td>
+                    }`}>{customer.company_name}</td>
                     <td className={`px-6 py-4 text-sm ${
                       isDark ? 'text-silver-300' : 'text-gray-700'
                     }`}>{customer.email || '-'}</td>
                     <td className={`px-6 py-4 text-sm ${
                       isDark ? 'text-silver-300' : 'text-gray-700'
-                    }`}>{customer.phone_number || '-'}</td>
+                    }`}>{customer.phone || '-'}</td>
                     <td className={`px-6 py-4 text-sm ${
                       isDark ? 'text-silver-300' : 'text-gray-700'
-                    }`}>{customer.proprietor_name || '-'}</td>
-                    <td className={`px-6 py-4 text-sm`}>
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        customer.status === 'Active'
-                          ? isDark
-                            ? 'bg-green-900/30 text-green-400'
-                            : 'bg-green-100 text-green-700'
-                          : isDark
-                          ? 'bg-red-900/30 text-red-400'
-                          : 'bg-red-100 text-red-700'
-                      }`}>
-                        {customer.status}
-                      </span>
-                    </td>
+                    }`}>{customer.assigned_sales_person_details?.username || customer.assigned_sales_person_details?.email || '-'}</td>
+                    <td className={`px-6 py-4 text-sm ${
+                      isDark ? 'text-silver-300' : 'text-gray-700'
+                    }`}>{customer.potential_revenue ? `$${customer.potential_revenue.toLocaleString()}` : '-'}</td>
+                    <td className={`px-6 py-4 text-sm ${
+                      isDark ? 'text-silver-300' : 'text-gray-700'
+                    }`}>{customer.monthly_revenue ? `$${customer.monthly_revenue.toLocaleString()}` : '-'}</td>
                     <td className={`px-6 py-4 text-sm`}>
                       <div className="flex items-center space-x-2">
                         <motion.button
