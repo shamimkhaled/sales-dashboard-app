@@ -82,16 +82,32 @@ export default function Prospects() {
         pageSize,
         search: searchTerm,
       });
-      if (response.data) {
+      
+      // Handle Django REST Framework pagination response
+      if (response.results) {
+        // DRF PageNumberPagination format: { count, next, previous, results }
+        setProspects(response.results);
+        setTotalCount(response.count || 0);
+        setTotalPages(Math.ceil((response.count || 0) / pageSize));
+      } else if (response.data) {
         setProspects(response.data);
+        // Extract pagination info from response
         if (response.pagination) {
-          setTotalCount(response.pagination.totalCount);
-          setTotalPages(response.pagination.totalPages);
+          setTotalCount(response.pagination.totalCount || response.pagination.total || 0);
+          setTotalPages(response.pagination.totalPages || response.pagination.pages || 0);
+        } else if (response.total || response.totalCount) {
+          // Pagination info at root level
+          setTotalCount(response.total || response.totalCount);
+          setTotalPages(response.totalPages || Math.ceil((response.total || response.totalCount) / pageSize));
+        } else {
+          // No pagination info available
+          setTotalCount(response.data.length);
+          setTotalPages(Math.ceil(response.data.length / pageSize));
         }
       } else if (Array.isArray(response)) {
         setProspects(response);
-      } else if (response.results) {
-        setProspects(response.results);
+        setTotalCount(response.length);
+        setTotalPages(Math.ceil(response.length / pageSize));
       }
     } catch (err) {
       setError(err.message || "Failed to fetch prospects");
