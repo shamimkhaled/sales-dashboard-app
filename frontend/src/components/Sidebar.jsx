@@ -56,13 +56,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       permission: null, // Dashboard is always visible to authenticated users
     },
     {
-<<<<<<< HEAD
-      name: 'Bill Entry',
-      path: '/data-entry',
-=======
-      name: "Data Entry",
+      name: "Bill Entry",
       path: "/data-entry",
->>>>>>> front
       icon: FileText,
       permission: "bills:create", // Changed from bills:write to bills:create
     },
@@ -136,7 +131,6 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       onClick={() => setIsOpen(false)}
       className={`flex items-center px-3 sm:px-4 py-3 rounded-lg font-medium transition-all duration-300 group ${
         isActive(item.path)
-<<<<<<< HEAD
           ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:text-white shadow-lg'
           : isDark
           ? 'text-gray-300 hover:text-gray-300'
@@ -145,24 +139,6 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     >
       <item.icon className={`h-5 w-5 mr-3 ${isActive(item.path) ? 'text-white' : ''}`} />
       <span className={`text-sm sm:text-base ${!isActive(item.path) ? 'group-hover:underline' : ''}`}>{item.name}</span>
-=======
-          ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:text-white shadow-lg"
-          : isDark
-          ? "text-gray-300 hover:text-gray-300"
-          : "text-gray-700 hover:text-gray-700"
-      } ${isSubmenu ? "ml-4 sm:ml-6 text-sm" : ""}`}
-    >
-      <item.icon
-        className={`h-5 w-5 mr-3 ${isActive(item.path) ? "text-white" : ""}`}
-      />
-      <span
-        className={`text-sm sm:text-base ${
-          !isActive(item.path) ? "group-hover:underline" : ""
-        }`}
-      >
-        {item.name}
-      </span>
->>>>>>> arman
     </Link>
   );
 
@@ -258,13 +234,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                   onClick={() => setReportsOpen(!reportsOpen)}
                   className={`flex items-center w-full px-4 py-3 rounded-lg font-medium transition-all duration-300 group ${
                     isDark
-<<<<<<< HEAD
                       ? 'text-gray-300 hover:text-gray-300'
                       : 'text-gray-700 hover:text-gray-700'
-=======
-                      ? "text-gray-300 hover:text-gray-300"
-                      : "text-gray-700 hover:text-gray-700"
->>>>>>> arman
                   }`}
                 >
                   <BarChart3 className="h-5 w-5 mr-3" />
@@ -319,34 +290,18 @@ export default function Sidebar({ isOpen, setIsOpen }) {
               onClick={toggleTheme}
               className={`flex items-center w-full px-4 py-2 rounded-lg font-medium transition-all duration-300 group ${
                 isDark
-<<<<<<< HEAD
                   ? 'text-gray-300 hover:text-gray-300'
                   : 'text-gray-700 hover:text-gray-700'
               }`}
             >
               {isDark ? <Sun className="h-5 w-5 mr-3" /> : <Moon className="h-5 w-5 mr-3" />}
               <span className="group-hover:underline">{isDark ? 'Light Mode' : 'Dark Mode'}</span>
-=======
-                  ? "text-gray-300 hover:text-gray-300"
-                  : "text-gray-700 hover:text-gray-700"
-              }`}
-            >
-              {isDark ? (
-                <Sun className="h-5 w-5 mr-3" />
-              ) : (
-                <Moon className="h-5 w-5 mr-3" />
-              )}
-              <span className="group-hover:underline">
-                {isDark ? "Light Mode" : "Dark Mode"}
-              </span>
->>>>>>> arman
             </button>
 
             {/* Settings (placeholder) */}
             <Link
               to="/settings"
               className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all duration-300 group ${
-<<<<<<< HEAD
                 isActive('/settings')
                   ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:text-white shadow-lg'
                   : isDark
@@ -356,23 +311,6 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             >
               <Settings className="h-5 w-5 mr-3" />
               <span className={`${!isActive('/settings') ? 'group-hover:underline' : ''}`}>Settings</span>
-=======
-                isActive("/settings")
-                  ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:text-white shadow-lg"
-                  : isDark
-                  ? "text-gray-300 hover:text-gray-300"
-                  : "text-gray-700 hover:text-gray-700"
-              }`}
-            >
-              <Settings className="h-5 w-5 mr-3" />
-              <span
-                className={`${
-                  !isActive("/settings") ? "group-hover:underline" : ""
-                }`}
-              >
-                Settings
-              </span>
->>>>>>> arman
             </Link>
 
             {/* Logout */}
@@ -380,13 +318,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
               onClick={handleLogout}
               className={`flex items-center w-full px-4 py-2 rounded-lg font-medium transition-all duration-300 group ${
                 isDark
-<<<<<<< HEAD
                   ? 'text-gray-300 hover:text-gray-300'
                   : 'text-gray-700 hover:text-gray-700'
-=======
-                  ? "text-gray-300 hover:text-gray-300"
-                  : "text-gray-700 hover:text-gray-700"
->>>>>>> arman
               }`}
             >
               <LogOut className="h-5 w-5 mr-3" />
