@@ -20,6 +20,7 @@ import DataEntryPerformance from "./pages/DataEntryPerformance";
 import DataEntry from "./pages/DataEntry";
 import Customers from "./pages/Customers";
 import Users from "./pages/Users";
+import Prospects from "./pages/Prospects";
 import "./App.css";
 
 // Protected Route Component
@@ -151,6 +152,17 @@ const AppRoutes = () => {
           <ProtectedRoute requiredPermission="customers:read">
             <AppLayout>
               <Customers />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/prospects"
+        element={
+          <ProtectedRoute requiredPermission="customers:read">
+            <AppLayout>
+              <Prospects />
             </AppLayout>
           </ProtectedRoute>
         }
