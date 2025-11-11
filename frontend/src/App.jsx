@@ -123,7 +123,7 @@ const AppRoutes = () => {
       <Route
         path="/data-entry"
         element={
-          <ProtectedRoute requiredPermission="bills:write">
+          <ProtectedRoute requiredPermission="bills:create">
             <AppLayout>
               <DataEntry />
             </AppLayout>

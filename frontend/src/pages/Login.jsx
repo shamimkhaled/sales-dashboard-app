@@ -38,7 +38,7 @@ const Login = () => {
   } = useForm({
     resolver: yupResolver(loginSchema),
     defaultValues: {
-      email: 'tanzir@gmail.com',
+      email: 'tanzir@admin.com',
       password: '12345678',
       rememberMe: false
     }

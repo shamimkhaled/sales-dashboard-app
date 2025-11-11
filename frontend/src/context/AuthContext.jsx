@@ -151,7 +151,10 @@ export const AuthProvider = ({ children }) => {
 
   // Check if user has permission
   const hasPermission = (permission) => {
-    if (!user || !user.permissions) return false;
+    if (!user) return false;
+    // Super admin and admin roles have all permissions
+    if (user.role === 'super_admin' || user.role === 'admin') return true;
+    if (!user.permissions) return false;
     return user.permissions.includes('all') || user.permissions.includes(permission);
   };
 
@@ -162,12 +165,14 @@ export const AuthProvider = ({ children }) => {
 
   // Check if user is admin or super admin
   const isAdmin = () => {
+    if (!user) return false;
     return user && ['admin', 'super_admin'].includes(user.role);
   };
 
   // Check if user is super admin
   const isSuperAdmin = () => {
-    return user && user.role === 'super_admin'
+    if (!user) return false;
+    return user && user.role === 'super_admin';
   };
 
   const value = {
