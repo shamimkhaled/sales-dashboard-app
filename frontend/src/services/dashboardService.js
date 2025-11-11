@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = '/api';
 
 const dashboardService = {
   /**
@@ -9,7 +9,7 @@ const dashboardService = {
    */
   getWeeklyRevenue: async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/dashboard/weekly-revenue`);
+      const response = await axios.get(`${API_BASE_URL}/dashboard/weekly-revenue/`);
       return response.data || [];
     } catch (error) {
       console.error('Error fetching weekly revenue:', error);
@@ -23,7 +23,7 @@ const dashboardService = {
    */
   getMonthlyRevenue: async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/dashboard/monthly-revenue`);
+      const response = await axios.get(`${API_BASE_URL}/dashboard/monthly-revenue/`);
       return response.data || [];
     } catch (error) {
       console.error('Error fetching monthly revenue:', error);
@@ -37,7 +37,7 @@ const dashboardService = {
    */
   getYearlyRevenue: async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/dashboard/yearly-revenue`);
+      const response = await axios.get(`${API_BASE_URL}/dashboard/yearly-revenue/`);
       return response.data || [];
     } catch (error) {
       console.error('Error fetching yearly revenue:', error);
@@ -51,7 +51,7 @@ const dashboardService = {
    */
   getCustomerWiseRevenue: async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/dashboard/customer-wise-revenue`);
+      const response = await axios.get(`${API_BASE_URL}/dashboard/customer-wise-revenue/`);
       return response.data || [];
     } catch (error) {
       console.error('Error fetching customer-wise revenue:', error);

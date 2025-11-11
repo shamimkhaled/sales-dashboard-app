@@ -45,7 +45,10 @@ db.sqlite3
 .venv
 venv/
 ENV/
+<<<<<<< HEAD
 env/
+=======
+>>>>>>> arman
 
 # VSCode / IDE
 .vscode/
