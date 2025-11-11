@@ -102,13 +102,9 @@ const AppLayout = ({ children }) => {
             </button>
           </div>
         )}
-<<<<<<< HEAD
         <main className="flex-1 overflow-y-auto">
           {children}
         </main>
-=======
-        <main className="flex-1 overflow-y-auto">{children}</main>
->>>>>>> arman
       </div>
       <NotificationContainer />
     </div>
