@@ -101,9 +101,18 @@ export default function DataEntry() {
   const fetchCustomers = async () => {
     try {
       const response = await customerService.getAllCustomers();
-      setCustomers(response.data || response);
+      // Ensure we always set an array
+      if (Array.isArray(response)) {
+        setCustomers(response);
+      } else if (response && Array.isArray(response.data)) {
+        setCustomers(response.data);
+      } else {
+        setCustomers([]);
+        console.warn('Unexpected customers response format:', response);
+      }
     } catch (err) {
       console.error('Failed to fetch customers:', err);
+      setCustomers([]); // Set empty array on error
     }
   };
 
@@ -491,7 +500,7 @@ export default function DataEntry() {
                     } focus:outline-none`}
                   >
                     <option value="">Select Customer</option>
-                    {customers.map(customer => (
+                    {Array.isArray(customers) && customers.map(customer => (
                       <option key={customer.id} value={customer.id}>
                         {customer.serial_number} - {customer.name_of_party}
                       </option>

@@ -38,8 +38,8 @@ const Login = () => {
   } = useForm({
     resolver: yupResolver(loginSchema),
     defaultValues: {
-      email: 'shamim.khaled@alawaf.com.bd',
-      password: 'Admin@999',
+      email: 'tanzir@admin.com',
+      password: '12345678',
       rememberMe: false
     }
   });
