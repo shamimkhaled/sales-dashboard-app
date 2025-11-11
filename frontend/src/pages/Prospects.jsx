@@ -68,6 +68,25 @@ export default function Prospects() {
     return Object.keys(errors).length === 0;
   };
 
+  // Parse validation errors from API response
+  const parseValidationErrors = (errorMessage) => {
+    const errors = {};
+    
+    // Try to extract field errors from error message
+    // Format: "field_name: error message; another_field: error message"
+    if (errorMessage && typeof errorMessage === 'string') {
+      const fieldErrorPattern = /(\w+):\s*([^;]+)/g;
+      let match;
+      while ((match = fieldErrorPattern.exec(errorMessage)) !== null) {
+        const fieldName = match[1].trim();
+        const errorMsg = match[2].trim();
+        errors[fieldName] = errorMsg;
+      }
+    }
+    
+    return errors;
+  };
+
   useEffect(() => {
     fetchProspects();
     // eslint-disable-next-line
@@ -83,13 +102,17 @@ export default function Prospects() {
         search: searchTerm,
       });
       
+      console.log('Prospects API Response:', response);
+      
       // Handle Django REST Framework pagination response
       if (response.results) {
         // DRF PageNumberPagination format: { count, next, previous, results }
+        console.log('Using DRF format - count:', response.count, 'results length:', response.results.length);
         setProspects(response.results);
         setTotalCount(response.count || 0);
         setTotalPages(Math.ceil((response.count || 0) / pageSize));
       } else if (response.data) {
+        console.log('Using data format - data length:', response.data.length);
         setProspects(response.data);
         // Extract pagination info from response
         if (response.pagination) {
@@ -105,11 +128,13 @@ export default function Prospects() {
           setTotalPages(Math.ceil(response.data.length / pageSize));
         }
       } else if (Array.isArray(response)) {
+        console.log('Using array format - length:', response.length);
         setProspects(response);
         setTotalCount(response.length);
         setTotalPages(Math.ceil(response.length / pageSize));
       }
     } catch (err) {
+      console.error('Error fetching prospects:', err);
       setError(err.message || "Failed to fetch prospects");
     } finally {
       setLoading(false);
@@ -140,7 +165,17 @@ export default function Prospects() {
       setCurrentPage(1);
       setSearchTerm("");
     } catch (err) {
-      showError(err.message || "Failed to create prospect");
+      console.error('Create prospect error:', err);
+      // Try to parse field-level validation errors
+      const errorMessage = err.message || "Failed to create prospect";
+      const fieldErrors = parseValidationErrors(errorMessage);
+      
+      if (Object.keys(fieldErrors).length > 0) {
+        setFormErrors(fieldErrors);
+        showError("Please fix the validation errors");
+      } else {
+        showError(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -211,7 +246,17 @@ export default function Prospects() {
       setEditingProspect(null);
       fetchProspects();
     } catch (err) {
-      showError(err.message || "Failed to update prospect");
+      console.error('Update prospect error:', err);
+      // Try to parse field-level validation errors
+      const errorMessage = err.message || "Failed to update prospect";
+      const fieldErrors = parseValidationErrors(errorMessage);
+      
+      if (Object.keys(fieldErrors).length > 0) {
+        setFormErrors(fieldErrors);
+        showError("Please fix the validation errors");
+      } else {
+        showError(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -314,8 +359,15 @@ export default function Prospects() {
                     value={formData.name}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-4 py-2 rounded-lg border focus:outline-none"
+                    className={`w-full px-4 py-2 rounded-lg border focus:outline-none ${
+                      formErrors.name
+                        ? "border-red-500 bg-red-50"
+                        : "border-gray-300"
+                    }`}
                   />
+                  {formErrors.name && (
+                    <p className="text-red-500 text-sm mt-1">{formErrors.name}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">
@@ -326,8 +378,15 @@ export default function Prospects() {
                     name="company_name"
                     value={formData.company_name}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 rounded-lg border focus:outline-none"
+                    className={`w-full px-4 py-2 rounded-lg border focus:outline-none ${
+                      formErrors.company_name
+                        ? "border-red-500 bg-red-50"
+                        : "border-gray-300"
+                    }`}
                   />
+                  {formErrors.company_name && (
+                    <p className="text-red-500 text-sm mt-1">{formErrors.company_name}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">
@@ -338,8 +397,15 @@ export default function Prospects() {
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 rounded-lg border focus:outline-none"
+                    className={`w-full px-4 py-2 rounded-lg border focus:outline-none ${
+                      formErrors.email
+                        ? "border-red-500 bg-red-50"
+                        : "border-gray-300"
+                    }`}
                   />
+                  {formErrors.email && (
+                    <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">
@@ -534,8 +600,15 @@ export default function Prospects() {
                     value={formData.name}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-4 py-2 rounded-lg border focus:outline-none"
+                    className={`w-full px-4 py-2 rounded-lg border focus:outline-none ${
+                      formErrors.name
+                        ? "border-red-500 bg-red-50"
+                        : "border-gray-300"
+                    }`}
                   />
+                  {formErrors.name && (
+                    <p className="text-red-500 text-sm mt-1">{formErrors.name}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">
@@ -546,8 +619,15 @@ export default function Prospects() {
                     name="company_name"
                     value={formData.company_name}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 rounded-lg border focus:outline-none"
+                    className={`w-full px-4 py-2 rounded-lg border focus:outline-none ${
+                      formErrors.company_name
+                        ? "border-red-500 bg-red-50"
+                        : "border-gray-300"
+                    }`}
                   />
+                  {formErrors.company_name && (
+                    <p className="text-red-500 text-sm mt-1">{formErrors.company_name}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">
@@ -558,8 +638,15 @@ export default function Prospects() {
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 rounded-lg border focus:outline-none"
+                    className={`w-full px-4 py-2 rounded-lg border focus:outline-none ${
+                      formErrors.email
+                        ? "border-red-500 bg-red-50"
+                        : "border-gray-300"
+                    }`}
                   />
+                  {formErrors.email && (
+                    <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">
