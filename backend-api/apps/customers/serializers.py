@@ -43,9 +43,23 @@ class ProspectAttachmentSerializer(serializers.ModelSerializer):
 
 
 class CustomerSerializer(serializers.ModelSerializer):
+    assigned_sales_person_details = serializers.SerializerMethodField()
+    
     class Meta:
         model = Customer
         fields = '__all__'
         read_only_fields = ['created_at', 'updated_at']
+    
+    def get_assigned_sales_person_details(self, obj):
+        if obj.assigned_sales_person:
+            return {
+                'id': obj.assigned_sales_person.id,
+                'username': getattr(obj.assigned_sales_person, 'username', ''),
+                'email': obj.assigned_sales_person.email,
+                'first_name': getattr(obj.assigned_sales_person, 'first_name', ''),
+                'last_name': getattr(obj.assigned_sales_person, 'last_name', ''),
+            }
+        return None
+
 
 

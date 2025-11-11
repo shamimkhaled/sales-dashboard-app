@@ -56,7 +56,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       permission: null // Dashboard is always visible to authenticated users
     },
     {
-      name: 'Data Entry',
+      name: 'Bill Entry',
       path: '/data-entry',
       icon: FileText,
       permission: 'bills:create' // Changed from bills:write to bills:create
