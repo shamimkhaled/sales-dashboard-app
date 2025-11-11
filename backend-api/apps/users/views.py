@@ -14,28 +14,11 @@ class MeView(APIView):
 
     def get(self, request):
         user = request.user
-<<<<<<< HEAD
-=======
-        
-        # Get user permissions
-        user_permissions = []
-        if user.is_superuser:
-            user_permissions = ['all']
-        elif hasattr(user, 'role') and user.role:
-            # Get permissions from role
-            user_permissions = list(user.role.permissions.values_list('codename', flat=True))
-        
->>>>>>> arman
         return Response({
             'id': user.id,
             'email': user.email,
             'username': user.username,
             'role': user.role.name if getattr(user, 'role', None) else None,
-<<<<<<< HEAD
-=======
-            'is_superuser': user.is_superuser,
-            'permissions': user_permissions,
->>>>>>> arman
         })
 
 
