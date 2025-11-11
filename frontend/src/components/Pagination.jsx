@@ -13,8 +13,8 @@ export default function Pagination({
   const { isDark } = useTheme();
 
   const pageSizeOptions = [10, 25, 50, 100];
-  const startRecord = (currentPage - 1) * pageSize + 1;
-  const endRecord = Math.min(currentPage * pageSize, totalCount);
+  const startRecord = totalCount === 0 ? 0 : Math.max(1, (currentPage - 1) * pageSize + 1);
+  const endRecord = totalCount === 0 ? 0 : Math.min(currentPage * pageSize, totalCount);
 
   return (
     <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 rounded-lg border transition-all duration-300 ${
