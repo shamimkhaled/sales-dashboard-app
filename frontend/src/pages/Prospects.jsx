@@ -40,6 +40,33 @@ export default function Prospects() {
   const [prospectToDelete, setProspectToDelete] = useState(null);
   const [showEditForm, setShowEditForm] = useState(false);
   const [editingProspect, setEditingProspect] = useState(null);
+  const [formErrors, setFormErrors] = useState({});
+
+  // Get today's date in YYYY-MM-DD format
+  const getTodayDate = () => {
+    const today = new Date();
+    return today.toISOString().split("T")[0];
+  };
+
+  // Validate phone number
+  const validatePhone = (phone) => {
+    if (!phone) return "";
+    const phoneRegex = /^[0-9\s\-\+\(\)]{10,}$/;
+    if (!phoneRegex.test(phone)) {
+      return "Phone must be at least 10 digits and contain only numbers, spaces, dashes, plus, or parentheses";
+    }
+    return "";
+  };
+
+  // Validate form
+  const validateForm = () => {
+    const errors = {};
+    if (formData.phone && validatePhone(formData.phone)) {
+      errors.phone = validatePhone(formData.phone);
+    }
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   useEffect(() => {
     fetchProspects();
@@ -80,6 +107,10 @@ export default function Prospects() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validateForm()) {
+      showError("Please fix the validation errors");
+      return;
+    }
     try {
       setLoading(true);
       await prospectService.createProspect({
@@ -88,8 +119,10 @@ export default function Prospects() {
       });
       showSuccess("Prospect created successfully");
       setFormData(initialForm);
+      setFormErrors({});
       setShowForm(false);
-      fetchProspects();
+      setCurrentPage(1);
+      setSearchTerm("");
     } catch (err) {
       showError(err.message || "Failed to create prospect");
     } finally {
@@ -145,6 +178,10 @@ export default function Prospects() {
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     if (!editingProspect) return;
+    if (!validateForm()) {
+      showError("Please fix the validation errors");
+      return;
+    }
     try {
       setLoading(true);
       await prospectService.updateProspect(editingProspect.id, {
@@ -153,6 +190,7 @@ export default function Prospects() {
       });
       showSuccess("Prospect updated successfully");
       setFormData(initialForm);
+      setFormErrors({});
       setShowEditForm(false);
       setEditingProspect(null);
       fetchProspects();
@@ -296,8 +334,15 @@ export default function Prospects() {
                     name="phone"
                     value={formData.phone}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 rounded-lg border focus:outline-none"
+                    className={`w-full px-4 py-2 rounded-lg border focus:outline-none ${
+                      formErrors.phone
+                        ? "border-red-500 bg-red-50"
+                        : "border-gray-300"
+                    }`}
                   />
+                  {formErrors.phone && (
+                    <p className="text-red-500 text-sm mt-1">{formErrors.phone}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">
@@ -356,6 +401,7 @@ export default function Prospects() {
                     name="follow_up_date"
                     value={formData.follow_up_date}
                     onChange={handleInputChange}
+                    min={getTodayDate()}
                     className="w-full px-4 py-2 rounded-lg border focus:outline-none"
                   />
                 </div>
@@ -508,8 +554,15 @@ export default function Prospects() {
                     name="phone"
                     value={formData.phone}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 rounded-lg border focus:outline-none"
+                    className={`w-full px-4 py-2 rounded-lg border focus:outline-none ${
+                      formErrors.phone
+                        ? "border-red-500 bg-red-50"
+                        : "border-gray-300"
+                    }`}
                   />
+                  {formErrors.phone && (
+                    <p className="text-red-500 text-sm mt-1">{formErrors.phone}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">
@@ -568,6 +621,7 @@ export default function Prospects() {
                     name="follow_up_date"
                     value={formData.follow_up_date}
                     onChange={handleInputChange}
+                    min={getTodayDate()}
                     className="w-full px-4 py-2 rounded-lg border focus:outline-none"
                   />
                 </div>

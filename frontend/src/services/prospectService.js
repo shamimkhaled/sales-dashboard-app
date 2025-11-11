@@ -19,6 +19,11 @@ export const prospectService = {
     return await api.post("/customers/prospects/", data);
   },
 
+  // Update a prospect by id
+  async updateProspect(id, data) {
+    return await api.put(`/customers/prospects/${id}/`, data);
+  },
+
   // Delete a prospect by id
   async deleteProspect(id) {
     return await api.delete(`/customers/prospects/${id}/`);
