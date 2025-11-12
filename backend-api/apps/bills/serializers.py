@@ -3,10 +3,26 @@ from .models import BillRecord
 
 
 class BillRecordSerializer(serializers.ModelSerializer):
+    # Include customer details in the response
+    customer_details = serializers.SerializerMethodField()
+    
     class Meta:
         model = BillRecord
         fields = '__all__'
         read_only_fields = ['created_at', 'updated_at']
+
+    def get_customer_details(self, obj):
+        """Return customer details including name and company info"""
+        if obj.customer:
+            return {
+                'id': obj.customer.id,
+                'name': obj.customer.name,
+                'company_name': obj.customer.company_name,
+                'email': obj.customer.email,
+                'phone': obj.customer.phone,
+                'address': obj.customer.address,
+            }
+        return None
 
     def validate(self, attrs):
         # Compute totals from components if not explicitly provided

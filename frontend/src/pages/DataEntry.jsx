@@ -101,9 +101,12 @@ export default function DataEntry() {
   const fetchCustomers = async () => {
     try {
       const response = await customerService.getAllCustomers();
-      // Ensure we always set an array
+      // Handle Django REST Framework paginated response
       if (Array.isArray(response)) {
         setCustomers(response);
+      } else if (response && Array.isArray(response.results)) {
+        // DRF paginated response format
+        setCustomers(response.results);
       } else if (response && Array.isArray(response.data)) {
         setCustomers(response.data);
       } else {
@@ -330,7 +333,7 @@ export default function DataEntry() {
 
   const getCustomerName = (customerId) => {
     const customer = customers.find(c => c.id === customerId);
-    return customer?.name_of_party || `Customer #${customerId}`;
+    return customer?.name || `Customer #${customerId}`;
   };
 
   const handlePageSizeChange = (newPageSize) => {
@@ -511,7 +514,7 @@ export default function DataEntry() {
                     <option value="">Select Customer</option>
                     {Array.isArray(customers) && customers.map(customer => (
                       <option key={customer.id} value={customer.id}>
-                        {customer.serial_number} - {customer.name_of_party}
+                        {customer.name} - {customer.company_name}
                       </option>
                     ))}
                   </select>
@@ -1100,7 +1103,7 @@ export default function DataEntry() {
                     }`}>S/L</th>
                     <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
                       isDark ? 'text-silver-300' : 'text-gray-700'
-                    }`}>Name Of Party</th>
+                    }`}>Customer Name</th>
                     <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
                       isDark ? 'text-silver-300' : 'text-gray-700'
                     }`}>Address</th>
@@ -1109,7 +1112,7 @@ export default function DataEntry() {
                     }`}>Email</th>
                     <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
                       isDark ? 'text-silver-300' : 'text-gray-700'
-                    }`}>Proprietor</th>
+                    }`}>Company</th>
                     <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
                       isDark ? 'text-silver-300' : 'text-gray-700'
                     }`}>Phone</th>
@@ -1203,25 +1206,25 @@ export default function DataEntry() {
                     >
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
                         isDark ? 'text-silver-300' : 'text-gray-700'
-                      }`}>{bill.serial_number || index + 1}</td>
+                      }`}>{index + 1}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap ${
                         isDark ? 'text-gray-100' : 'text-gray-900'
-                      }`}>{bill.name_of_party}</td>
+                      }`}>{bill.customer_details?.name || 'N/A'}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
                         isDark ? 'text-silver-300' : 'text-gray-700'
-                      }`}>{bill.address || '-'}</td>
+                      }`}>{bill.customer_details?.address || '-'}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
                         isDark ? 'text-silver-300' : 'text-gray-700'
-                      }`}>{bill.email || '-'}</td>
+                      }`}>{bill.customer_details?.email || '-'}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
                         isDark ? 'text-silver-300' : 'text-gray-700'
-                      }`}>{bill.proprietor_name || '-'}</td>
+                      }`}>{bill.customer_details?.company_name || '-'}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
                         isDark ? 'text-silver-300' : 'text-gray-700'
-                      }`}>{bill.phone_number || '-'}</td>
+                      }`}>{bill.customer_details?.phone || '-'}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
                         isDark ? 'text-silver-300' : 'text-gray-700'
-                      }`}>{bill.link_id || '-'}</td>
+                      }`}>-</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
                         isDark ? 'text-silver-300' : 'text-gray-700'
                       }`}>{bill.nttn_com || '-'}</td>
@@ -1379,12 +1382,12 @@ export default function DataEntry() {
                     <h3 className={`text-lg font-semibold ${
                       isDark ? 'text-blue-400' : 'text-blue-600'
                     }`}>
-                      {bill.name_of_party}
+                      {bill.customer_details?.name || 'N/A'}
                     </h3>
                     <p className={`text-sm ${
                       isDark ? 'text-silver-400' : 'text-gray-600'
                     }`}>
-                      S/L: {bill.serial_number || '-'}
+                      Company: {bill.customer_details?.company_name || '-'}
                     </p>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
@@ -1403,14 +1406,14 @@ export default function DataEntry() {
                 {/* Card Body */}
                 <div className="space-y-3 mb-4">
                   {/* Contact Info */}
-                  {bill.phone_number && (
+                  {bill.customer_details?.phone && (
                     <div>
                       <p className={`text-xs font-medium ${
                         isDark ? 'text-silver-400' : 'text-gray-600'
                       }`}>Phone</p>
                       <p className={`text-sm ${
                         isDark ? 'text-silver-300' : 'text-gray-700'
-                      }`}>{bill.phone_number}</p>
+                      }`}>{bill.customer_details.phone}</p>
                     </div>
                   )}
 
