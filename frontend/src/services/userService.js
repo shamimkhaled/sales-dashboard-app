@@ -70,6 +70,16 @@ export const userService = {
     }
   },
 
+  // Get all roles from auth endpoint
+  async getAllRoles() {
+    try {
+      const response = await api.get('/auth/roles/');
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  },
+
   // Get user permissions
   async getUserPermissions(id) {
     try {
