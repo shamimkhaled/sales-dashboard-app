@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 // 'http://localhost:8000'
-VITE_API_URL = 'http://103.146.220.225:223';
+// VITE_API_URL = 'http://103.146.220.225:223';
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -9,7 +9,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: VITE_API_URL,
+        target: 'http://103.146.220.225:223',
         changeOrigin: true,
         secure: false,
       },
