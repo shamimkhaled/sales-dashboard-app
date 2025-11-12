@@ -234,9 +234,13 @@ export default function Customers() {
       const formDataToSend = new FormData();
       formDataToSend.append('file', file);
 
-      const response = await fetch('http://localhost:5000/api/upload/customers', {
+      const API_URL = import.meta.env.VITE_API_URL || '/api';
+      const response = await fetch(`${API_URL}/upload/customers`, {
         method: 'POST',
         body: formDataToSend,
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+        },
       });
 
       const data = await response.json();
@@ -260,7 +264,12 @@ export default function Customers() {
   const handleExport = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5000/api/upload/export/customers/excel');
+      const API_URL = import.meta.env.VITE_API_URL || '/api';
+      const response = await fetch(`${API_URL}/upload/export/customers/excel`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+        },
+      });
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');

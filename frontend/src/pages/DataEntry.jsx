@@ -272,9 +272,13 @@ export default function DataEntry() {
       const formDataToSend = new FormData();
       formDataToSend.append('file', file);
 
-      const response = await fetch('http://localhost:5000/api/upload/import', {
+      const API_URL = import.meta.env.VITE_API_URL || '/api';
+      const response = await fetch(`${API_URL}/upload/import`, {
         method: 'POST',
         body: formDataToSend,
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+        },
       });
 
       if (!response.ok) {
@@ -297,11 +301,16 @@ export default function DataEntry() {
   const handleExport = async () => {
     try {
       setLoading(true);
+      const API_URL = import.meta.env.VITE_API_URL || '/api';
       const endpoint = fileType === 'excel'
-        ? 'http://localhost:5000/api/upload/export/bills/excel'
-        : 'http://localhost:5000/api/upload/export/bills/csv';
+        ? `${API_URL}/upload/export/bills/excel`
+        : `${API_URL}/upload/export/bills/csv`;
 
-      const response = await fetch(endpoint);
+      const response = await fetch(endpoint, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+        },
+      });
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
