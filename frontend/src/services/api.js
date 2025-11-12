@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_URL = '/api';  // Use proxy in development, relative path in production
+// Use environment variable or fallback to relative path
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 const api = axios.create({
   baseURL: API_URL,

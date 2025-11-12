@@ -52,8 +52,7 @@ services:
       dockerfile: Dockerfile
     container_name: sales-dashboard-frontend
     environment:
-      VITE_API_URL: http://172.31.82.254/api
-      VITE_APP_NAME: Sales Dashboard
+      VITE_API_URL: /api
     ports:
       - "3000:80"
     depends_on:
