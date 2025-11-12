@@ -39,6 +39,7 @@ api.interceptors.response.use(
       // Server responded with error status
       const data = error.response.data;
       let message = 'Server error';
+      const validationErrors = {};
       
       // Try to extract detailed error message
       if (data?.error) {
@@ -55,13 +56,22 @@ api.interceptors.response.use(
           message = Object.entries(data.errors)
             .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
             .join('; ');
+          // Store field-specific errors
+          Object.keys(data.errors).forEach(key => {
+            validationErrors[key] = Array.isArray(data.errors[key])
+              ? data.errors[key][0]
+              : data.errors[key];
+          });
         }
       }
       
       // Include status code for debugging
       const statusCode = error.response.status;
       const fullMessage = `${message} (${statusCode})`;
-      throw new Error(fullMessage);
+      const err = new Error(fullMessage);
+      err.validationErrors = validationErrors;
+      err.statusCode = statusCode;
+      throw err;
     } else if (error.request) {
       // Request was made but no response received
       throw new Error('Network error - please check your connection');

@@ -27,6 +27,7 @@ export default function DataEntry() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [validationErrors, setValidationErrors] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
   const [bills, setBills] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -39,7 +40,7 @@ export default function DataEntry() {
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(100);
+  const [pageSize, setPageSize] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
@@ -72,8 +73,11 @@ export default function DataEntry() {
 
   useEffect(() => {
     fetchBills();
-    fetchCustomers();
   }, [currentPage, pageSize, searchTerm]);
+
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
 
   const fetchBills = async () => {
     try {
@@ -84,12 +88,26 @@ export default function DataEntry() {
         search: searchTerm
       });
       
-      if (response.data) {
+      // Handle Django REST Framework paginated response
+      if (Array.isArray(response)) {
+        setBills(response);
+      } else if (response && Array.isArray(response.results)) {
+        // DRF paginated response format: {count, next, previous, results}
+        setBills(response.results);
+        if (response.count !== undefined) {
+          setTotalCount(response.count);
+          const pages = Math.ceil(response.count / pageSize);
+          setTotalPages(pages);
+        }
+      } else if (response && Array.isArray(response.data)) {
         setBills(response.data);
         if (response.pagination) {
           setTotalCount(response.pagination.totalCount);
           setTotalPages(response.pagination.totalPages);
         }
+      } else {
+        setBills([]);
+        console.warn('Unexpected bills response format:', response);
       }
     } catch (err) {
       setError(err.message || 'Failed to fetch bills');
@@ -101,9 +119,12 @@ export default function DataEntry() {
   const fetchCustomers = async () => {
     try {
       const response = await customerService.getAllCustomers();
-      // Ensure we always set an array
+      // Handle Django REST Framework paginated response
       if (Array.isArray(response)) {
         setCustomers(response);
+      } else if (response && Array.isArray(response.results)) {
+        // DRF paginated response format
+        setCustomers(response.results);
       } else if (response && Array.isArray(response.data)) {
         setCustomers(response.data);
       } else {
@@ -128,33 +149,35 @@ export default function DataEntry() {
     e.preventDefault();
     try {
       setLoading(true);
+      setValidationErrors({});
+      setError(null);
       
       // Filter out only the bill-specific fields (exclude customer fields from joins)
       const billData = {
-        customer_id: formData.customer_id,
-        nttn_cap: formData.nttn_cap,
-        nttn_com: formData.nttn_com,
-        active_date: formData.active_date,
-        billing_date: formData.billing_date,
-        termination_date: formData.termination_date,
-        iig_qt: formData.iig_qt,
-        iig_qt_price: formData.iig_qt_price,
-        fna: formData.fna,
-        fna_price: formData.fna_price,
-        ggc: formData.ggc,
-        ggc_price: formData.ggc_price,
-        cdn: formData.cdn,
-        cdn_price: formData.cdn_price,
-        bdix: formData.bdix,
-        bdix_price: formData.bdix_price,
-        baishan: formData.baishan,
-        baishan_price: formData.baishan_price,
-        total_bill: formData.total_bill,
-        total_received: formData.total_received,
-        total_due: formData.total_due,
-        discount: formData.discount,
-        remarks: formData.remarks,
-        status: formData.status,
+        customer: parseInt(formData.customer_id) || null,
+        nttn_cap: formData.nttn_cap || '',
+        nttn_com: formData.nttn_com || '',
+        active_date: formData.active_date || null,
+        billing_date: formData.billing_date || null,
+        termination_date: formData.termination_date || null,
+        iig_qt: parseFloat(formData.iig_qt) || 0,
+        iig_qt_price: parseFloat(formData.iig_qt_price) || 0,
+        fna: parseFloat(formData.fna) || 0,
+        fna_price: parseFloat(formData.fna_price) || 0,
+        ggc: parseFloat(formData.ggc) || 0,
+        ggc_price: parseFloat(formData.ggc_price) || 0,
+        cdn: parseFloat(formData.cdn) || 0,
+        cdn_price: parseFloat(formData.cdn_price) || 0,
+        bdix: parseFloat(formData.bdix) || 0,
+        bdix_price: parseFloat(formData.bdix_price) || 0,
+        baishan: parseFloat(formData.baishan) || 0,
+        baishan_price: parseFloat(formData.baishan_price) || 0,
+        total_bill: parseFloat(formData.total_bill) || 0,
+        total_received: parseFloat(formData.total_received) || 0,
+        total_due: parseFloat(formData.total_due) || 0,
+        discount: parseFloat(formData.discount) || 0,
+        remarks: formData.remarks || '',
+        status: formData.status || 'Active',
       };
       
       if (editingId) {
@@ -168,7 +191,18 @@ export default function DataEntry() {
       setCurrentPage(1);
       fetchBills();
     } catch (err) {
-      showError(err.message || 'Failed to save bill');
+      console.error('Submit error:', err);
+      
+      let errorMessage = err.message || 'Failed to save bill';
+      
+      // Check if we have validation errors from the API
+      if (err.validationErrors && Object.keys(err.validationErrors).length > 0) {
+        setValidationErrors(err.validationErrors);
+        errorMessage = 'Please fix the validation errors below';
+        showError(errorMessage);
+      } else {
+        setError(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -330,12 +364,64 @@ export default function DataEntry() {
 
   const getCustomerName = (customerId) => {
     const customer = customers.find(c => c.id === customerId);
-    return customer?.name_of_party || `Customer #${customerId}`;
+    return customer?.name || `Customer #${customerId}`;
+  };
+
+  const getCustomerDetails = (bill) => {
+    // If customer_details is already populated from backend, use it
+    if (bill.customer_details) {
+      return bill.customer_details;
+    }
+    
+    // Fallback: find customer from customers array using customer_id
+    const customerId = bill.customer || bill.customer_id;
+    if (customerId) {
+      const customer = customers.find(c => c.id === customerId);
+      if (customer) {
+        return {
+          id: customer.id,
+          name: customer.name,
+          company_name: customer.company_name,
+          email: customer.email,
+          phone: customer.phone,
+          address: customer.address,
+        };
+      }
+    }
+    
+    // Return empty object if no customer found
+    return {
+      name: 'N/A',
+      company_name: '-',
+      email: '-',
+      phone: '-',
+      address: '-',
+    };
   };
 
   const handlePageSizeChange = (newPageSize) => {
     setPageSize(newPageSize);
     setCurrentPage(1); // Reset to first page when changing page size
+  };
+
+  const getFieldClassName = (fieldName) => {
+    const hasError = validationErrors[fieldName];
+    return `w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+      hasError
+        ? isDark
+          ? 'bg-dark-700 border-red-500 text-white focus:border-red-500'
+          : 'bg-white border-red-500 text-dark-900 focus:border-red-500'
+        : isDark
+        ? 'bg-dark-700 border-dark-600 text-white focus:border-gold-500'
+        : 'bg-white border-gold-200 text-dark-900 focus:border-gold-500'
+    } focus:outline-none`;
+  };
+
+  const renderFieldError = (fieldName) => {
+    if (validationErrors[fieldName]) {
+      return <p className="text-red-500 text-xs mt-1">{validationErrors[fieldName]}</p>;
+    }
+    return null;
   };
 
   const containerVariants = {
@@ -503,7 +589,11 @@ export default function DataEntry() {
                     onChange={handleInputChange}
                     required
                     className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                      isDark
+                      validationErrors.customer_id
+                        ? isDark
+                          ? 'bg-dark-700 border-red-500 text-white focus:border-red-500'
+                          : 'bg-white border-red-500 text-dark-900 focus:border-red-500'
+                        : isDark
                         ? 'bg-dark-700 border-dark-600 text-white focus:border-gold-500'
                         : 'bg-white border-gold-200 text-dark-900 focus:border-gold-500'
                     } focus:outline-none`}
@@ -511,10 +601,13 @@ export default function DataEntry() {
                     <option value="">Select Customer</option>
                     {Array.isArray(customers) && customers.map(customer => (
                       <option key={customer.id} value={customer.id}>
-                        {customer.serial_number} - {customer.name_of_party}
+                        {customer.name} - {customer.company_name}
                       </option>
                     ))}
                   </select>
+                  {validationErrors.customer_id && (
+                    <p className="text-red-500 text-xs mt-1">{validationErrors.customer_id}</p>
+                  )}
                 </div>
 
                 {/* NTTN Fields */}
@@ -529,12 +622,9 @@ export default function DataEntry() {
                     name="nttn_cap"
                     value={formData.nttn_cap}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                      isDark
-                        ? 'bg-dark-700 border-dark-600 text-white focus:border-gold-500'
-                        : 'bg-white border-gold-200 text-dark-900 focus:border-gold-500'
-                    } focus:outline-none`}
+                    className={getFieldClassName('nttn_cap')}
                   />
+                  {renderFieldError('nttn_cap')}
                 </div>
 
                 <div>
@@ -548,12 +638,9 @@ export default function DataEntry() {
                     name="nttn_com"
                     value={formData.nttn_com}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                      isDark
-                        ? 'bg-dark-700 border-dark-600 text-white focus:border-gold-500'
-                        : 'bg-white border-gold-200 text-dark-900 focus:border-gold-500'
-                    } focus:outline-none`}
+                    className={getFieldClassName('nttn_com')}
                   />
+                  {renderFieldError('nttn_com')}
                 </div>
 
                 {/* Date Fields */}
@@ -1100,7 +1187,7 @@ export default function DataEntry() {
                     }`}>S/L</th>
                     <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
                       isDark ? 'text-silver-300' : 'text-gray-700'
-                    }`}>Name Of Party</th>
+                    }`}>Customer Name</th>
                     <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
                       isDark ? 'text-silver-300' : 'text-gray-700'
                     }`}>Address</th>
@@ -1109,7 +1196,7 @@ export default function DataEntry() {
                     }`}>Email</th>
                     <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
                       isDark ? 'text-silver-300' : 'text-gray-700'
-                    }`}>Proprietor</th>
+                    }`}>Company</th>
                     <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
                       isDark ? 'text-silver-300' : 'text-gray-700'
                     }`}>Phone</th>
@@ -1203,25 +1290,25 @@ export default function DataEntry() {
                     >
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
                         isDark ? 'text-silver-300' : 'text-gray-700'
-                      }`}>{bill.serial_number || index + 1}</td>
+                      }`}>{index + 1}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap ${
                         isDark ? 'text-gray-100' : 'text-gray-900'
-                      }`}>{bill.name_of_party}</td>
+                      }`}>{getCustomerDetails(bill).name}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
                         isDark ? 'text-silver-300' : 'text-gray-700'
-                      }`}>{bill.address || '-'}</td>
+                      }`}>{getCustomerDetails(bill).address}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
                         isDark ? 'text-silver-300' : 'text-gray-700'
-                      }`}>{bill.email || '-'}</td>
+                      }`}>{getCustomerDetails(bill).email}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
                         isDark ? 'text-silver-300' : 'text-gray-700'
-                      }`}>{bill.proprietor_name || '-'}</td>
+                      }`}>{getCustomerDetails(bill).company_name}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
                         isDark ? 'text-silver-300' : 'text-gray-700'
-                      }`}>{bill.phone_number || '-'}</td>
+                      }`}>{getCustomerDetails(bill).phone}</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
                         isDark ? 'text-silver-300' : 'text-gray-700'
-                      }`}>{bill.link_id || '-'}</td>
+                      }`}>-</td>
                       <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
                         isDark ? 'text-silver-300' : 'text-gray-700'
                       }`}>{bill.nttn_com || '-'}</td>
@@ -1379,12 +1466,12 @@ export default function DataEntry() {
                     <h3 className={`text-lg font-semibold ${
                       isDark ? 'text-blue-400' : 'text-blue-600'
                     }`}>
-                      {bill.name_of_party}
+                      {getCustomerDetails(bill).name}
                     </h3>
                     <p className={`text-sm ${
                       isDark ? 'text-silver-400' : 'text-gray-600'
                     }`}>
-                      S/L: {bill.serial_number || '-'}
+                      Company: {getCustomerDetails(bill).company_name}
                     </p>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
@@ -1403,14 +1490,14 @@ export default function DataEntry() {
                 {/* Card Body */}
                 <div className="space-y-3 mb-4">
                   {/* Contact Info */}
-                  {bill.phone_number && (
+                  {getCustomerDetails(bill).phone && getCustomerDetails(bill).phone !== '-' && (
                     <div>
                       <p className={`text-xs font-medium ${
                         isDark ? 'text-silver-400' : 'text-gray-600'
                       }`}>Phone</p>
                       <p className={`text-sm ${
                         isDark ? 'text-silver-300' : 'text-gray-700'
-                      }`}>{bill.phone_number}</p>
+                      }`}>{getCustomerDetails(bill).phone}</p>
                     </div>
                   )}
 
@@ -1624,7 +1711,7 @@ export default function DataEntry() {
                 <p className={`text-center mb-6 ${
                   isDark ? 'text-silver-400' : 'text-gray-600'
                 }`}>
-                  Are you sure you want to delete the bill record for <span className="font-semibold text-red-500">"{billToDelete?.name_of_party}"</span>? This action cannot be undone.
+                  Are you sure you want to delete the bill record for <span className="font-semibold text-red-500">"{billToDelete ? getCustomerDetails(billToDelete).name : 'Unknown'}"</span>? This action cannot be undone.
                 </p>
 
                 {/* Buttons */}
