@@ -1,40 +1,37 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users as UsersIcon, Search, Edit2, Trash2, Plus, X } from "lucide-react";
+import { Shield, Search, Edit2, Trash2, Plus, X } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import { useNotification } from "../context/NotificationContext";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorAlert from "../components/ErrorAlert";
 import Pagination from "../components/Pagination";
-import { userService } from "../services/userService";
+import { roleService } from "../services/roleService";
 
 const initialForm = {
-  username: "",
-  email: "",
-  password: "",
-  first_name: "",
-  last_name: "",
-  role: "",
+  name: "",
+  description: "",
+  permissions: [],
   is_active: true,
 };
 
-export default function Users() {
+export default function Roles() {
   const { isDark } = useTheme();
   const { showError, showSuccess } = useNotification();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
+  const [permissions, setPermissions] = useState([]);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState(initialForm);
   const [showEditForm, setShowEditForm] = useState(false);
-  const [editingUser, setEditingUser] = useState(null);
+  const [editingRole, setEditingRole] = useState(null);
   const [formErrors, setFormErrors] = useState({});
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [userToDelete, setUserToDelete] = useState(null);
+  const [roleToDelete, setRoleToDelete] = useState(null);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -43,72 +40,82 @@ export default function Users() {
   const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
-    fetchUsers();
     fetchRoles();
+    fetchPermissions();
   }, [currentPage, pageSize, searchTerm]);
 
-  const fetchRoles = async () => {
+  const fetchPermissions = async () => {
     try {
-      const response = await userService.getAllRoles();
+      const response = await roleService.getPermissions();
       // Handle different response formats
       if (Array.isArray(response)) {
-        setRoles(response);
+        setPermissions(response);
       } else if (response?.data && Array.isArray(response.data)) {
-        setRoles(response.data);
+        setPermissions(response.data);
       } else if (response?.results && Array.isArray(response.results)) {
-        setRoles(response.results);
+        setPermissions(response.results);
       } else {
-        setRoles([]);
+        setPermissions([]);
       }
     } catch (err) {
-      console.error("Error fetching roles:", err);
-      // Don't show error notification for roles, just log it
+      console.error("Error fetching permissions:", err);
+      setPermissions([]);
     }
   };
 
-  const getRoleName = (roleId) => {
-    if (!roleId) return "-";
-    const role = roles.find((r) => r.id === roleId || r.id === parseInt(roleId, 10));
-    return role ? role.name : roleId;
+  const getPermissionName = (permissionId) => {
+    if (!permissionId) return permissionId;
+    const permission = permissions.find((p) => p.id === permissionId || p.id === parseInt(permissionId, 10));
+    return permission ? permission.name : permissionId;
   };
 
-  const fetchUsers = async () => {
+  const fetchRoles = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await userService.getUsers({
+      const response = await roleService.getRoles({
         page: currentPage,
         pageSize,
         search: searchTerm || undefined,
       });
 
 
-      // The API returns an object like { data: [...], pagination: {...} }
-      if (response?.data) {
-        setUsers(response.data);
-      } else if (Array.isArray(response)) {
-        // Fallback if API returns array directly
-        setUsers(response);
-      } else if (response) {
-        // Some APIs may return {results: [...]} or similar
-        if (Array.isArray(response.results)) setUsers(response.results);
-        else setUsers([]);
+      // Handle different API response formats
+      if (Array.isArray(response)) {
+        // API returns array directly
+        setRoles(response);
+      } else if (response?.data && Array.isArray(response.data)) {
+        // API returns { data: [...] }
+        setRoles(response.data);
+      } else if (response?.data?.results && Array.isArray(response.data.results)) {
+        // API returns { data: { results: [...] } }
+        setRoles(response.data.results);
+      } else if (response?.results && Array.isArray(response.results)) {
+        // API returns { results: [...] }
+        setRoles(response.results);
+      } else {
+        // Fallback
+        setRoles([]);
       }
 
+      // Handle pagination data
+      let paginationData = null;
       if (response?.pagination) {
-        setTotalCount(response.pagination.totalCount || 0);
-        setTotalPages(response.pagination.totalPages || 0);
+        paginationData = response.pagination;
+      } else if (response?.data?.pagination) {
+        paginationData = response.data.pagination;
+      }
+
+      if (paginationData) {
+        setTotalCount(paginationData.totalCount || paginationData.count || 0);
+        setTotalPages(paginationData.totalPages || 0);
       } else {
-        // Fallback: compute from totalCount if provided or from array
-        setTotalCount(
-          response?.totalCount ||
-            (Array.isArray(response)
-              ? response.length
-              : response?.data?.length || 0)
-        );
+        // Fallback: use count from response or compute from array length
+        const count = response?.count || response?.totalCount || response?.data?.count || response?.data?.totalCount || roles.length;
+        setTotalCount(count);
       }
     } catch (err) {
-      const msg = err?.message || "Failed to fetch users";
+      const msg = err?.message || "Failed to fetch roles";
       setError(msg);
       showError(msg);
     } finally {
@@ -124,29 +131,30 @@ export default function Users() {
     }));
   };
 
+  const handlePermissionChange = (permissionId) => {
+    setFormData((prev) => {
+      const permissions = prev.permissions || [];
+      if (permissions.includes(permissionId)) {
+        return {
+          ...prev,
+          permissions: permissions.filter((p) => p !== permissionId),
+        };
+      } else {
+        return {
+          ...prev,
+          permissions: [...permissions, permissionId],
+        };
+      }
+    });
+  };
+
   const validateForm = () => {
     const errors = {};
-    if (!formData.username || formData.username.trim() === "") {
-      errors.username = "Username is required";
+    if (!formData.name || formData.name.trim() === "") {
+      errors.name = "Role name is required";
     }
-    if (!formData.email || formData.email.trim() === "") {
-      errors.email = "Email is required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = "Please enter a valid email address";
-    }
-    if (!formData.password && !editingUser) {
-      errors.password = "Password is required";
-    } else if (formData.password && formData.password.length < 6) {
-      errors.password = "Password must be at least 6 characters";
-    }
-    if (!formData.first_name || formData.first_name.trim() === "") {
-      errors.first_name = "First name is required";
-    }
-    if (!formData.last_name || formData.last_name.trim() === "") {
-      errors.last_name = "Last name is required";
-    }
-    if (!formData.role) {
-      errors.role = "Role is required";
+    if (!formData.description || formData.description.trim() === "") {
+      errors.description = "Description is required";
     }
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -161,42 +169,41 @@ export default function Users() {
     try {
       setLoading(true);
       const submitData = {
-        ...formData,
-        role: parseInt(formData.role, 10),
+        name: formData.name,
+        description: formData.description,
+        permissions: formData.permissions || [],
+        is_active: formData.is_active,
       };
-      await userService.createUser(submitData);
-      showSuccess("User created successfully");
+      await roleService.createRole(submitData);
+      showSuccess("Role created successfully");
       setFormData(initialForm);
       setFormErrors({});
       setShowForm(false);
       setCurrentPage(1);
       setSearchTerm("");
-      fetchUsers();
+      fetchRoles();
     } catch (err) {
-      console.error("Create user error:", err);
-      showError(err.message || "Failed to create user");
+      console.error("Create role error:", err);
+      showError(err.message || "Failed to create role");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleEditClick = (user) => {
-    setEditingUser(user);
+  const handleEditClick = (role) => {
+    setEditingRole(role);
     setFormData({
-      username: user.username || "",
-      email: user.email || "",
-      password: "",
-      first_name: user.first_name || "",
-      last_name: user.last_name || "",
-      role: user.role || "",
-      is_active: user.is_active !== false,
+      name: role.name || "",
+      description: role.description || "",
+      permissions: role.permissions || [],
+      is_active: role.is_active !== false,
     });
     setShowEditForm(true);
   };
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
-    if (!editingUser) return;
+    if (!editingRole) return;
     if (!validateForm()) {
       showError("Please fix the validation errors");
       return;
@@ -204,19 +211,21 @@ export default function Users() {
     try {
       setLoading(true);
       const submitData = {
-        ...formData,
-        role: parseInt(formData.role, 10),
+        name: formData.name,
+        description: formData.description,
+        permissions: formData.permissions || [],
+        is_active: formData.is_active,
       };
-      await userService.updateUser(editingUser.id, submitData);
-      showSuccess("User updated successfully");
+      await roleService.updateRole(editingRole.id, submitData);
+      showSuccess("Role updated successfully");
       setFormData(initialForm);
       setFormErrors({});
       setShowEditForm(false);
-      setEditingUser(null);
-      fetchUsers();
+      setEditingRole(null);
+      fetchRoles();
     } catch (err) {
-      console.error("Update user error:", err);
-      showError(err.message || "Failed to update user");
+      console.error("Update role error:", err);
+      showError(err.message || "Failed to update role");
     } finally {
       setLoading(false);
     }
@@ -224,27 +233,27 @@ export default function Users() {
 
   const handleEditCancel = () => {
     setShowEditForm(false);
-    setEditingUser(null);
+    setEditingRole(null);
     setFormData(initialForm);
     setFormErrors({});
   };
 
-  const handleDeleteClick = (user) => {
-    setUserToDelete(user);
+  const handleDeleteClick = (role) => {
+    setRoleToDelete(role);
     setShowDeleteModal(true);
   };
 
   const handleDeleteConfirm = async () => {
-    if (!userToDelete) return;
+    if (!roleToDelete) return;
     try {
       setLoading(true);
-      await userService.deleteUser(userToDelete.id);
-      showSuccess("User deleted successfully");
+      await roleService.deleteRole(roleToDelete.id);
+      showSuccess("Role deleted successfully");
       setShowDeleteModal(false);
-      setUserToDelete(null);
-      fetchUsers();
+      setRoleToDelete(null);
+      fetchRoles();
     } catch (err) {
-      showError(err.message || "Failed to delete user");
+      showError(err.message || "Failed to delete role");
     } finally {
       setLoading(false);
     }
@@ -252,10 +261,10 @@ export default function Users() {
 
   const handleDeleteCancel = () => {
     setShowDeleteModal(false);
-    setUserToDelete(null);
+    setRoleToDelete(null);
   };
 
-  if (loading && users.length === 0) return <LoadingSpinner />;
+  if (loading && roles.length === 0) return <LoadingSpinner />;
 
   return (
     <div
@@ -279,14 +288,14 @@ export default function Users() {
                   isDark ? "text-white" : "text-dark-900"
                 }`}
               >
-                User Management
+                Role Management
               </h1>
               <p
                 className={`mt-2 ${
                   isDark ? "text-silver-400" : "text-gray-600"
                 }`}
               >
-                View and manage application users
+                View and manage application roles
               </p>
             </div>
             <motion.button
@@ -296,7 +305,7 @@ export default function Users() {
               className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl"
             >
               <Plus size={20} />
-              <span>New User</span>
+              <span>New Role</span>
             </motion.button>
           </div>
         </div>
@@ -324,7 +333,7 @@ export default function Users() {
                     isDark ? "text-white" : "text-dark-900"
                   }`}
                 >
-                  New User
+                  New Role
                 </h2>
                 <button
                   onClick={() => setShowForm(false)}
@@ -342,117 +351,39 @@ export default function Users() {
                 className="grid grid-cols-1 md:grid-cols-2 gap-6"
               >
                 <div>
-                  <label className="block text-sm font-medium mb-2">Username</label>
+                  <label className="block text-sm font-medium mb-2">Role Name</label>
                   <input
                     type="text"
-                    name="username"
-                    value={formData.username}
+                    name="name"
+                    value={formData.name}
                     onChange={handleInputChange}
                     required
                     className={`w-full px-4 py-2 rounded-lg border focus:outline-none ${
-                      formErrors.username
+                      formErrors.name
                         ? "border-red-500 bg-red-50"
                         : "border-gray-300"
                     }`}
                   />
-                  {formErrors.username && (
-                    <p className="text-red-500 text-sm mt-1">{formErrors.username}</p>
+                  {formErrors.name && (
+                    <p className="text-red-500 text-sm mt-1">{formErrors.name}</p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">Email</label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    required
-                    className={`w-full px-4 py-2 rounded-lg border focus:outline-none ${
-                      formErrors.email
-                        ? "border-red-500 bg-red-50"
-                        : "border-gray-300"
-                    }`}
-                  />
-                  {formErrors.email && (
-                    <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Password</label>
-                  <input
-                    type="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    required
-                    className={`w-full px-4 py-2 rounded-lg border focus:outline-none ${
-                      formErrors.password
-                        ? "border-red-500 bg-red-50"
-                        : "border-gray-300"
-                    }`}
-                  />
-                  {formErrors.password && (
-                    <p className="text-red-500 text-sm mt-1">{formErrors.password}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">First Name</label>
+                  <label className="block text-sm font-medium mb-2">Description</label>
                   <input
                     type="text"
-                    name="first_name"
-                    value={formData.first_name}
+                    name="description"
+                    value={formData.description}
                     onChange={handleInputChange}
                     required
                     className={`w-full px-4 py-2 rounded-lg border focus:outline-none ${
-                      formErrors.first_name
+                      formErrors.description
                         ? "border-red-500 bg-red-50"
                         : "border-gray-300"
                     }`}
                   />
-                  {formErrors.first_name && (
-                    <p className="text-red-500 text-sm mt-1">{formErrors.first_name}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Last Name</label>
-                  <input
-                    type="text"
-                    name="last_name"
-                    value={formData.last_name}
-                    onChange={handleInputChange}
-                    required
-                    className={`w-full px-4 py-2 rounded-lg border focus:outline-none ${
-                      formErrors.last_name
-                        ? "border-red-500 bg-red-50"
-                        : "border-gray-300"
-                    }`}
-                  />
-                  {formErrors.last_name && (
-                    <p className="text-red-500 text-sm mt-1">{formErrors.last_name}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Role</label>
-                  <select
-                    name="role"
-                    value={formData.role}
-                    onChange={handleInputChange}
-                    required
-                    className={`w-full px-4 py-2 rounded-lg border focus:outline-none ${
-                      formErrors.role
-                        ? "border-red-500 bg-red-50"
-                        : "border-gray-300"
-                    }`}
-                  >
-                    <option value="">Select a role</option>
-                    {roles.map((role) => (
-                      <option key={role.id || role.name} value={role.id}>
-                        {role.name || role}
-                      </option>
-                    ))}
-                  </select>
-                  {formErrors.role && (
-                    <p className="text-red-500 text-sm mt-1">{formErrors.role}</p>
+                  {formErrors.description && (
+                    <p className="text-red-500 text-sm mt-1">{formErrors.description}</p>
                   )}
                 </div>
                 <div>
@@ -467,6 +398,22 @@ export default function Users() {
                     <span className="text-sm font-medium">Active</span>
                   </label>
                 </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium mb-2">Permissions</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-40 overflow-y-auto border border-gray-300 rounded-lg p-3">
+                    {permissions.map((permission) => (
+                      <label key={permission.id || permission.name} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={formData.permissions?.includes(permission.id || permission.name) || false}
+                          onChange={() => handlePermissionChange(permission.id || permission.name)}
+                          className="w-4 h-4 rounded"
+                        />
+                        <span className="text-sm">{permission.name || permission}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
                 <div className="md:col-span-2 flex gap-3">
                   <motion.button
                     whileHover={{ scale: 1.05 }}
@@ -475,7 +422,7 @@ export default function Users() {
                     disabled={loading}
                     className="flex-1 px-6 py-2 rounded-lg font-medium bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 disabled:opacity-50"
                   >
-                    {loading ? "Saving..." : "Create User"}
+                    {loading ? "Saving..." : "Create Role"}
                   </motion.button>
                   <motion.button
                     whileHover={{ scale: 1.05 }}
@@ -515,7 +462,7 @@ export default function Users() {
                     isDark ? "text-white" : "text-dark-900"
                   }`}
                 >
-                  Edit User
+                  Edit Role
                 </h2>
                 <button
                   onClick={handleEditCancel}
@@ -533,109 +480,39 @@ export default function Users() {
                 className="grid grid-cols-1 md:grid-cols-2 gap-6"
               >
                 <div>
-                  <label className="block text-sm font-medium mb-2">Username</label>
+                  <label className="block text-sm font-medium mb-2">Role Name</label>
                   <input
                     type="text"
-                    name="username"
-                    value={formData.username}
+                    name="name"
+                    value={formData.name}
                     onChange={handleInputChange}
                     required
                     className={`w-full px-4 py-2 rounded-lg border focus:outline-none ${
-                      formErrors.username
+                      formErrors.name
                         ? "border-red-500 bg-red-50"
                         : "border-gray-300"
                     }`}
                   />
-                  {formErrors.username && (
-                    <p className="text-red-500 text-sm mt-1">{formErrors.username}</p>
+                  {formErrors.name && (
+                    <p className="text-red-500 text-sm mt-1">{formErrors.name}</p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">Email</label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    required
-                    className={`w-full px-4 py-2 rounded-lg border focus:outline-none ${
-                      formErrors.email
-                        ? "border-red-500 bg-red-50"
-                        : "border-gray-300"
-                    }`}
-                  />
-                  {formErrors.email && (
-                    <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Password (leave blank to keep current)</label>
-                  <input
-                    type="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 rounded-lg border focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">First Name</label>
+                  <label className="block text-sm font-medium mb-2">Description</label>
                   <input
                     type="text"
-                    name="first_name"
-                    value={formData.first_name}
+                    name="description"
+                    value={formData.description}
                     onChange={handleInputChange}
                     required
                     className={`w-full px-4 py-2 rounded-lg border focus:outline-none ${
-                      formErrors.first_name
+                      formErrors.description
                         ? "border-red-500 bg-red-50"
                         : "border-gray-300"
                     }`}
                   />
-                  {formErrors.first_name && (
-                    <p className="text-red-500 text-sm mt-1">{formErrors.first_name}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Last Name</label>
-                  <input
-                    type="text"
-                    name="last_name"
-                    value={formData.last_name}
-                    onChange={handleInputChange}
-                    required
-                    className={`w-full px-4 py-2 rounded-lg border focus:outline-none ${
-                      formErrors.last_name
-                        ? "border-red-500 bg-red-50"
-                        : "border-gray-300"
-                    }`}
-                  />
-                  {formErrors.last_name && (
-                    <p className="text-red-500 text-sm mt-1">{formErrors.last_name}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Role</label>
-                  <select
-                    name="role"
-                    value={formData.role}
-                    onChange={handleInputChange}
-                    required
-                    className={`w-full px-4 py-2 rounded-lg border focus:outline-none ${
-                      formErrors.role
-                        ? "border-red-500 bg-red-50"
-                        : "border-gray-300"
-                    }`}
-                  >
-                    <option value="">Select a role</option>
-                    {roles.map((role) => (
-                      <option key={role.id || role.name} value={role.id}>
-                        {role.name || role}
-                      </option>
-                    ))}
-                  </select>
-                  {formErrors.role && (
-                    <p className="text-red-500 text-sm mt-1">{formErrors.role}</p>
+                  {formErrors.description && (
+                    <p className="text-red-500 text-sm mt-1">{formErrors.description}</p>
                   )}
                 </div>
                 <div>
@@ -650,6 +527,22 @@ export default function Users() {
                     <span className="text-sm font-medium">Active</span>
                   </label>
                 </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium mb-2">Permissions</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-40 overflow-y-auto border border-gray-300 rounded-lg p-3">
+                    {permissions.map((permission) => (
+                      <label key={permission.id || permission.name} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={formData.permissions?.includes(permission.id || permission.name) || false}
+                          onChange={() => handlePermissionChange(permission.id || permission.name)}
+                          className="w-4 h-4 rounded"
+                        />
+                        <span className="text-sm">{permission.name || permission}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
                 <div className="md:col-span-2 flex gap-3">
                   <motion.button
                     whileHover={{ scale: 1.05 }}
@@ -658,7 +551,7 @@ export default function Users() {
                     disabled={loading}
                     className="flex-1 px-6 py-2 rounded-lg font-medium bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 disabled:opacity-50"
                   >
-                    {loading ? "Updating..." : "Update User"}
+                    {loading ? "Updating..." : "Update Role"}
                   </motion.button>
                   <motion.button
                     whileHover={{ scale: 1.05 }}
@@ -696,7 +589,7 @@ export default function Users() {
             />
             <input
               type="text"
-              placeholder="Search users..."
+              placeholder="Search roles..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className={`w-full pl-10 pr-4 py-2 rounded-lg ${
@@ -736,21 +629,14 @@ export default function Users() {
                       isDark ? "text-silver-300" : "text-gray-700"
                     }`}
                   >
-                    Username
+                    Role Name
                   </th>
                   <th
                     className={`px-6 py-4 text-left text-sm font-semibold ${
                       isDark ? "text-silver-300" : "text-gray-700"
                     }`}
                   >
-                    Email
-                  </th>
-                  <th
-                    className={`px-6 py-4 text-left text-sm font-semibold ${
-                      isDark ? "text-silver-300" : "text-gray-700"
-                    }`}
-                  >
-                    Role
+                    Description
                   </th>
                   <th
                     className={`px-6 py-4 text-left text-sm font-semibold ${
@@ -764,14 +650,21 @@ export default function Users() {
                       isDark ? "text-silver-300" : "text-gray-700"
                     }`}
                   >
+                    Permissions
+                  </th>
+                  <th
+                    className={`px-6 py-4 text-left text-sm font-semibold ${
+                      isDark ? "text-silver-300" : "text-gray-700"
+                    }`}
+                  >
                     Actions
                   </th>
                 </tr>
               </thead>
               <tbody className={isDark ? "bg-dark-800" : "bg-white"}>
-                {users.map((u) => (
+                {roles.map((role) => (
                   <tr
-                    key={u.id}
+                    key={role.id}
                     className={`border-b transition-colors duration-300 hover:${
                       isDark ? "bg-dark-700" : "bg-gold-50"
                     } ${isDark ? "border-dark-700" : "border-gold-100"}`}
@@ -781,57 +674,57 @@ export default function Users() {
                         isDark ? "text-white" : "text-dark-900"
                       }`}
                     >
-                      {u.id}
+                      {role.id}
                     </td>
                     <td
                       className={`px-6 py-4 text-sm font-medium ${
                         isDark ? "text-white" : "text-dark-900"
                       }`}
                     >
-                      {u.username}
+                      {role.name}
                     </td>
                     <td
                       className={`px-6 py-4 text-sm ${
                         isDark ? "text-silver-300" : "text-gray-700"
                       }`}
                     >
-                      {u.email || "-"}
-                    </td>
-                    <td
-                      className={`px-6 py-4 text-sm ${
-                        isDark ? "text-silver-300" : "text-gray-700"
-                      }`}
-                    >
-                      {getRoleName(u.role)}
+                      {role.description || "-"}
                     </td>
                     <td className={`px-6 py-4 text-sm`}>
-                      {u.is_active ? "Yes" : "No"}
+                      {role.is_active ? "Yes" : "No"}
+                    </td>
+                    <td
+                      className={`px-6 py-4 text-sm ${
+                        isDark ? "text-silver-300" : "text-gray-700"
+                      }`}
+                    >
+                      {role.permissions?.map(id => getPermissionName(id)).join(', ') || '-'}
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <div className="flex items-center space-x-2">
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.95 }}
-                          onClick={() => handleEditClick(u)}
+                          onClick={() => handleEditClick(role)}
                           className={`p-2 rounded-lg transition-all ${
                             isDark
                               ? "bg-dark-700 text-blue-400 hover:bg-dark-600"
                               : "bg-blue-50 text-blue-600 hover:bg-blue-100"
                           }`}
-                          title="Edit user"
+                          title="Edit role"
                         >
                           <Edit2 size={16} />
                         </motion.button>
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.95 }}
-                          onClick={() => handleDeleteClick(u)}
+                          onClick={() => handleDeleteClick(role)}
                           className={`p-2 rounded-lg transition-all ${
                             isDark
                               ? "bg-dark-700 text-red-400 hover:bg-dark-600"
                               : "bg-red-50 text-red-600 hover:bg-red-100"
                           }`}
-                          title="Delete user"
+                          title="Delete role"
                         >
                           <Trash2 size={16} />
                         </motion.button>
@@ -845,12 +738,12 @@ export default function Users() {
         </div>
 
         {/* Pagination */}
-        {users.length > 0 && (
+        {roles.length > 0 && (
           <div className="mt-6">
             <Pagination
               currentPage={currentPage}
               totalPages={
-                totalPages || Math.ceil((totalCount || users.length) / pageSize)
+                totalPages || Math.ceil((totalCount || roles.length) / pageSize)
               }
               onPageChange={setCurrentPage}
               pageSize={pageSize}
@@ -860,7 +753,7 @@ export default function Users() {
           </div>
         )}
 
-        {users.length === 0 && !loading && (
+        {roles.length === 0 && !loading && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -875,7 +768,7 @@ export default function Users() {
                 isDark ? "text-silver-400" : "text-gray-600"
               }`}
             >
-              No users found.
+              No roles found.
             </p>
           </motion.div>
         )}
@@ -922,16 +815,16 @@ export default function Users() {
                       isDark ? "text-white" : "text-gray-900"
                     }`}
                   >
-                    Delete User
+                    Delete Role
                   </h3>
                   <p
                     className={`text-center mb-6 ${
                       isDark ? "text-silver-400" : "text-gray-600"
                     }`}
                   >
-                    Are you sure you want to delete the user{" "}
+                    Are you sure you want to delete the role{" "}
                     <span className="font-semibold text-red-500">
-                      "{userToDelete?.username}"
+                      "{roleToDelete?.name}"
                     </span>
                     ? This action cannot be undone.
                   </p>

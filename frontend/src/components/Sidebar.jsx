@@ -15,6 +15,7 @@ import {
   Settings,
   ChevronDown,
   ChevronRight,
+  Shield,
 } from "lucide-react";
 import KTLLogo from "./KTLLogo";
 import { useTheme } from "../context/ThemeContext";
@@ -80,6 +81,12 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       name: "User Management",
       path: "/users",
       icon: UserPlus,
+      permission: "users:read",
+    },
+    {
+      name: "Role Management",
+      path: "/roles",
+      icon: Shield,
       permission: "users:read",
     },
     {

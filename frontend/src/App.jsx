@@ -20,6 +20,7 @@ import DataEntryPerformance from "./pages/DataEntryPerformance";
 import DataEntry from "./pages/DataEntry";
 import Customers from "./pages/Customers";
 import Users from "./pages/Users";
+import Roles from "./pages/Roles";
 import Prospects from "./pages/Prospects";
 import "./App.css";
 
@@ -177,6 +178,17 @@ const AppRoutes = () => {
           <AdminRoute>
             <AppLayout>
               <Users />
+            </AppLayout>
+          </AdminRoute>
+        }
+      />
+
+      <Route
+        path="/roles"
+        element={
+          <AdminRoute>
+            <AppLayout>
+              <Roles />
             </AppLayout>
           </AdminRoute>
         }
