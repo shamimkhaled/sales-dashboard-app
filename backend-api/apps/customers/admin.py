@@ -134,7 +134,7 @@ class ProspectAttachmentAdmin(admin.ModelAdmin):
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):
     list_display = ['name', 'company_name', 'email', 'phone', 'assigned_sales_person', 
-                   'monthly_revenue', 'potential_revenue', 'created_at']
+                   'monthly_revenue', 'link_id', 'created_at']
     list_filter = ['assigned_sales_person', 'created_at']
     search_fields = ['name', 'company_name', 'email', 'phone']
     ordering = ['-created_at']

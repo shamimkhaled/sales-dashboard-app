@@ -114,7 +114,7 @@ class Customer(models.Model):
     )
     address = models.TextField(blank=True)
     assigned_sales_person = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='customers')
-    link_id = models.CharField(max_length=100, unique=True)
+    link_id = models.CharField(max_length=100, unique=True, null=True, blank=True, default=None)
     monthly_revenue = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='Active', db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
