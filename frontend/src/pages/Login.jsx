@@ -38,8 +38,8 @@ const Login = () => {
   } = useForm({
     resolver: yupResolver(loginSchema),
     defaultValues: {
-      email: 'tanzir@admin.com',
-      password: '12345678',
+      email: 'admin@kloud.com',
+      password: 'admin9999',
       rememberMe: false
     }
   });
@@ -52,7 +52,10 @@ const Login = () => {
       const result = await login(data.email, data.password, data.rememberMe);
 
       if (result.success) {
-        navigate(from, { replace: true });
+        // Force a one-time full page refresh into the target route to ensure
+        // all role/permission-dependent UI initializes consistently.
+        const target = from && from !== '/login' ? from : '/dashboard';
+        window.location.assign(target);
       } else {
         setLoginError(result.error);
       }

@@ -15,6 +15,8 @@ import {
   Settings,
   ChevronDown,
   ChevronRight,
+  ChevronUp,
+  User,
 } from "lucide-react";
 import KTLLogo from "./KTLLogo";
 import { useTheme } from "../context/ThemeContext";
@@ -28,6 +30,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
   const navigate = useNavigate();
 
   const [reportsOpen, setReportsOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
 
   useEffect(() => {
@@ -196,29 +199,6 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             </button>
           </div>
 
-          {/* User Info */}
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-white font-medium text-sm sm:text-base">
-                  {user?.username?.charAt(0).toUpperCase()}
-                </span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p
-                  className={`text-sm sm:text-base font-medium truncate ${
-                    isDark ? "text-white" : "text-gray-900"
-                  }`}
-                >
-                  {user?.username}
-                </p>
-                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 capitalize">
-                  {user?.role?.replace("_", " ")}
-                </p>
-              </div>
-            </div>
-          </div>
-
           {/* Navigation */}
           <nav className="flex-1 px-3 sm:px-4 py-4 space-y-2 overflow-y-auto">
             {/* Main Navigation */}
@@ -282,48 +262,106 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             )}
           </nav>
 
-          {/* Footer */}
-          <div className="p-3 sm:p-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
-            {/* Theme Toggle */}
+          {/* Footer - User Menu with Dropdown */}
+          <div className="p-3 sm:p-4 border-t border-gray-200 dark:border-gray-700">
+            {/* User Info Dropdown Trigger */}
             <button
-              onClick={toggleTheme}
-              className={`flex items-center w-full px-4 py-2 rounded-lg font-medium transition-all duration-300 group ${
-                isDark
-                  ? 'text-gray-300 hover:text-gray-300'
-                  : 'text-gray-700 hover:text-gray-700'
+              onClick={() => setUserMenuOpen(!userMenuOpen)}
+              className={`flex items-center w-full px-3 py-2 rounded-lg transition-all duration-300 hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                isDark ? "text-gray-300" : "text-gray-700"
               }`}
             >
-              {isDark ? <Sun className="h-5 w-5 mr-3" /> : <Moon className="h-5 w-5 mr-3" />}
-              <span className="group-hover:underline">{isDark ? 'Light Mode' : 'Dark Mode'}</span>
+              <div className="w-11 h-11 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-white font-medium text-sm">
+                  {user?.username?.charAt(0).toUpperCase()}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0 ml-3 text-left">
+                <p
+                  className={`text-sm sm:text-base font-medium truncate ${
+                    isDark ? "text-white" : "text-gray-900"
+                  }`}
+                >
+                  {user?.username}
+                </p>
+                <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 capitalize">
+                  {user?.role?.replace("_", " ")}
+                </p>
+              </div>
+              {userMenuOpen ? (
+                <ChevronUp className="h-4 w-4 ml-2 flex-shrink-0" />
+              ) : (
+                <ChevronDown className="h-4 w-4 ml-2 flex-shrink-0" />
+              )}
             </button>
 
-            {/* Settings (placeholder) */}
-            <Link
-              to="/settings"
-              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all duration-300 group ${
-                isActive('/settings')
-                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:text-white shadow-lg'
-                  : isDark
-                  ? 'text-gray-300 hover:text-gray-300'
-                  : 'text-gray-700 hover:text-gray-700'
-              }`}
-            >
-              <Settings className="h-5 w-5 mr-3" />
-              <span className={`${!isActive('/settings') ? 'group-hover:underline' : ''}`}>Settings</span>
-            </Link>
+            {/* Dropdown Menu */}
+            {userMenuOpen && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mt-2 space-y-1"
+              >
+                {/* Profile */}
+                <Link
+                  to="/profile"
+                  onClick={() => setIsOpen(false)}
+                  className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all duration-300 group ${
+                    isActive('/profile')
+                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:text-white shadow-lg'
+                      : isDark
+                      ? 'text-gray-300 hover:text-gray-300 hover:bg-gray-700'
+                      : 'text-gray-700 hover:text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  <User className="h-4 w-4 mr-3" />
+                  <span className={`text-sm ${!isActive('/profile') ? 'group-hover:underline' : ''}`}>Profile</span>
+                </Link>
 
-            {/* Logout */}
-            <button
-              onClick={handleLogout}
-              className={`flex items-center w-full px-4 py-2 rounded-lg font-medium transition-all duration-300 group ${
-                isDark
-                  ? 'text-gray-300 hover:text-gray-300'
-                  : 'text-gray-700 hover:text-gray-700'
-              }`}
-            >
-              <LogOut className="h-5 w-5 mr-3" />
-              <span className="group-hover:underline">Logout</span>
-            </button>
+                {/* Theme Toggle */}
+                <button
+                  onClick={toggleTheme}
+                  className={`flex items-center w-full px-4 py-2 rounded-lg font-medium transition-all duration-300 group ${
+                    isDark
+                      ? 'text-gray-300 hover:text-gray-300 hover:bg-gray-700'
+                      : 'text-gray-700 hover:text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  {isDark ? <Sun className="h-4 w-4 mr-3" /> : <Moon className="h-4 w-4 mr-3" />}
+                  <span className="text-sm group-hover:underline">{isDark ? 'Light Mode' : 'Dark Mode'}</span>
+                </button>
+
+                {/* Settings */}
+                <Link
+                  to="/settings"
+                  onClick={() => setIsOpen(false)}
+                  className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all duration-300 group ${
+                    isActive('/settings')
+                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:text-white shadow-lg'
+                      : isDark
+                      ? 'text-gray-300 hover:text-gray-300 hover:bg-gray-700'
+                      : 'text-gray-700 hover:text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  <Settings className="h-4 w-4 mr-3" />
+                  <span className={`text-sm ${!isActive('/settings') ? 'group-hover:underline' : ''}`}>Settings</span>
+                </Link>
+
+                {/* Logout */}
+                <button
+                  onClick={handleLogout}
+                  className={`flex items-center w-full px-4 py-2 rounded-lg font-medium transition-all duration-300 group ${
+                    isDark
+                      ? 'text-gray-300 hover:text-gray-300 hover:bg-gray-700'
+                      : 'text-gray-700 hover:text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  <LogOut className="h-4 w-4 mr-3" />
+                  <span className="text-sm group-hover:underline">Logout</span>
+                </button>
+              </motion.div>
+            )}
           </div>
         </div>
       </motion.div>

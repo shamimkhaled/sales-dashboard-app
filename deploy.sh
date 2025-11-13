@@ -80,3 +80,5 @@ echo ""
 echo "✨ Deployment completed successfully!"
 echo "📅 $(date)"
 echo "🌐 Visit: http://172.31.82.254"
+
+
