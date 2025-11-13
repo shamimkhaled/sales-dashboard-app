@@ -285,7 +285,9 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                   {user?.username}
                 </p>
                 <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 capitalize">
-                  {user?.role?.replace("_", " ")}
+                  {typeof user?.role === 'string' 
+                    ? user.role.replace("_", " ") 
+                    : user?.role_name || 'User'}
                 </p>
               </div>
               {userMenuOpen ? (

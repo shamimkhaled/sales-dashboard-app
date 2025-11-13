@@ -152,27 +152,35 @@ export const AuthProvider = ({ children }) => {
   // Check if user has permission
   const hasPermission = (permission) => {
     if (!user) return false;
+    
+    // Get role name - handle both string and object formats
+    const roleName = typeof user.role === 'string' ? user.role : user.role_name;
+    
     // Super admin and admin roles have all permissions
-    if (user.role === 'super_admin' || user.role === 'admin') return true;
+    if (roleName === 'super_admin' || roleName === 'admin') return true;
     if (!user.permissions) return false;
     return user.permissions.includes('all') || user.permissions.includes(permission);
   };
 
   // Check if user has role
   const hasRole = (role) => {
-    return user && user.role === role;
+    if (!user) return false;
+    const roleName = typeof user.role === 'string' ? user.role : user.role_name;
+    return roleName === role;
   };
 
   // Check if user is admin or super admin
   const isAdmin = () => {
     if (!user) return false;
-    return user && ['admin', 'super_admin'].includes(user.role);
+    const roleName = typeof user.role === 'string' ? user.role : user.role_name;
+    return ['admin', 'super_admin'].includes(roleName);
   };
 
   // Check if user is super admin
   const isSuperAdmin = () => {
     if (!user) return false;
-    return user && user.role === 'super_admin';
+    const roleName = typeof user.role === 'string' ? user.role : user.role_name;
+    return roleName === 'super_admin';
   };
 
   const value = {
