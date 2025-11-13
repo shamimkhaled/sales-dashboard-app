@@ -4,6 +4,20 @@ const API_BASE_URL = '/api';
 
 const dashboardService = {
   /**
+   * Get dashboard KPIs
+   * @returns {Promise<Object>} KPI data
+   */
+  getKPIs: async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/dashboard/kpis/`);
+      return response.data || {};
+    } catch (error) {
+      console.error('Error fetching KPIs:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Get weekly revenue analytics
    * @returns {Promise<Array>} Weekly revenue data
    */
@@ -55,6 +69,20 @@ const dashboardService = {
       return response.data || [];
     } catch (error) {
       console.error('Error fetching customer-wise revenue:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get KAM performance analytics
+   * @returns {Promise<Array>} KAM performance data
+   */
+  getKAMPerformance: async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/dashboard/kam-performance/`);
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching KAM performance:', error);
       throw error;
     }
   },

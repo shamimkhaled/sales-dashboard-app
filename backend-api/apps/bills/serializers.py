@@ -5,7 +5,9 @@ from .models import BillRecord
 class BillRecordSerializer(serializers.ModelSerializer):
     # Include customer details in the response
     customer_details = serializers.SerializerMethodField()
-    
+    # Dynamic status based on customer status
+    status = serializers.SerializerMethodField()
+
     class Meta:
         model = BillRecord
         fields = '__all__'
@@ -23,6 +25,12 @@ class BillRecordSerializer(serializers.ModelSerializer):
                 'address': obj.customer.address,
             }
         return None
+
+    def get_status(self, obj):
+        """Return status based on customer's status"""
+        if obj.customer:
+            return obj.customer.status
+        return 'Inactive'  # Default if no customer
 
     def validate(self, attrs):
         # Compute totals from components if not explicitly provided

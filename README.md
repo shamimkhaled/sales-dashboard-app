@@ -68,27 +68,35 @@ The Sales Dashboard is a full-stack web application designed specifically for IS
 ## 🚀 Quick Start
 
 ### Prerequisites
+- Python 3.8+
 - Node.js (v16 or higher)
 - npm or yarn
-- SQLite3
+- pip
 
-### Backend Setup
+### Backend Setup (Django)
 
 ```bash
 # Navigate to backend directory
-cd backend
+cd backend-api
+
+# Create virtual environment
+python3 -m venv env
+source env/bin/activate  # On Windows: env\Scripts\activate
 
 # Install dependencies
-npm install
+pip install -r requirements.txt
+
+# Run migrations
+python manage.py migrate
 
 # Start the server
-npm start
+python manage.py runserver
 ```
 
-Backend runs on `http://localhost:5000`
-Swagger API documentation available at `http://localhost:5000/api-docs`
+Backend runs on `http://localhost:8000`
+API documentation available at `http://localhost:8000/api/docs/`
 
-### Frontend Setup
+### Frontend Setup (React)
 
 ```bash
 # Navigate to frontend directory
@@ -107,110 +115,152 @@ Frontend runs on `http://localhost:5173`
 
 ```
 sales-dashboard-app/
-├── backend/
-│   ├── config/
-│   │   ├── database.js
-│   │   └── swagger.js
-│   ├── controllers/
-│   │   ├── billController.js
-│   │   ├── customerController.js
-│   │   ├── dashboardController.js
-│   │   └── uploadController.js
-│   ├── models/
-│   │   ├── Bill.js
-│   │   └── Customer.js
-│   ├── routes/
-│   │   ├── billRoutes.js
-│   │   ├── customerRoutes.js
-│   │   ├── dshboardRoutes.js
-│   │   └── uploadRotues.js
-│   ├── utils/
-│   │   ├── excelImport.js
-│   │   └── excelExport.js
-│   ├── .gitignore
-│   ├── server.js
-│   └── package.json
-├── frontend/
+├── backend-api/                           # Django Backend
+│   ├── apps/                              # Django Apps
+│   │   ├── authentication/                # User authentication & permissions
+│   │   │   ├── models.py
+│   │   │   ├── views.py
+│   │   │   ├── serializers.py
+│   │   │   ├── urls.py
+│   │   │   └── permissions.py
+│   │   ├── bills/                         # Bill management
+│   │   │   ├── models.py (BillRecord)
+│   │   │   ├── views.py
+│   │   │   ├── serializers.py
+│   │   │   └── urls.py
+│   │   ├── customers/                     # Customer management
+│   │   │   ├── models.py (Customer, Prospect)
+│   │   │   ├── views.py
+│   │   │   ├── serializers.py
+│   │   │   └── urls.py
+│   │   ├── dashboard/                     # Analytics & KPIs
+│   │   │   ├── views.py
+│   │   │   └── urls.py
+│   │   └── users/                         # User management
+│   ├── config/                            # Django settings
+│   │   ├── settings.py
+│   │   ├── urls.py
+│   │   ├── wsgi.py
+│   │   └── asgi.py
+│   ├── manage.py
+│   ├── requirements.txt
+│   └── api-docs.md                        # API documentation
+├── frontend/                              # React Frontend
 │   ├── src/
-│   │   ├── components/
-│   │   │   ├── Navbar.jsx
+│   │   ├── components/                    # Reusable components
 │   │   │   ├── KPICard.jsx
 │   │   │   ├── LoadingSpinner.jsx
-│   │   │   └── ErrorAlert.jsx
-│   │   ├── context/
-│   │   │   └── ThemeContext.jsx
-│   │   ├── pages/
+│   │   │   ├── ErrorAlert.jsx
+│   │   │   ├── Navbar.jsx
+│   │   │   └── Sidebar.jsx
+│   │   ├── context/                       # React contexts
+│   │   │   ├── AuthContext.jsx
+│   │   │   ├── ThemeContext.jsx
+│   │   │   └── NotificationContext.jsx
+│   │   ├── pages/                         # Page components
 │   │   │   ├── Dashboard.jsx
+│   │   │   ├── Customers.jsx
 │   │   │   ├── DataEntry.jsx
-│   │   │   └── Customers.jsx
-│   │   ├── services/
+│   │   │   ├── Login.jsx
+│   │   │   └── Users.jsx
+│   │   ├── services/                      # API services
 │   │   │   ├── api.js
-│   │   │   ├── billService.js
+│   │   │   ├── dashboardService.js
 │   │   │   ├── customerService.js
-│   │   │   └── dashboardService.js
+│   │   │   ├── billService.js
+│   │   │   └── authService.js
 │   │   ├── App.jsx
-│   │   ├── App.css
-│   │   ├── index.css
-│   │   └── main.jsx
-│   ├── tailwind.config.js
+│   │   ├── main.jsx
+│   │   └── index.css
+│   ├── package.json
 │   ├── vite.config.js
-│   ├── FRONTEND_SETUP.md
-│   └── package.json
-├── docs/
+│   ├── tailwind.config.js
+│   └── nginx.conf
+├── docs/                                 # Documentation
 │   ├── API_DOCUMENTATION.md
 │   ├── BACKEND_DOCUMENTATION.md
 │   ├── FRONTEND_DOCUMENTATION.md
 │   ├── SETUP_DEPLOYMENT_GUIDE.md
 │   └── USER_MANUAL.md
-├── IMPLEMENTATION_GUIDE.md
-├── FRONTEND_IMPLEMENTATION_SUMMARY.md
-├── PROJECT_COMPLETION_REPORT.md
+├── docker-compose.yml                    # Docker setup
+├── backup-db.sh                         # Database backup script
+├── deploy.sh                           # Deployment script
 └── README.md
 ```
 
 ## 🔌 API Endpoints
 
+### Authentication
+```
+POST   /api/auth/login/                    # User login
+POST   /api/auth/logout/                   # User logout
+POST   /api/auth/token/refresh/            # Refresh JWT token
+GET    /api/auth/user/                     # Get current user info
+```
+
 ### Dashboard Analytics
 ```
-GET /api/dashboard/weekly-revenue
-GET /api/dashboard/monthly-revenue
-GET /api/dashboard/yearly-revenue
-GET /api/dashboard/customer-wise-revenue
+GET    /api/dashboard/kpis/                # KPI metrics (revenue, customers, etc.)
+GET    /api/dashboard/weekly-revenue/      # Weekly revenue data
+GET    /api/dashboard/monthly-revenue/     # Monthly revenue data
+GET    /api/dashboard/yearly-revenue/      # Yearly revenue data
+GET    /api/dashboard/customer-wise-revenue/ # Customer revenue breakdown
+GET    /api/dashboard/kam-performance/     # KAM performance metrics
 ```
 
 ### Bills Management
 ```
-GET    /api/bills
-GET    /api/bills/:id
-POST   /api/bills
-PUT    /api/bills/:id
-DELETE /api/bills/:id
-POST   /api/upload/bills
-GET    /api/upload/export/bills/excel
-GET    /api/upload/export/bills/csv
+GET    /api/bills/                         # List bills with filtering
+GET    /api/bills/{id}/                    # Get specific bill
+POST   /api/bills/                         # Create new bill
+PUT    /api/bills/{id}/                    # Update bill
+DELETE /api/bills/{id}/                    # Delete bill
+POST   /api/bills/import/                  # Import bills from Excel/CSV
+GET    /api/bills/export/                  # Export bills to Excel/CSV
 ```
 
 ### Customers Management
 ```
-GET    /api/customers
-GET    /api/customers/:id
-POST   /api/customers
-PUT    /api/customers/:id
-DELETE /api/customers/:id
-GET    /api/upload/export/customers/excel
-GET    /api/upload/export/customers/csv
+GET    /api/customers/                     # List customers with filtering
+GET    /api/customers/{id}/                # Get specific customer
+POST   /api/customers/                     # Create new customer
+PUT    /api/customers/{id}/                # Update customer
+DELETE /api/customers/{id}/                # Delete customer
+POST   /api/customers/import/              # Import customers from Excel/CSV
+GET    /api/customers/export/              # Export customers to Excel/CSV
+```
+
+### Prospects Management
+```
+GET    /api/customers/prospects/            # List prospects
+GET    /api/customers/prospects/{id}/       # Get specific prospect
+POST   /api/customers/prospects/            # Create new prospect
+PUT    /api/customers/prospects/{id}/       # Update prospect
+DELETE /api/customers/prospects/{id}/       # Delete prospect
+```
+
+### User Management
+```
+GET    /api/users/                          # List users
+GET    /api/users/{id}/                     # Get specific user
+POST   /api/users/                          # Create new user
+PUT    /api/users/{id}/                     # Update user
+DELETE /api/users/{id}/                     # Delete user
 ```
 
 ## 🛠 Technology Stack
 
 ### Backend
-- **Node.js** - Runtime environment
-- **Express.js** - Web framework
-- **SQLite** - Database
-- **Swagger/OpenAPI** - API documentation
-- **XLSX** - Excel file handling
-- **PapaParse** - CSV file handling
-- **Multer** - File upload middleware
+- **Python 3.8+** - Runtime environment
+- **Django 5.2** - Web framework
+- **Django REST Framework** - API framework
+- **SQLite** - Database (development)
+- **PostgreSQL** - Database (production)
+- **JWT** - Authentication
+- **Pandas** - Data processing for imports/exports
+- **OpenPyXL** - Excel file handling
+- **DRF Spectacular** - API documentation
+- **Django Filters** - Advanced filtering
 
 ### Frontend
 - **React 18** - UI library
@@ -221,41 +271,75 @@ GET    /api/upload/export/customers/csv
 - **Lucide React** - Icons
 - **Axios** - HTTP client
 - **Vite** - Build tool
+- **React Context** - State management
 
 ## 📊 Database Schema
 
-### Customers Table
+### Customers Table (sales_customers)
 ```sql
-CREATE TABLE customers (
+CREATE TABLE sales_customers (
   id INTEGER PRIMARY KEY,
-  name TEXT NOT NULL,
-  email TEXT UNIQUE,
-  phone TEXT,
+  name VARCHAR(255) NOT NULL,
+  company_name VARCHAR(255),
+  email VARCHAR(254) UNIQUE NOT NULL,
+  phone VARCHAR(20) NOT NULL,
   address TEXT,
-  joinDate DATE,
-  leaveDate DATE,
-  status TEXT,
-  monthlyBudget DECIMAL,
-  createdAt TIMESTAMP,
-  updatedAt TIMESTAMP
+  assigned_sales_person_id INTEGER,
+  potential_revenue DECIMAL(12,2) DEFAULT 0,
+  monthly_revenue DECIMAL(12,2) DEFAULT 0,
+  status VARCHAR(10) DEFAULT 'Active',
+  created_at TIMESTAMP NOT NULL,
+  updated_at TIMESTAMP NOT NULL,
+  FOREIGN KEY (assigned_sales_person_id) REFERENCES users_user(id)
 )
 ```
 
-### Bills Table
+### Bills Table (bill_records)
 ```sql
-CREATE TABLE bills (
+CREATE TABLE bill_records (
   id INTEGER PRIMARY KEY,
-  customerId INTEGER,
-  customerName TEXT,
-  billAmount DECIMAL,
-  billDate DATE,
-  dueDate DATE,
-  status TEXT,
-  paymentMethod TEXT,
-  notes TEXT,
-  createdAt TIMESTAMP,
-  updatedAt TIMESTAMP,
-  FOREIGN KEY (customerId) REFERENCES customers(id)
+  customer_id INTEGER NOT NULL,
+  nttn_cap VARCHAR(100),
+  nttn_com VARCHAR(100),
+  active_date DATE,
+  billing_date DATE,
+  termination_date DATE,
+  iig_qt DECIMAL(10,2) DEFAULT 0,
+  iig_qt_price DECIMAL(10,2) DEFAULT 0,
+  fna DECIMAL(10,2) DEFAULT 0,
+  fna_price DECIMAL(10,2) DEFAULT 0,
+  ggc DECIMAL(10,2) DEFAULT 0,
+  ggc_price DECIMAL(10,2) DEFAULT 0,
+  cdn DECIMAL(10,2) DEFAULT 0,
+  cdn_price DECIMAL(10,2) DEFAULT 0,
+  bdix DECIMAL(10,2) DEFAULT 0,
+  bdix_price DECIMAL(10,2) DEFAULT 0,
+  baishan DECIMAL(10,2) DEFAULT 0,
+  baishan_price DECIMAL(10,2) DEFAULT 0,
+  total_bill DECIMAL(15,2) DEFAULT 0,
+  total_received DECIMAL(15,2) DEFAULT 0,
+  total_due DECIMAL(15,2) DEFAULT 0,
+  discount DECIMAL(10,2) DEFAULT 0,
+  status VARCHAR(10) DEFAULT 'Active',
+  remarks TEXT,
+  created_at TIMESTAMP NOT NULL,
+  updated_at TIMESTAMP NOT NULL,
+  FOREIGN KEY (customer_id) REFERENCES sales_customers(id)
+)
+```
+
+### Users Table (users_user)
+```sql
+CREATE TABLE users_user (
+  id INTEGER PRIMARY KEY,
+  username VARCHAR(150) UNIQUE NOT NULL,
+  email VARCHAR(254) NOT NULL,
+  first_name VARCHAR(150),
+  last_name VARCHAR(150),
+  role_id INTEGER,
+  is_active BOOLEAN DEFAULT TRUE,
+  date_joined TIMESTAMP NOT NULL,
+  FOREIGN KEY (role_id) REFERENCES authentication_role(id)
 )
 ```
 
@@ -290,13 +374,13 @@ CREATE TABLE bills (
 
 ## 🧪 Testing
 
-### Backend Testing
+### Backend Testing (Django)
 ```bash
-cd backend
-npm test
+cd backend-api
+python manage.py test
 ```
 
-### Frontend Testing
+### Frontend Testing (React)
 ```bash
 cd frontend
 npm test
@@ -310,27 +394,46 @@ cd frontend
 npm run build
 ```
 
-### Build Backend
+### Build Backend (Django)
 ```bash
-cd backend
-npm run build
+cd backend-api
+python manage.py collectstatic
 ```
 
 ### Deploy to Vercel (Frontend)
 ```bash
+cd frontend
 npm install -g vercel
 vercel
 ```
 
 ### Deploy to Heroku (Backend)
 ```bash
+cd backend-api
 heroku create app-name
 git push heroku main
+heroku run python manage.py migrate
 ```
 
 ### Docker Deployment
 ```bash
-docker-compose up
+docker-compose up --build
+```
+
+### Environment Variables
+Create `.env` files in both backend-api and frontend directories:
+
+**backend-api/.env:**
+```
+SECRET_KEY=your-secret-key
+DEBUG=True
+DATABASE_URL=sqlite:///db.sqlite3
+ALLOWED_HOSTS=localhost,127.0.0.1
+```
+
+**frontend/.env:**
+```
+VITE_API_BASE_URL=http://localhost:8000/api
 ```
 
 ## 📚 Documentation
