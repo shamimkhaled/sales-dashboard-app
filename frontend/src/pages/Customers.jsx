@@ -235,7 +235,7 @@ export default function Customers() {
       formDataToSend.append('file', file);
 
       const API_URL = import.meta.env.VITE_API_URL || '/api';
-      const response = await fetch(`${API_URL}/upload/customers`, {
+      const response = await fetch(`${API_URL}/customers/import/`, {
         method: 'POST',
         body: formDataToSend,
         headers: {
@@ -246,12 +246,35 @@ export default function Customers() {
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.error || data.details || 'Import failed');
+        // Extract detailed error message
+        let errorMessage = 'Import failed';
+        
+        if (data.error) {
+          errorMessage = data.error;
+        } else if (data.detail) {
+          errorMessage = data.detail;
+        } else if (data.details) {
+          errorMessage = data.details;
+        } else if (data.message) {
+          errorMessage = data.message;
+        } else if (typeof data === 'object') {
+          // Try to extract first error message from object
+          const firstKey = Object.keys(data)[0];
+          if (firstKey && Array.isArray(data[firstKey])) {
+            errorMessage = data[firstKey][0];
+          } else if (firstKey && typeof data[firstKey] === 'string') {
+            errorMessage = data[firstKey];
+          }
+        }
+        
+        throw new Error(errorMessage);
       }
       
-      showSuccess(`Customers imported successfully! ${data.data.success} imported, ${data.data.failed} failed.`);
-      if (data.data.errors && data.data.errors.length > 0) {
-        console.error('Import errors:', data.data.errors);
+      const successCount = data.success || data.data?.success || 0;
+      const failedCount = data.failed || data.data?.failed || 0;
+      showSuccess(`Customers imported successfully! ${successCount} imported, ${failedCount} failed.`);
+      if (data.errors && data.errors.length > 0) {
+        console.error('Import errors:', data.errors);
       }
       fetchCustomers();
     } catch (err) {
@@ -265,18 +288,76 @@ export default function Customers() {
     try {
       setLoading(true);
       const API_URL = import.meta.env.VITE_API_URL || '/api';
-      const response = await fetch(`${API_URL}/upload/export/customers/excel`, {
+      
+      // Fetch all customers data
+      const response = await fetch(`${API_URL}/customers/?page_size=10000`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
         },
       });
-      const blob = await response.blob();
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch customers data');
+      }
+      
+      const data = await response.json();
+      const customersData = data.results || data.data || [];
+      
+      // Define CSV headers matching backend fields
+      const headers = [
+        'id',
+        'name',
+        'company_name',
+        'email',
+        'phone',
+        'address',
+        'potential_revenue',
+        'monthly_revenue',
+        'assigned_sales_person',
+        'created_at',
+        'updated_at'
+      ];
+      
+      // Convert customers data to CSV rows
+      const rows = customersData.map(customer => [
+        customer.id || '',
+        customer.name || '',
+        customer.company_name || '',
+        customer.email || '',
+        customer.phone || '',
+        customer.address || '',
+        customer.potential_revenue || '',
+        customer.monthly_revenue || '',
+        customer.assigned_sales_person || '',
+        customer.created_at || '',
+        customer.updated_at || ''
+      ]);
+      
+      // Combine headers and rows
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row =>
+          row.map(cell => {
+            // Escape quotes and wrap in quotes if contains comma or quotes
+            const cellStr = String(cell);
+            if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+              return `"${cellStr.replace(/"/g, '""')}"`;
+            }
+            return cellStr;
+          }).join(',')
+        )
+      ].join('\n');
+      
+      // Create blob and download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'customers.xlsx';
+      a.download = 'customers.csv';
       a.click();
-      showSuccess('Customers exported successfully');
+      window.URL.revokeObjectURL(url);
+      
+      showSuccess('Customers exported successfully as CSV');
     } catch (err) {
       showError(err.message || 'Failed to export customers');
     } finally {
