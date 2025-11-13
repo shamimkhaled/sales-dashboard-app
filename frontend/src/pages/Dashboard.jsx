@@ -404,8 +404,8 @@ export default function Dashboard() {
                   labelStyle={{ color: isDark ? '#d4af37' : '#d4af37' }}
                 />
                 <Legend />
-                <Bar dataKey="totalRevenue" fill={chartColors.primary} name="Revenue" radius={[8, 8, 0, 0]} />
-                <Bar dataKey="customers" fill={chartColors.secondary} name="Customers" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="total_revenue" fill={chartColors.primary} name="Revenue" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="total_customers" fill={chartColors.secondary} name="Customers" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </motion.div>
@@ -551,16 +551,16 @@ export default function Dashboard() {
                      }`}>{kam.kam}</td>
                      <td className={`px-4 py-3 text-sm text-center ${
                        isDark ? 'text-silver-300' : 'text-gray-700'
-                     }`}>{kam.customers}</td>
+                     }`}>{kam.total_customers}</td>
                      <td className={`px-4 py-3 text-sm text-center ${
                        isDark ? 'text-green-400' : 'text-green-600'
-                     }`}>{kam.activeCustomers}</td>
+                     }`}>{kam.active_customers}</td>
                      <td className={`px-4 py-3 text-sm font-semibold text-right ${
                        isDark ? 'text-gold-400' : 'text-gold-600'
-                     }`}>৳{kam.totalRevenue?.toLocaleString()}</td>
+                     }`}>৳{kam.total_revenue?.toLocaleString()}</td>
                      <td className={`px-4 py-3 text-sm text-right ${
                        isDark ? 'text-silver-300' : 'text-gray-700'
-                     }`}>৳{(kam.totalRevenue / kam.customers).toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
+                     }`}>৳{(kam.total_revenue / kam.total_customers).toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
                    </tr>
                  ))}
                </tbody>

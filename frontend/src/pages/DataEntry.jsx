@@ -240,7 +240,15 @@ export default function DataEntry() {
   };
 
   const handleEdit = (bill) => {
-    setFormData(bill);
+    // Ensure customer_id is set correctly - handle both object and ID formats
+    const customerIdValue = typeof bill.customer === 'object' && bill.customer !== null
+      ? bill.customer.id
+      : bill.customer || bill.customer_id;
+    
+    setFormData({
+      ...bill,
+      customer_id: customerIdValue
+    });
     setEditingId(bill.id);
     setShowForm(true);
   };
@@ -691,30 +699,51 @@ export default function DataEntry() {
                   <label className={`block text-sm font-medium mb-2 ${
                     isDark ? 'text-silver-300' : 'text-gray-700'
                   }`}>
-                    Customer *
+                    Customer 
                   </label>
-                  <select
-                    name="customer_id"
-                    value={formData.customer_id}
-                    onChange={handleInputChange}
-                    required
-                    className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                      validationErrors.customer_id
-                        ? isDark
-                          ? 'bg-dark-700 border-red-500 text-white focus:border-red-500'
-                          : 'bg-white border-red-500 text-dark-900 focus:border-red-500'
-                        : isDark
-                        ? 'bg-dark-700 border-dark-600 text-white focus:border-gold-500'
-                        : 'bg-white border-gold-200 text-dark-900 focus:border-gold-500'
-                    } focus:outline-none`}
-                  >
-                    <option value="">Select Customer</option>
-                    {Array.isArray(customers) && customers.map(customer => (
-                      <option key={customer.id} value={customer.id}>
-                        {customer.name} - {customer.company_name}
-                      </option>
-                    ))}
-                  </select>
+                  {editingId !== null ? (
+                    <input
+                      type="text"
+                      value={
+                        formData.customer_id && Array.isArray(customers)
+                          ? (() => {
+                              const customer = customers.find(c => c.id === parseInt(formData.customer_id));
+                              return customer ? `${customer.name} - ${customer.company_name}` : '';
+                            })()
+                          : ''
+                      }
+                      readOnly
+                      disabled
+                      className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 cursor-not-allowed opacity-75 ${
+                        isDark
+                          ? 'bg-dark-700 border-dark-600 text-white'
+                          : 'bg-gray-100 border-gold-200 text-dark-900'
+                      } focus:outline-none`}
+                    />
+                  ) : (
+                    <select
+                      name="customer_id"
+                      value={formData.customer_id}
+                      onChange={handleInputChange}
+                      required
+                      className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                        validationErrors.customer_id
+                          ? isDark
+                            ? 'bg-dark-700 border-red-500 text-white focus:border-red-500'
+                            : 'bg-white border-red-500 text-dark-900 focus:border-red-500'
+                          : isDark
+                          ? 'bg-dark-700 border-dark-600 text-white focus:border-gold-500'
+                          : 'bg-white border-gold-200 text-dark-900 focus:border-gold-500'
+                      } focus:outline-none`}
+                    >
+                      <option value="">Select Customer</option>
+                      {Array.isArray(customers) && customers.map(customer => (
+                        <option key={customer.id} value={customer.id}>
+                          {customer.name} - {customer.company_name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                   {validationErrors.customer_id && (
                     <p className="text-red-500 text-xs mt-1">{validationErrors.customer_id}</p>
                   )}
