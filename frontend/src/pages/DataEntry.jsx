@@ -303,11 +303,12 @@ export default function DataEntry() {
 
     try {
       setLoading(true);
+      setError(null);
       const formDataToSend = new FormData();
       formDataToSend.append('file', file);
 
       const API_URL = import.meta.env.VITE_API_URL || '/api';
-      const response = await fetch(`${API_URL}/upload/import`, {
+      const response = await fetch(`${API_URL}/bills/import/`, {
         method: 'POST',
         body: formDataToSend,
         headers: {
@@ -315,18 +316,64 @@ export default function DataEntry() {
         },
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.details || 'Import failed');
+      // Check content type to handle HTML error responses
+      const contentType = response.headers.get('content-type');
+      let data;
+      
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        // If response is HTML (error page), extract error message
+        const text = await response.text();
+        if (!response.ok) {
+          throw new Error(`Import failed: ${response.status} ${response.statusText}`);
+        }
+        data = {};
       }
       
-      const result = await response.json();
-      setSuccess(`Import successful! ${result.data.customers.success} customers and ${result.data.bills.success} bills imported.`);
+      if (!response.ok) {
+        // Extract detailed error message
+        let errorMessage = 'Import failed';
+        
+        if (data.error) {
+          errorMessage = data.error;
+        } else if (data.detail) {
+          errorMessage = data.detail;
+        } else if (data.details) {
+          errorMessage = data.details;
+        } else if (data.message) {
+          errorMessage = data.message;
+        } else if (typeof data === 'object' && Object.keys(data).length > 0) {
+          // Try to extract first error message from object
+          const firstKey = Object.keys(data)[0];
+          if (firstKey && Array.isArray(data[firstKey])) {
+            errorMessage = data[firstKey][0];
+          } else if (firstKey && typeof data[firstKey] === 'string') {
+            errorMessage = data[firstKey];
+          }
+        }
+        
+        throw new Error(errorMessage);
+      }
+      
+      // Handle success response
+      const customersSuccess = data.data?.customers?.success || data.customers?.success || 0;
+      const billsSuccess = data.data?.bills?.success || data.bills?.success || 0;
+      const customersFailed = data.data?.customers?.failed || data.customers?.failed || 0;
+      const billsFailed = data.data?.bills?.failed || data.bills?.failed || 0;
+      
+      showSuccess(`Import successful! ${customersSuccess} customers and ${billsSuccess} bills imported.${customersFailed > 0 || billsFailed > 0 ? ` (${customersFailed} customers and ${billsFailed} bills failed)` : ''}`);
+      
+      if (data.errors && data.errors.length > 0) {
+        console.error('Import errors:', data.errors);
+      }
+      
       setCurrentPage(1);
       fetchBills();
       fetchCustomers();
     } catch (err) {
-      setError(err.message || 'Failed to import data');
+      console.error('Import error:', err);
+      showError(err.message || 'Failed to import data');
     } finally {
       setLoading(false);
     }
@@ -336,25 +383,110 @@ export default function DataEntry() {
     try {
       setLoading(true);
       const API_URL = import.meta.env.VITE_API_URL || '/api';
-      const endpoint = fileType === 'excel'
-        ? `${API_URL}/upload/export/bills/excel`
-        : `${API_URL}/upload/export/bills/csv`;
-
-      const response = await fetch(endpoint, {
+      
+      // Fetch all bills data
+      const response = await fetch(`${API_URL}/bills/?page_size=10000`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
         },
       });
-      const blob = await response.blob();
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch bills data');
+      }
+      
+      const data = await response.json();
+      const billsData = data.results || data.data || [];
+      
+      // Define CSV headers matching backend fields
+      const headers = [
+        'id',
+        'customer',
+        'customer_details',
+        'nttn_cap',
+        'nttn_com',
+        'active_date',
+        'billing_date',
+        'termination_date',
+        'iig_qt',
+        'iig_qt_price',
+        'fna',
+        'fna_price',
+        'ggc',
+        'ggc_price',
+        'cdn',
+        'cdn_price',
+        'bdix',
+        'bdix_price',
+        'baishan',
+        'baishan_price',
+        'total_bill',
+        'total_received',
+        'total_due',
+        'discount',
+        'status',
+        'remarks',
+        'created_at',
+        'updated_at'
+      ];
+      
+      // Convert bills data to CSV rows
+      const rows = billsData.map(bill => [
+        bill.id || '',
+        bill.customer || '',
+        bill.customer_details || '',
+        bill.nttn_cap || '',
+        bill.nttn_com || '',
+        bill.active_date || '',
+        bill.billing_date || '',
+        bill.termination_date || '',
+        bill.iig_qt || '',
+        bill.iig_qt_price || '',
+        bill.fna || '',
+        bill.fna_price || '',
+        bill.ggc || '',
+        bill.ggc_price || '',
+        bill.cdn || '',
+        bill.cdn_price || '',
+        bill.bdix || '',
+        bill.bdix_price || '',
+        bill.baishan || '',
+        bill.baishan_price || '',
+        bill.total_bill || '',
+        bill.total_received || '',
+        bill.total_due || '',
+        bill.discount || '',
+        bill.status || '',
+        bill.remarks || '',
+        bill.created_at || '',
+        bill.updated_at || ''
+      ]);
+      
+      // Combine headers and rows
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row =>
+          row.map(cell => {
+            // Escape quotes and wrap in quotes if contains comma or quotes
+            const cellStr = String(cell);
+            if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+              return `"${cellStr.replace(/"/g, '""')}"`;
+            }
+            return cellStr;
+          }).join(',')
+        )
+      ].join('\n');
+      
+      // Create blob and download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      // TODO: Future Enhancement - Make filename dynamic based on current month/year
-      // const currentDate = new Date();
-      // const monthYear = currentDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-      a.download = fileType === 'excel' ? 'Sales-Pannel-Oct.2025.xlsx' : 'bills.csv';
+      a.download = 'bills.csv';
       a.click();
-      setSuccess('Bills exported successfully');
+      window.URL.revokeObjectURL(url);
+      
+      setSuccess('Bills exported successfully as CSV');
     } catch (err) {
       setError(err.message || 'Failed to export bills');
     } finally {
@@ -461,7 +593,31 @@ export default function DataEntry() {
                 Manage billing records with complete customer information
               </p>
             </div>
+
             <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center space-x-2">
+                {/* <label className="relative cursor-pointer px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 shadow-lg">
+                  <FileUp size={20} />
+                  <span>Import</span>
+                  <input
+                    type="file"
+                    accept=".xlsx,.csv"
+                    onChange={handleImport}
+                    className="hidden"
+                  />
+                </label> */}
+
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleExport}
+                  className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 shadow-lg"
+                >
+                  <FileDown size={20} />
+                  <span>Export CSV</span>
+                </motion.button>
+
+              </div>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -472,54 +628,8 @@ export default function DataEntry() {
                 <span>New Bill</span>
               </motion.button>
 
-              <div className="flex items-center space-x-2">
-                <label className="relative cursor-pointer px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 shadow-lg">
-                  <FileUp size={20} />
-                  <span>Import</span>
-                  <input
-                    type="file"
-                    accept=".xlsx,.csv"
-                    onChange={handleImport}
-                    className="hidden"
-                  />
-                </label>
-
-                <div className="relative group">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 shadow-lg"
-                  >
-                    <FileDown size={20} />
-                    <span>Export</span>
-                  </motion.button>
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    whileHover={{ opacity: 1, y: 0 }}
-                    className={`absolute right-0 mt-2 w-32 rounded-lg shadow-lg hidden group-hover:block ${
-                      isDark ? 'bg-dark-800 border border-dark-700' : 'bg-white border border-gold-200'
-                    }`}
-                  >
-                    <button
-                      onClick={() => { setFileType('excel'); handleExport(); }}
-                      className={`w-full text-left px-4 py-2 text-sm rounded-t-lg transition-colors ${
-                        isDark ? 'hover:bg-dark-700' : 'hover:bg-gold-50'
-                      }`}
-                    >
-                      Export as Excel
-                    </button>
-                    <button
-                      onClick={() => { setFileType('csv'); handleExport(); }}
-                      className={`w-full text-left px-4 py-2 text-sm rounded-b-lg transition-colors ${
-                        isDark ? 'hover:bg-dark-700' : 'hover:bg-gold-50'
-                      }`}
-                    >
-                      Export as CSV
-                    </button>
-                  </motion.div>
-                </div>
-              </div>
             </div>
+
           </div>
         </div>
       </div>
