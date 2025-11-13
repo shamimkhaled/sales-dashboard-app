@@ -38,30 +38,6 @@ class Prospect(models.Model):
     def __str__(self):
         return self.name
 
-    @property
-    def calculated_monthly_revenue(self):
-        """Calculate monthly revenue from bill records for the current month"""
-        from django.db.models import Sum
-        from django.utils import timezone
-        import calendar
-
-        now = timezone.now()
-        current_month = now.month
-        current_year = now.year
-
-        # Get total revenue for current month
-        monthly_total = self.bill_records.filter(
-            billing_date__year=current_year,
-            billing_date__month=current_month,
-            status='Active'
-        ).aggregate(total=Sum('total_bill'))['total'] or 0
-
-        return monthly_total
-
-    def update_monthly_revenue(self):
-        """Update the monthly_revenue field with calculated value"""
-        self.monthly_revenue = self.calculated_monthly_revenue
-        self.save(update_fields=['monthly_revenue'])
 
 
 class ProspectStatusHistory(models.Model):
@@ -115,10 +91,14 @@ class Customer(models.Model):
     address = models.TextField(blank=True)
     assigned_sales_person = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='customers')
     link_id = models.CharField(max_length=100, unique=True, null=True, blank=True, default=None)
-    monthly_revenue = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='Active', db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def calculated_monthly_revenue(self):
+        from apps.bills.models import BillRecord
+        return BillRecord.objects.filter(customer=self).aggregate(total=models.Sum('total_bill'))['total'] or 0
 
     class Meta:
         db_table = 'sales_customers'

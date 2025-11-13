@@ -116,8 +116,7 @@ class BillImportView(APIView):
                             'email': customer_email,
                             'phone': str(row.get('customer_phone', '')).strip(),
                             'address': str(row.get('customer_address', '')).strip() or None,
-                            'monthly_revenue': float(row.get('customer_monthly_revenue', 0) or 0),
-                            'potential_revenue': float(row.get('customer_potential_revenue', 0) or 0),
+                            'link_id': str(row.get('customer_link_id', '')).strip() or None,
                         }
 
                         # Validate customer data

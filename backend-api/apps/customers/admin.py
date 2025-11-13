@@ -133,8 +133,8 @@ class ProspectAttachmentAdmin(admin.ModelAdmin):
 
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):
-    list_display = ['name', 'company_name', 'email', 'phone', 'assigned_sales_person', 
-                   'monthly_revenue', 'link_id', 'created_at']
+    list_display = ['name', 'company_name', 'email', 'phone', 'assigned_sales_person',
+                   'calculated_monthly_revenue', 'link_id', 'created_at']
     list_filter = ['assigned_sales_person', 'created_at']
     search_fields = ['name', 'company_name', 'email', 'phone']
     ordering = ['-created_at']
@@ -149,7 +149,7 @@ class CustomerAdmin(admin.ModelAdmin):
             'fields': ('email', 'phone', 'address')
         }),
         ('Sales Information', {
-            'fields': ('assigned_sales_person', 'potential_revenue', 'monthly_revenue')
+            'fields': ('assigned_sales_person', 'calculated_monthly_revenue')
         }),
         ('Metadata', {
             'fields': ('created_at', 'updated_at'),

@@ -8,6 +8,7 @@ import pandas as pd
 from io import BytesIO
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Prospect, Customer
+from apps.bills.models import BillRecord
 from .serializers import (
     ProspectSerializer,
     CustomerSerializer,
@@ -49,7 +50,7 @@ class CustomerListCreateView(generics.ListCreateAPIView):
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['assigned_sales_person']
     search_fields = ['name', 'company_name', 'email', 'phone']
-    ordering_fields = ['created_at', 'monthly_revenue']
+    ordering_fields = ['created_at']
 
     def get_queryset(self):
         qs = Customer.objects.all()
@@ -123,8 +124,7 @@ class CustomerImportView(APIView):
                     'email': str(row.get('email', '')).strip().lower(),
                     'phone': str(row.get('phone', '')).strip(),
                     'address': str(row.get('address', '')).strip() or None,
-                    'monthly_revenue': float(row.get('monthly_revenue', 0) or 0),
-                    'potential_revenue': float(row.get('potential_revenue', 0) or 0),
+                    'link_id': str(row.get('link_id', '')).strip() or None,
                 }
 
                 # Validate required fields
@@ -186,7 +186,7 @@ class CustomerExportView(APIView):
                     'email': c.email,
                     'phone': c.phone,
                     'address': c.address or '',
-                    'monthly_revenue': float(c.monthly_revenue),
+                    'calculated_monthly_revenue': float(c.calculated_monthly_revenue),
                     'potential_revenue': float(c.potential_revenue),
                     'created_at': c.created_at.strftime('%Y-%m-%d %H:%M:%S') if c.created_at else '',
                 })
@@ -207,12 +207,12 @@ class CustomerExportView(APIView):
         else:
             # Export as CSV (default)
             def row_iter():
-                header = ['id', 'name', 'company_name', 'email', 'phone', 'address', 'monthly_revenue', 'potential_revenue', 'created_at']
+                header = ['id', 'name', 'company_name', 'email', 'phone', 'address', 'calculated_monthly_revenue', 'potential_revenue', 'created_at']
                 yield ','.join(header) + '\n'
                 for c in queryset.iterator():
                     row = [
                         str(c.id), c.name, c.company_name or '', c.email, c.phone,
-                        c.address or '', str(c.monthly_revenue), str(c.potential_revenue),
+                        c.address or '', str(c.calculated_monthly_revenue), str(c.potential_revenue),
                         c.created_at.strftime('%Y-%m-%d %H:%M:%S') if c.created_at else ''
                     ]
                     yield ','.join(row) + '\n'
@@ -228,7 +228,7 @@ class RevenueCalculationView(APIView):
 
     def get(self, request):
         # Simple aggregation example; can be extended to weekly/yearly
-        monthly_total = Customer.objects.all().aggregate(total=models.Sum('monthly_revenue'))['total'] or 0
+        monthly_total = BillRecord.objects.aggregate(total=models.Sum('total_bill'))['total'] or 0
         weekly_total = monthly_total / 4
         yearly_total = monthly_total * 12
         return Response({

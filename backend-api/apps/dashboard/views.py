@@ -11,7 +11,7 @@ from apps.customers.models import Customer
 
 
 class DashboardKPIsView(APIView):
-    permission_classes = [permissions.IsAuthenticated, RequirePermissions]
+    permission_classes = [permissions.IsAuthenticated]
     required_permissions = ['dashboard:read']
 
     def get(self, request):
@@ -82,7 +82,7 @@ class DashboardKPIsView(APIView):
 
 
 class WeeklyRevenueView(APIView):
-    permission_classes = [permissions.IsAuthenticated, RequirePermissions]
+    permission_classes = [permissions.IsAuthenticated]
     required_permissions = ['dashboard:read']
 
     def get(self, request):
@@ -110,7 +110,7 @@ class WeeklyRevenueView(APIView):
 
 
 class MonthlyRevenueView(APIView):
-    permission_classes = [permissions.IsAuthenticated, RequirePermissions]
+    permission_classes = [permissions.IsAuthenticated]
     required_permissions = ['dashboard:read']
 
     def get(self, request):
@@ -138,7 +138,7 @@ class MonthlyRevenueView(APIView):
 
 
 class YearlyRevenueView(APIView):
-    permission_classes = [permissions.IsAuthenticated, RequirePermissions]
+    permission_classes = [permissions.IsAuthenticated]
     required_permissions = ['dashboard:read']
 
     def get(self, request):
@@ -166,7 +166,7 @@ class YearlyRevenueView(APIView):
 
 
 class CustomerWiseRevenueView(APIView):
-    permission_classes = [permissions.IsAuthenticated, RequirePermissions]
+    permission_classes = [permissions.IsAuthenticated]
     required_permissions = ['dashboard:read']
 
     def get(self, request):
@@ -202,7 +202,7 @@ class CustomerWiseRevenueView(APIView):
 
 
 class KAMPerformanceView(APIView):
-    permission_classes = [permissions.IsAuthenticated, RequirePermissions]
+    permission_classes = [permissions.IsAuthenticated]
     required_permissions = ['dashboard:read']
 
     def get(self, request):
