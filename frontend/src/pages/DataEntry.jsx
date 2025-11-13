@@ -1179,21 +1179,15 @@ export default function DataEntry() {
                 </div>
 
                 <div className="lg:col-span-3 flex gap-3">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    type="submit"
-                    disabled={loading}
-                    className={`flex-1 px-6 py-2 rounded-lg font-medium transition-all duration-300 ${
-                      editingId
-                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 disabled:opacity-50 shadow-lg'
-                        : isDark
-                        ? 'bg-gold-600 text-dark-900 hover:bg-gold-500 disabled:opacity-50'
-                        : 'bg-gold-500 text-white hover:bg-gold-600 disabled:opacity-50'
-                    }`}
-                  >
-                    {loading ? 'Saving...' : editingId ? 'Update Bill' : 'Create Bill'}
-                  </motion.button>
+                   <motion.button
+                     whileHover={{ scale: 1.05 }}
+                     whileTap={{ scale: 0.95 }}
+                     type="submit"
+                     disabled={loading}
+                     className={`flex-1 px-6 py-2 rounded-lg font-medium transition-all duration-300 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl disabled:opacity-50`}
+                   >
+                     {loading ? 'Saving...' : editingId ? 'Update Bill' : 'Create Bill'}
+                   </motion.button>
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
