@@ -26,9 +26,15 @@ import { motion } from "framer-motion";
 
 export default function Sidebar({ isOpen, setIsOpen }) {
   const { isDark, toggleTheme } = useTheme();
-  const { user, logout, hasPermission, isAdmin } = useAuth();
+  const { user, logout, hasPermission, isAdmin, hasRole } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Debug user permissions
+  console.log('Sidebar user:', user);
+  console.log('User permissions:', user?.permissions);
+  console.log('User role:', user?.role);
+  console.log('isAdmin():', isAdmin());
 
   const [reportsOpen, setReportsOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -115,24 +121,29 @@ export default function Sidebar({ isOpen, setIsOpen }) {
   ];
 
   // Filter navigation items based on permissions
-  const visibleNavItems = baseNavItems.filter(
-    (item) =>
-      !item.permission || hasPermission(item.permission) || hasPermission("all")
-  );
+  const visibleNavItems = baseNavItems.filter((item) => {
+    let show = !item.permission || hasPermission(item.permission) || hasPermission("all");
+    // Special case for sales_manager to show Bill Entry
+    if (item.name === "Bill Entry" && hasRole("sales_manager")) {
+      show = true;
+    }
+    console.log(`Base nav item "${item.name}": permission="${item.permission}", show=${show}`);
+    return show;
+  });
 
-  const visibleAdminItems = isAdmin()
-    ? adminNavItems.filter(
-        (item) =>
-          !item.permission ||
-          hasPermission(item.permission) ||
-          hasPermission("all")
-      )
-    : [];
+  const visibleAdminItems = isAdmin() ? adminNavItems : [];
 
-  const visibleReportsItems = reportsItems.filter(
-    (item) =>
-      !item.permission || hasPermission(item.permission) || hasPermission("all")
-  );
+  const visibleReportsItems = reportsItems.filter((item) => {
+    const show = !item.permission || hasPermission(item.permission) || hasPermission("all");
+    console.log(`Reports item "${item.name}": permission="${item.permission}", show=${show}`);
+    return show;
+  });
+
+  console.log('Final visible counts:', {
+    baseNav: visibleNavItems.length,
+    adminNav: visibleAdminItems.length,
+    reports: visibleReportsItems.length
+  });
 
   const NavItem = ({ item, isSubmenu = false }) => (
     <Link

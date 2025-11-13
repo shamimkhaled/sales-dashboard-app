@@ -46,15 +46,22 @@ export default function Roles() {
 
   const fetchPermissions = async () => {
     try {
+      console.log("Fetching permissions...");
       const response = await roleService.getPermissions();
+      console.log("Permissions API response:", response);
+
       // Handle different response formats
       if (Array.isArray(response)) {
+        console.log(`Fetched ${response.length} permissions:`, response.map(p => p.name || p));
         setPermissions(response);
       } else if (response?.data && Array.isArray(response.data)) {
+        console.log(`Fetched ${response.data.length} permissions from data:`, response.data.map(p => p.name || p));
         setPermissions(response.data);
       } else if (response?.results && Array.isArray(response.results)) {
+        console.log(`Fetched ${response.results.length} permissions from results:`, response.results.map(p => p.name || p));
         setPermissions(response.results);
       } else {
+        console.log("No permissions array found in response:", response);
         setPermissions([]);
       }
     } catch (err) {

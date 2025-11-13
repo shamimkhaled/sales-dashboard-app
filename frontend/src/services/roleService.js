@@ -17,8 +17,35 @@ export const roleService = {
   // Get all permissions
   async getPermissions() {
     try {
-      const response = await api.get('/auth/permissions/');
-      return response;
+      // Try to get all permissions, handle pagination if present
+      let allPermissions = [];
+      let nextUrl = '/auth/permissions/';
+      let page = 1;
+
+      while (nextUrl && page <= 10) { // Limit to 10 pages to prevent infinite loops
+        const response = await api.get(nextUrl);
+
+        let permissions = [];
+        if (Array.isArray(response)) {
+          permissions = response;
+        } else if (response?.data && Array.isArray(response.data)) {
+          permissions = response.data;
+        } else if (response?.results && Array.isArray(response.results)) {
+          permissions = response.results;
+        }
+
+        allPermissions = [...allPermissions, ...permissions];
+
+        // Check for pagination
+        if (response?.next) {
+          nextUrl = response.next.replace(api.defaults.baseURL, ''); // Remove base URL
+          page++;
+        } else {
+          nextUrl = null;
+        }
+      }
+
+      return allPermissions;
     } catch (error) {
       throw error;
     }

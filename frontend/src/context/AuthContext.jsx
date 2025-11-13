@@ -152,14 +152,36 @@ export const AuthProvider = ({ children }) => {
   // Check if user has permission
   const hasPermission = (permission) => {
     if (!user) return false;
-    
-    // Get role name - handle both string and object formats
-    const roleName = typeof user.role === 'string' ? user.role : user.role_name;
-    
-    // Super admin and admin roles have all permissions
-    if (roleName === 'super_admin' || roleName === 'admin') return true;
-    if (!user.permissions) return false;
-    return user.permissions.includes('all') || user.permissions.includes(permission);
+
+    // Super admin has ALL permissions
+    if (user.role === 'super_admin') {
+      console.log(`Super admin access granted for permission: ${permission}`);
+      return true;
+    }
+
+    // Admin role has all permissions
+    if (user.role === 'admin') {
+      console.log(`Admin access granted for permission: ${permission}`);
+      return true;
+    }
+
+    // Check user permissions array if it exists
+    if (user.permissions && Array.isArray(user.permissions)) {
+      const hasPermission = user.permissions.includes('all') || user.permissions.includes(permission);
+      console.log(`User permissions check for ${permission}:`, hasPermission, user.permissions);
+      return hasPermission;
+    }
+
+    // Check role permissions if user has a role object with permissions
+    if (user.role && user.role.permissions && Array.isArray(user.role.permissions)) {
+      const hasPermission = user.role.permissions.includes('all') || user.role.permissions.includes(permission);
+      console.log(`Role permissions check for ${permission}:`, hasPermission, user.role.permissions);
+      return hasPermission;
+    }
+
+    // Fallback: allow basic access for authenticated users
+    console.log(`Fallback access for ${permission}:`, isAuthenticated);
+    return isAuthenticated;
   };
 
   // Check if user has role
@@ -172,15 +194,17 @@ export const AuthProvider = ({ children }) => {
   // Check if user is admin or super admin
   const isAdmin = () => {
     if (!user) return false;
-    const roleName = typeof user.role === 'string' ? user.role : user.role_name;
-    return ['admin', 'super_admin'].includes(roleName);
+    const isAdmin = user && ['admin', 'super_admin'].includes(user.role);
+    console.log('isAdmin check:', isAdmin, 'role:', user.role);
+    return isAdmin;
   };
 
   // Check if user is super admin
   const isSuperAdmin = () => {
     if (!user) return false;
-    const roleName = typeof user.role === 'string' ? user.role : user.role_name;
-    return roleName === 'super_admin';
+    const isSuperAdmin = user && user.role === 'super_admin';
+    console.log('isSuperAdmin check:', isSuperAdmin, 'role:', user.role);
+    return isSuperAdmin;
   };
 
   const value = {
