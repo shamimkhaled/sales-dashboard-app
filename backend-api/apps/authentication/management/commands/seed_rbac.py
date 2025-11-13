@@ -25,6 +25,11 @@ PERMISSIONS = [
     ('reports:read', 'reports', 'read', 'Read reports'),
     ('logs:read', 'logs', 'read', 'Read logs'),
     ('settings:read', 'settings', 'read', 'View settings'),
+
+    # Roles
+    ('role:read', 'role', 'read', 'Read roles'),
+    ('role:write', 'role', 'update', 'Create/Update/Delete roles'), 
+
 ]
 
 ROLES = {
@@ -39,7 +44,7 @@ ROLES = {
             'customers:read','customers:update','customers:import','customers:export',
             'prospects:read','prospects:update',
             'bills:read','bills:create','bills:update','bills:import','bills:export',
-            'reports:read','logs:read','settings:read'
+            'reports:read','logs:read','settings:read', 'role:read', 'role:write'
         ],
     },
     'sales_manager': {
@@ -54,8 +59,8 @@ ROLES = {
     'sales_person': {
         'description': 'Sales person limited to assigned accounts',
         'permissions': [
-            'customers:read','prospects:read','prospects:update',
-            'bills:read','bills:create','bills:update',
+            'customers:read','prospects:read','prospects:update', 'sales_person:update',
+            # 'bills:read','bills:create','bills:update',
             'reports:read'
         ],
     },

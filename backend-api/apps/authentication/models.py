@@ -17,6 +17,7 @@ class Permission(models.Model):
         ('reports', 'Reports'),
         ('settings', 'Settings'),
         ('logs', 'Logs'),
+        ('role', 'Roles')
     )
     
     ACTION_CHOICES = (
