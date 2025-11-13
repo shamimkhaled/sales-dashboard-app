@@ -12,6 +12,7 @@ import ErrorAlert from '../components/ErrorAlert';
 import KPICard from '../components/KPICard';
 import Pagination from '../components/Pagination';
 import { customerService } from '../services/customerService';
+import { userService } from '../services/userService';
 
 export default function Customers() {
   const { isDark } = useTheme();
@@ -43,8 +44,10 @@ export default function Customers() {
     phone: '',
     address: '',
     potential_revenue: 0,
-    monthly_revenue: 0,
-    assigned_sales_person: user?.id || 0,
+    calculated_monthly_revenue: 0,
+    assigned_sales_person: user?.id || '',
+    status: 'Active',
+    link_id: '',
   });
 
   const [stats, setStats] = useState({
@@ -53,9 +56,18 @@ export default function Customers() {
     inactiveCustomers: 0,
   });
 
+  const [salesUsers, setSalesUsers] = useState([]);
+
+  const getUserName = (userId) => {
+    if (!userId) return '-';
+    const user = salesUsers.find(u => u.id === parseInt(userId));
+    return user ? user.username || user.email || userId : userId;
+  };
+
   useEffect(() => {
     fetchCustomers();
-  }, [currentPage, pageSize, searchTerm, filterStatus]);
+    fetchSalesUsers();
+  }, []);
 
   // Reset to page 1 when search term or filter changes
   useEffect(() => {
@@ -112,6 +124,30 @@ export default function Customers() {
     }
   };
 
+  const fetchSalesUsers = async () => {
+    try {
+      const response = await userService.getUsers();
+      // Handle different response formats
+      let users = [];
+      if (Array.isArray(response)) {
+        users = response;
+      } else if (response?.data && Array.isArray(response.data)) {
+        users = response.data;
+      } else if (response?.results && Array.isArray(response.results)) {
+        users = response.results;
+      }
+
+      // Filter to only show users with sales_manager or sales_person role_name
+      const filteredUsers = users.filter(user =>
+        user.role_name === 'sales_manager' || user.role_name === 'sales_person'
+      );
+      setSalesUsers(filteredUsers);
+    } catch (err) {
+      console.error('Error fetching sales users:', err);
+      setSalesUsers([]);
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -136,8 +172,10 @@ export default function Customers() {
           phone: formData.phone || '',
           address: formData.address || '',
           potential_revenue: parseFloat(formData.potential_revenue) || 0,
-          monthly_revenue: parseFloat(formData.monthly_revenue) || 0,
-          assigned_sales_person: formData.assigned_sales_person || user?.id,
+          calculated_monthly_revenue: parseFloat(formData.calculated_monthly_revenue) || 0,
+          assigned_sales_person: parseInt(formData.assigned_sales_person) || null,
+          status: formData.status || 'Active',
+          link_id: formData.link_id || '',
         };
         console.log('Updating customer:', editingId, customerData);
         const response = await customerService.updateCustomer(editingId, customerData);
@@ -155,8 +193,10 @@ export default function Customers() {
           phone: formData.phone || '',
           address: formData.address || '',
           potential_revenue: parseFloat(formData.potential_revenue) || 0,
-          monthly_revenue: parseFloat(formData.monthly_revenue) || 0,
-          assigned_sales_person: user?.id, // Auto-set to current user
+          calculated_monthly_revenue: parseFloat(formData.calculated_monthly_revenue) || 0,
+          assigned_sales_person: parseInt(formData.assigned_sales_person) || null,
+          status: formData.status || 'Active',
+          link_id: formData.link_id || '',
         };
         await customerService.createCustomer(customerData);
         showSuccess('Customer created successfully');
@@ -184,8 +224,10 @@ export default function Customers() {
       phone: '',
       address: '',
       potential_revenue: 0,
-      monthly_revenue: 0,
-      assigned_sales_person: user?.id || 0,
+      calculated_monthly_revenue: 0,
+      assigned_sales_person: user?.id || '',
+      status: 'Active',
+      link_id: '',
     });
     setEditingId(null);
     setShowForm(false);
@@ -312,8 +354,11 @@ export default function Customers() {
         'phone',
         'address',
         'potential_revenue',
-        'monthly_revenue',
+        'calculated_monthly_revenue',
         'assigned_sales_person',
+        'assigned_sales_person_details',
+        'status',
+        'link_id',
         'created_at',
         'updated_at'
       ];
@@ -327,8 +372,11 @@ export default function Customers() {
         customer.phone || '',
         customer.address || '',
         customer.potential_revenue || '',
-        customer.monthly_revenue || '',
+        customer.calculated_monthly_revenue || '',
         customer.assigned_sales_person || '',
+        customer.assigned_sales_person_details || '',
+        customer.status || '',
+        customer.link_id || '',
         customer.created_at || '',
         customer.updated_at || ''
       ]);
@@ -627,17 +675,17 @@ export default function Customers() {
                   />
                 </div>
 
-                {/* Monthly Revenue */}
+                {/* Calculated Monthly Revenue */}
                 <div>
                   <label className={`block text-sm font-medium mb-2 ${
                     isDark ? 'text-silver-300' : 'text-gray-700'
                   }`}>
-                    Monthly Revenue
+                    Calculated Monthly Revenue
                   </label>
                   <input
                     type="number"
-                    name="monthly_revenue"
-                    value={formData.monthly_revenue}
+                    name="calculated_monthly_revenue"
+                    value={formData.calculated_monthly_revenue}
                     onChange={handleInputChange}
                     step="0.01"
                     min="0"
@@ -649,26 +697,76 @@ export default function Customers() {
                   />
                 </div>
 
-                {/* CAM (Assigned Sales Person - readonly, auto-set to current user) */}
+                {/* KAM (Assigned Sales Person - select from roles) */}
                 <div>
                   <label className={`block text-sm font-medium mb-2 ${
                     isDark ? 'text-silver-300' : 'text-gray-700'
                   }`}>
-                    KAM
+                    KAM *
+                  </label>
+                  <select
+                    name="assigned_sales_person"
+                    value={formData.assigned_sales_person}
+                    onChange={handleInputChange}
+                    required
+                    className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                      isDark
+                        ? 'bg-dark-700 border-dark-600 text-white focus:border-gold-500'
+                        : 'bg-white border-gold-200 text-dark-900 focus:border-gold-500'
+                    } focus:outline-none`}
+                  >
+                    <option value="">Select a KAM</option>
+                    {salesUsers.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.username || user.email} ({user.role_name?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())})
+                      </option>
+                    ))}
+                  </select>
+                  <p className={`text-xs mt-1 ${isDark ? 'text-silver-400' : 'text-gray-500'}`}>
+                    Select the Key Account Manager (Sales Manager or Sales Person)
+                  </p>
+                </div>
+
+                {/* Status */}
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${
+                    isDark ? 'text-silver-300' : 'text-gray-700'
+                  }`}>
+                    Status
+                  </label>
+                  <select
+                    name="status"
+                    value={formData.status}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                      isDark
+                        ? 'bg-dark-700 border-dark-600 text-white focus:border-gold-500'
+                        : 'bg-white border-gold-200 text-dark-900 focus:border-gold-500'
+                    } focus:outline-none`}
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+
+                {/* Link ID */}
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${
+                    isDark ? 'text-silver-300' : 'text-gray-700'
+                  }`}>
+                    Link ID
                   </label>
                   <input
                     type="text"
-                    value={user?.username || user?.email || 'Current User'}
-                    readOnly
-                    className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 opacity-60 cursor-not-allowed ${
+                    name="link_id"
+                    value={formData.link_id}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
                       isDark
-                        ? 'bg-dark-700 border-dark-600 text-white'
-                        : 'bg-gray-100 border-gold-200 text-dark-900'
-                    }`}
+                        ? 'bg-dark-700 border-dark-600 text-white focus:border-gold-500'
+                        : 'bg-white border-gold-200 text-dark-900 focus:border-gold-500'
+                    } focus:outline-none`}
                   />
-                  <p className={`text-xs mt-1 ${isDark ? 'text-silver-400' : 'text-gray-500'}`}>
-                    Auto-assigned to you
-                  </p>
                 </div>
 
                 {/* Address */}
@@ -803,7 +901,7 @@ export default function Customers() {
                   }`}>Potential Revenue</th>
                   <th className={`px-6 py-4 text-left text-sm font-semibold ${
                     isDark ? 'text-silver-300' : 'text-gray-700'
-                  }`}>Monthly Revenue</th>
+                  }`}>Calculated Monthly Revenue</th>
                   <th className={`px-6 py-4 text-left text-sm font-semibold ${
                     isDark ? 'text-silver-300' : 'text-gray-700'
                   }`}>Actions</th>
@@ -831,13 +929,13 @@ export default function Customers() {
                     }`}>{customer.phone || '-'}</td>
                     <td className={`px-6 py-4 text-sm ${
                       isDark ? 'text-silver-300' : 'text-gray-700'
-                    }`}>{customer.assigned_sales_person_details?.username || customer.assigned_sales_person_details?.email || '-'}</td>
+                    }`}>{getUserName(customer.assigned_sales_person)}</td>
                     <td className={`px-6 py-4 text-sm ${
                       isDark ? 'text-silver-300' : 'text-gray-700'
                     }`}>{customer.potential_revenue ? `$${customer.potential_revenue.toLocaleString()}` : '-'}</td>
                     <td className={`px-6 py-4 text-sm ${
                       isDark ? 'text-silver-300' : 'text-gray-700'
-                    }`}>{customer.monthly_revenue ? `$${customer.monthly_revenue.toLocaleString()}` : '-'}</td>
+                    }`}>{customer.calculated_monthly_revenue ? `$${customer.calculated_monthly_revenue.toLocaleString()}` : '-'}</td>
                     <td className={`px-6 py-4 text-sm`}>
                       <div className="flex items-center space-x-2">
                         <motion.button
