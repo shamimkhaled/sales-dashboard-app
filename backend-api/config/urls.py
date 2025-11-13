@@ -28,10 +28,12 @@ urlpatterns = [
     # API docs
     path('api/docs/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('api/redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+    path('api/swagger.json', schema_view.without_ui(cache_timeout=0), name='schema-json'),
 
     # App routes
     path('api/auth/', include('apps.authentication.urls')),
     path('api/users/', include('apps.users.urls')),
     path('api/customers/', include('apps.customers.urls')),
     path('api/bills/', include('apps.bills.urls')),
+    path('api/dashboard/', include('apps.dashboard.urls')),
 ]

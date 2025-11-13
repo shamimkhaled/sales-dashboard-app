@@ -2,10 +2,13 @@ from rest_framework import generics, permissions, filters
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
-from django.http import StreamingHttpResponse
+from django.http import StreamingHttpResponse, HttpResponse
 import csv
+import pandas as pd
+from io import BytesIO
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Prospect, Customer
+from apps.bills.models import BillRecord
 from .serializers import (
     ProspectSerializer,
     CustomerSerializer,
@@ -47,7 +50,7 @@ class CustomerListCreateView(generics.ListCreateAPIView):
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['assigned_sales_person']
     search_fields = ['name', 'company_name', 'email', 'phone']
-    ordering_fields = ['created_at', 'monthly_revenue']
+    ordering_fields = ['created_at']
 
     def get_queryset(self):
         qs = Customer.objects.all()
@@ -73,12 +76,95 @@ class CustomerImportView(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
     def post(self, request):
-        # Placeholder validation and row-by-row reporting
         file = request.data.get('file')
         if not file:
             return Response({'detail': 'File is required'}, status=400)
-        # TODO: implement full validation and rollback
-        return Response({'success': True, 'processed': 0, 'errors': []})
+
+        file_name = file.name.lower()
+        if file_name.endswith('.xlsx') or file_name.endswith('.xls'):
+            return self._import_excel(file)
+        elif file_name.endswith('.csv'):
+            return self._import_csv(file)
+        else:
+            return Response({'detail': 'Unsupported file format. Please upload Excel (.xlsx, .xls) or CSV files.'}, status=400)
+
+    def _import_excel(self, file):
+        try:
+            df = pd.read_excel(file)
+            return self._process_dataframe(df)
+        except Exception as e:
+            return Response({'detail': f'Error reading Excel file: {str(e)}'}, status=400)
+
+    def _import_csv(self, file):
+        try:
+            df = pd.read_csv(file)
+            return self._process_dataframe(df)
+        except Exception as e:
+            return Response({'detail': f'Error reading CSV file: {str(e)}'}, status=400)
+
+    def _process_dataframe(self, df):
+        required_columns = ['name', 'email', 'phone']
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            return Response({
+                'detail': f'Missing required columns: {", ".join(missing_columns)}'
+            }, status=400)
+
+        processed = 0
+        errors = []
+        created = 0
+        updated = 0
+
+        for index, row in df.iterrows():
+            try:
+                # Clean and validate data
+                customer_data = {
+                    'name': str(row.get('name', '')).strip(),
+                    'company_name': str(row.get('company_name', '')).strip() or None,
+                    'email': str(row.get('email', '')).strip().lower(),
+                    'phone': str(row.get('phone', '')).strip(),
+                    'address': str(row.get('address', '')).strip() or None,
+                    'link_id': str(row.get('link_id', '')).strip() or None,
+                }
+
+                # Validate required fields
+                if not customer_data['name']:
+                    errors.append(f'Row {index + 2}: Name is required')
+                    continue
+                if not customer_data['email']:
+                    errors.append(f'Row {index + 2}: Email is required')
+                    continue
+                if not customer_data['phone']:
+                    errors.append(f'Row {index + 2}: Phone is required')
+                    continue
+
+                # Check if customer exists
+                customer, created_flag = Customer.objects.get_or_create(
+                    email=customer_data['email'],
+                    defaults=customer_data
+                )
+
+                if created_flag:
+                    created += 1
+                else:
+                    # Update existing customer
+                    for key, value in customer_data.items():
+                        setattr(customer, key, value)
+                    customer.save()
+                    updated += 1
+
+                processed += 1
+
+            except Exception as e:
+                errors.append(f'Row {index + 2}: {str(e)}')
+
+        return Response({
+            'success': len(errors) == 0,
+            'processed': processed,
+            'created': created,
+            'updated': updated,
+            'errors': errors
+        })
 
 
 class CustomerExportView(APIView):
@@ -87,16 +173,53 @@ class CustomerExportView(APIView):
 
     def get(self, request):
         queryset = Customer.objects.all()
-        def row_iter():
-            header = ['id', 'name', 'company_name', 'email', 'phone', 'monthly_revenue']
-            yield ','.join(header) + '\n'
-            for c in queryset.iterator():
-                row = [str(c.id), c.name, c.company_name or '', c.email, c.phone, str(c.monthly_revenue)]
-                yield ','.join(row) + '\n'
+        export_format = request.query_params.get('format', 'csv').lower()
 
-        response = StreamingHttpResponse(row_iter(), content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="customers.csv"'
-        return response
+        if export_format == 'excel':
+            # Export as Excel
+            data = []
+            for c in queryset:
+                data.append({
+                    'id': c.id,
+                    'name': c.name,
+                    'company_name': c.company_name or '',
+                    'email': c.email,
+                    'phone': c.phone,
+                    'address': c.address or '',
+                    'calculated_monthly_revenue': float(c.calculated_monthly_revenue),
+                    'potential_revenue': float(c.potential_revenue),
+                    'created_at': c.created_at.strftime('%Y-%m-%d %H:%M:%S') if c.created_at else '',
+                })
+
+            df = pd.DataFrame(data)
+            buffer = BytesIO()
+            with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+                df.to_excel(writer, sheet_name='Customers', index=False)
+            buffer.seek(0)
+
+            response = HttpResponse(
+                buffer.getvalue(),
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+            response['Content-Disposition'] = 'attachment; filename="customers.xlsx"'
+            return response
+
+        else:
+            # Export as CSV (default)
+            def row_iter():
+                header = ['id', 'name', 'company_name', 'email', 'phone', 'address', 'calculated_monthly_revenue', 'potential_revenue', 'created_at']
+                yield ','.join(header) + '\n'
+                for c in queryset.iterator():
+                    row = [
+                        str(c.id), c.name, c.company_name or '', c.email, c.phone,
+                        c.address or '', str(c.calculated_monthly_revenue), str(c.potential_revenue),
+                        c.created_at.strftime('%Y-%m-%d %H:%M:%S') if c.created_at else ''
+                    ]
+                    yield ','.join(row) + '\n'
+
+            response = StreamingHttpResponse(row_iter(), content_type='text/csv')
+            response['Content-Disposition'] = 'attachment; filename="customers.csv"'
+            return response
 
 
 class RevenueCalculationView(APIView):
@@ -105,7 +228,7 @@ class RevenueCalculationView(APIView):
 
     def get(self, request):
         # Simple aggregation example; can be extended to weekly/yearly
-        monthly_total = Customer.objects.all().aggregate(total=models.Sum('monthly_revenue'))['total'] or 0
+        monthly_total = BillRecord.objects.aggregate(total=models.Sum('total_bill'))['total'] or 0
         weekly_total = monthly_total / 4
         yearly_total = monthly_total * 12
         return Response({

@@ -24,9 +24,13 @@ export default function Dashboard() {
   // KPI Data
   const [kpiData, setKpiData] = useState({
     totalRevenue: 0,
+    totalRevenueChange: 0,
     totalCustomers: 0,
+    totalCustomersChange: 0,
     activeCustomers: 0,
+    activeCustomersChange: 0,
     collectionRate: 0,
+    collectionRateChange: 0,
   });
 
   // Chart Data
@@ -46,59 +50,38 @@ export default function Dashboard() {
       setError(null);
 
       // Fetch all analytics data
-      const [weeklyRes, monthlyRes, yearlyRes, customerWiseRes] = await Promise.all([
+      const [kpiRes, weeklyRes, monthlyRes, yearlyRes, customerWiseRes, kamRes] = await Promise.all([
+        dashboardService.getKPIs(),
         dashboardService.getWeeklyRevenue(),
         dashboardService.getMonthlyRevenue(),
         dashboardService.getYearlyRevenue(),
         dashboardService.getCustomerWiseRevenue(),
+        dashboardService.getKAMPerformance(),
       ]);
 
+      const kpis = kpiRes.data || kpiRes;
       const weekly = weeklyRes.data || weeklyRes;
       const monthly = monthlyRes.data || monthlyRes;
       const yearly = yearlyRes.data || yearlyRes;
       const customerWise = customerWiseRes.data || customerWiseRes;
+      const kamPerformance = kamRes.data || kamRes;
+
+      setKpiData({
+        totalRevenue: kpis.total_revenue || 0,
+        totalRevenueChange: kpis.total_revenue_change || 0,
+        totalCustomers: kpis.total_customers || 0,
+        totalCustomersChange: kpis.total_customers_change || 0,
+        activeCustomers: kpis.active_customers || 0,
+        activeCustomersChange: kpis.active_customers_change || 0,
+        collectionRate: kpis.collection_rate || 0,
+        collectionRateChange: kpis.collection_rate_change || 0,
+      });
 
       setWeeklyData(weekly);
       setMonthlyData(monthly);
       setYearlyData(yearly);
       setCustomerWiseData(customerWise);
-
-      // Calculate KAM Performance
-      const kamMap = {};
-      customerWise.forEach(customer => {
-        if (customer.kam) {
-          if (!kamMap[customer.kam]) {
-            kamMap[customer.kam] = {
-              kam: customer.kam,
-              customers: 0,
-              totalRevenue: 0,
-              activeCustomers: 0,
-            };
-          }
-          kamMap[customer.kam].customers += 1;
-          kamMap[customer.kam].totalRevenue += customer.totalRevenue || 0;
-          if (!customer.leaveDate) {
-            kamMap[customer.kam].activeCustomers += 1;
-          }
-        }
-      });
-      const kamPerformance = Object.values(kamMap).sort((a, b) => b.totalRevenue - a.totalRevenue);
       setKamPerformanceData(kamPerformance);
-
-      // Calculate KPIs
-      const totalRevenue = monthly.reduce((sum, item) => sum + (item.revenue || 0), 0);
-      const totalCustomers = customerWise.length;
-      const activeCustomers = customerWise.filter(c => !c.leaveDate).length;
-      const collectionRate = customerWise.length > 0
-        ? (customerWise.filter(c => c.collectionRate > 0).length / customerWise.length * 100).toFixed(1)
-        : 0;
-
-      setKpiData({
-        totalRevenue: totalRevenue.toLocaleString('en-US', { maximumFractionDigits: 0 }),
-        totalCustomers,
-        activeCustomers,
-        collectionRate: `${collectionRate}%`,
-      });
     } catch (err) {
       setError(err.message || 'Failed to fetch dashboard data');
     } finally {
@@ -202,11 +185,11 @@ export default function Dashboard() {
           <motion.div variants={itemVariants}>
             <KPICard
               title="Total Revenue"
-              value={`৳${kpiData.totalRevenue}`}
+              value={`৳${kpiData.totalRevenue?.toLocaleString()}`}
               icon={DollarSign}
               color="gold"
-              trend="up"
-              trendValue="+12.5%"
+              trend={kpiData.totalRevenueChange >= 0 ? "up" : "down"}
+              trendValue={`${kpiData.totalRevenueChange >= 0 ? '+' : ''}${kpiData.totalRevenueChange}%`}
             />
           </motion.div>
           <motion.div variants={itemVariants}>
@@ -215,8 +198,8 @@ export default function Dashboard() {
               value={kpiData.totalCustomers}
               icon={Users}
               color="blue"
-              trend="up"
-              trendValue="+8.2%"
+              trend={kpiData.totalCustomersChange >= 0 ? "up" : "down"}
+              trendValue={`${kpiData.totalCustomersChange >= 0 ? '+' : ''}${kpiData.totalCustomersChange}%`}
             />
           </motion.div>
           <motion.div variants={itemVariants}>
@@ -225,18 +208,18 @@ export default function Dashboard() {
               value={kpiData.activeCustomers}
               icon={TrendingUp}
               color="green"
-              trend="up"
-              trendValue="+5.1%"
+              trend={kpiData.activeCustomersChange >= 0 ? "up" : "down"}
+              trendValue={`${kpiData.activeCustomersChange >= 0 ? '+' : ''}${kpiData.activeCustomersChange}%`}
             />
           </motion.div>
           <motion.div variants={itemVariants}>
             <KPICard
               title="Collection Rate"
-              value={kpiData.collectionRate}
+              value={`${kpiData.collectionRate}%`}
               icon={Calendar}
               color="purple"
-              trend="up"
-              trendValue="+3.2%"
+              trend={kpiData.collectionRateChange >= 0 ? "up" : "down"}
+              trendValue={`${kpiData.collectionRateChange >= 0 ? '+' : ''}${kpiData.collectionRateChange}%`}
             />
           </motion.div>
         </motion.div>
@@ -421,8 +404,8 @@ export default function Dashboard() {
                   labelStyle={{ color: isDark ? '#d4af37' : '#d4af37' }}
                 />
                 <Legend />
-                <Bar dataKey="totalRevenue" fill={chartColors.primary} name="Revenue" radius={[8, 8, 0, 0]} />
-                <Bar dataKey="customers" fill={chartColors.secondary} name="Customers" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="total_revenue" fill={chartColors.primary} name="Revenue" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="total_customers" fill={chartColors.secondary} name="Customers" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </motion.div>
@@ -568,16 +551,16 @@ export default function Dashboard() {
                      }`}>{kam.kam}</td>
                      <td className={`px-4 py-3 text-sm text-center ${
                        isDark ? 'text-silver-300' : 'text-gray-700'
-                     }`}>{kam.customers}</td>
+                     }`}>{kam.total_customers}</td>
                      <td className={`px-4 py-3 text-sm text-center ${
                        isDark ? 'text-green-400' : 'text-green-600'
-                     }`}>{kam.activeCustomers}</td>
+                     }`}>{kam.active_customers}</td>
                      <td className={`px-4 py-3 text-sm font-semibold text-right ${
                        isDark ? 'text-gold-400' : 'text-gold-600'
-                     }`}>৳{kam.totalRevenue?.toLocaleString()}</td>
+                     }`}>৳{kam.total_revenue?.toLocaleString()}</td>
                      <td className={`px-4 py-3 text-sm text-right ${
                        isDark ? 'text-silver-300' : 'text-gray-700'
-                     }`}>৳{(kam.totalRevenue / kam.customers).toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
+                     }`}>৳{(kam.total_revenue / kam.total_customers).toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
                    </tr>
                  ))}
                </tbody>

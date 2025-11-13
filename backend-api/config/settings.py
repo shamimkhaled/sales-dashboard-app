@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'apps.authentication',
     'apps.customers',
     'apps.bills',
+    'apps.dashboard',
 ]
 
 MIDDLEWARE = [

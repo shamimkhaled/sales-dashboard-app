@@ -39,6 +39,7 @@ class Prospect(models.Model):
         return self.name
 
 
+
 class ProspectStatusHistory(models.Model):
     prospect = models.ForeignKey(Prospect, on_delete=models.CASCADE, related_name='status_history')
     from_status = models.CharField(max_length=20, blank=True)
@@ -75,6 +76,11 @@ class ProspectAttachment(models.Model):
 
 
 class Customer(models.Model):
+    STATUS_CHOICES = (
+        ('Active', 'Active'),
+        ('Inactive', 'Inactive'),
+    )
+
     name = models.CharField(max_length=255)
     company_name = models.CharField(max_length=255, blank=True)
     email = models.EmailField(unique=True)
@@ -84,10 +90,15 @@ class Customer(models.Model):
     )
     address = models.TextField(blank=True)
     assigned_sales_person = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='customers')
-    potential_revenue = models.DecimalField(max_digits=12, decimal_places=2, default=0, validators=[MinValueValidator(0)])
-    monthly_revenue = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    link_id = models.CharField(max_length=100, unique=True, null=True, blank=True, default=None)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='Active', db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def calculated_monthly_revenue(self):
+        from apps.bills.models import BillRecord
+        return BillRecord.objects.filter(customer=self).aggregate(total=models.Sum('total_bill'))['total'] or 0
 
     class Meta:
         db_table = 'sales_customers'
@@ -100,4 +111,3 @@ class Customer(models.Model):
         return self.name
 
 
-# Create your models here.

@@ -44,7 +44,8 @@ class ProspectAttachmentSerializer(serializers.ModelSerializer):
 
 class CustomerSerializer(serializers.ModelSerializer):
     assigned_sales_person_details = serializers.SerializerMethodField()
-    
+    calculated_monthly_revenue = serializers.SerializerMethodField()
+
     class Meta:
         model = Customer
         fields = '__all__'
@@ -60,6 +61,9 @@ class CustomerSerializer(serializers.ModelSerializer):
                 'last_name': getattr(obj.assigned_sales_person, 'last_name', ''),
             }
         return None
+
+    def get_calculated_monthly_revenue(self, obj):
+        return obj.calculated_monthly_revenue
 
 
 

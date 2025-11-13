@@ -186,7 +186,9 @@ export const AuthProvider = ({ children }) => {
 
   // Check if user has role
   const hasRole = (role) => {
-    return user && user.role === role;
+    if (!user) return false;
+    const roleName = typeof user.role === 'string' ? user.role : user.role_name;
+    return roleName === role;
   };
 
   // Check if user is admin or super admin
