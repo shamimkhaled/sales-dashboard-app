@@ -57,7 +57,9 @@ class DashboardKPIsView(APIView):
             total_billed=Sum('total_bill'),
             total_received=Sum('total_received')
         )
-        current_collection_rate = (bills_data['total_received'] / bills_data['total_billed'] * 100) if bills_data['total_billed'] > 0 else 0
+        total_billed = bills_data['total_billed'] or 0
+        total_received = bills_data['total_received'] or 0
+        current_collection_rate = (total_received / total_billed * 100) if total_billed > 0 else 0
 
         prev_bills_data = BillRecord.objects.filter(
             billing_date__range=[prev_start_date, prev_end_date],
@@ -66,7 +68,9 @@ class DashboardKPIsView(APIView):
             total_billed=Sum('total_bill'),
             total_received=Sum('total_received')
         )
-        prev_collection_rate = (prev_bills_data['total_received'] / prev_bills_data['total_billed'] * 100) if prev_bills_data['total_billed'] > 0 else 0
+        prev_total_billed = prev_bills_data['total_billed'] or 0
+        prev_total_received = prev_bills_data['total_received'] or 0
+        prev_collection_rate = (prev_total_received / prev_total_billed * 100) if prev_total_billed > 0 else 0
         collection_change = current_collection_rate - prev_collection_rate
 
         return Response({
@@ -183,7 +187,9 @@ class CustomerWiseRevenueView(APIView):
 
         data = []
         for customer in customer_data:
-            collection_rate = (customer['total_received'] / customer['total_billed'] * 100) if customer['total_billed'] and customer['total_billed'] > 0 else 0
+            total_billed = customer['total_billed'] or 0
+            total_received = customer['total_received'] or 0
+            collection_rate = (total_received / total_billed * 100) if total_billed > 0 else 0
 
             data.append({
                 'customer_id': customer['id'],

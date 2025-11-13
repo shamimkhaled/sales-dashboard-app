@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   FileText,
   Users,
+  User,
   UserPlus,
   BarChart3,
   Activity,
@@ -15,6 +16,7 @@ import {
   Settings,
   ChevronDown,
   ChevronRight,
+  ChevronUp,
   Shield,
 } from "lucide-react";
 import KTLLogo from "./KTLLogo";
