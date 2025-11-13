@@ -217,13 +217,14 @@ class KAMPerformanceView(APIView):
 
         data = []
         for kam in kam_data:
-            avg_revenue = (kam['total_revenue'] / kam['total_customers']) if kam['total_customers'] > 0 else 0
+            total_revenue = kam['total_revenue'] or 0
+            avg_revenue = (total_revenue / kam['total_customers']) if kam['total_customers'] > 0 else 0
             data.append({
                 'kam': kam['kam_name'],
                 'kam_id': kam['kam_id'],
                 'total_customers': kam['total_customers'],
                 'active_customers': kam['active_customers'],
-                'total_revenue': float(kam['total_revenue'] or 0),
+                'total_revenue': float(total_revenue),
                 'avg_revenue_per_customer': round(float(avg_revenue), 2)
             })
 
