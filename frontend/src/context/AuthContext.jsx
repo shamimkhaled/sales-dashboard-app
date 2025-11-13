@@ -153,14 +153,17 @@ export const AuthProvider = ({ children }) => {
   const hasPermission = (permission) => {
     if (!user) return false;
 
+    // Extract role name - handle both string and object format
+    const roleName = typeof user.role === 'string' ? user.role : (user.role?.role_name || user.role_name);
+
     // Super admin has ALL permissions
-    if (user.role === 'super_admin') {
+    if (roleName === 'super_admin') {
       console.log(`Super admin access granted for permission: ${permission}`);
       return true;
     }
 
     // Admin role has all permissions
-    if (user.role === 'admin') {
+    if (roleName === 'admin') {
       console.log(`Admin access granted for permission: ${permission}`);
       return true;
     }
@@ -194,16 +197,18 @@ export const AuthProvider = ({ children }) => {
   // Check if user is admin or super admin
   const isAdmin = () => {
     if (!user) return false;
-    const isAdmin = user && ['admin', 'super_admin'].includes(user.role);
-    console.log('isAdmin check:', isAdmin, 'role:', user.role);
+    const roleName = typeof user.role === 'string' ? user.role : (user.role?.role_name || user.role_name);
+    const isAdmin = user && ['admin', 'super_admin'].includes(roleName);
+    console.log('isAdmin check:', isAdmin, 'role:', roleName);
     return isAdmin;
   };
 
   // Check if user is super admin
   const isSuperAdmin = () => {
     if (!user) return false;
-    const isSuperAdmin = user && user.role === 'super_admin';
-    console.log('isSuperAdmin check:', isSuperAdmin, 'role:', user.role);
+    const roleName = typeof user.role === 'string' ? user.role : (user.role?.role_name || user.role_name);
+    const isSuperAdmin = user && roleName === 'super_admin';
+    console.log('isSuperAdmin check:', isSuperAdmin, 'role:', roleName);
     return isSuperAdmin;
   };
 
