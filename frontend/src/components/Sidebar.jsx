@@ -113,11 +113,11 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       path: "/reports/company",
       permission: "reports:read",
     },
-    {
-      name: "Data Entry Performance",
-      path: "/reports/performance",
-      permission: "reports:read",
-    },
+    // {
+    //   name: "Data Entry Performance",
+    //   path: "/reports/performance",
+    //   permission: "reports:read",
+    // },
   ];
 
   // Filter navigation items based on permissions

@@ -8,6 +8,11 @@ export const prospectService = {
     if (params.search) queryParams.append("search", params.search);
     if (params.page) queryParams.append("page", params.page);
     if (params.pageSize) queryParams.append("pageSize", params.pageSize);
+    if (params.status) queryParams.append("status", params.status);
+    if (params.month) queryParams.append("month", params.month);
+    if (params.year) queryParams.append("year", params.year);
+    if (params.start_date) queryParams.append("start_date", params.start_date);
+    if (params.end_date) queryParams.append("end_date", params.end_date);
     const url = `/customers/prospects/${
       queryParams.toString() ? "?" + queryParams.toString() : ""
     }`;
