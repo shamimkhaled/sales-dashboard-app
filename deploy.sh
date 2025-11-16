@@ -32,7 +32,7 @@ pip install -r requirements.txt
 
 # Run migrations
 echo "🗄️  Running database migrations..."
-python manage.py migrate
+python manage.py migrate  --settings=config.production_settings
 
 # Collect static files
 echo "📁 Collecting static files..."
