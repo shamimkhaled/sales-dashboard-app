@@ -39,6 +39,9 @@ DATABASES = {
 # Allowed hosts for production
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
 
+# CSRF Trusted Origins for production
+CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in config('CSRF_TRUSTED_ORIGINS', '').split(',') if origin.strip()]
+
 # Static files configuration for production
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
