@@ -138,9 +138,9 @@ class CustomerAdmin(admin.ModelAdmin):
     list_filter = ['assigned_sales_person', 'created_at']
     search_fields = ['name', 'company_name', 'email', 'phone']
     ordering = ['-created_at']
-    readonly_fields = ['created_at', 'updated_at']
+    readonly_fields = ['created_at', 'updated_at', 'calculated_monthly_revenue']
     date_hierarchy = 'created_at'
-    
+
     fieldsets = (
         ('Basic Information', {
             'fields': ('name', 'company_name')
