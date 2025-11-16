@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Plus, Search, Trash2, X, Edit2 } from "lucide-react";
+import { Users, Plus, Search, Trash2, X, Edit2, Eye } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import { useNotification } from "../context/NotificationContext";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorAlert from "../components/ErrorAlert";
 import Pagination from "../components/Pagination";
 import { prospectService } from "../services/prospectService";
+import { userService } from "../services/userService";
 
 const initialForm = {
   name: "",
@@ -36,11 +37,20 @@ export default function Prospects() {
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [monthFilter, setMonthFilter] = useState("");
+  const [yearFilter, setYearFilter] = useState("");
+  const [startDateFilter, setStartDateFilter] = useState("");
+  const [endDateFilter, setEndDateFilter] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [prospectToDelete, setProspectToDelete] = useState(null);
   const [showEditForm, setShowEditForm] = useState(false);
   const [editingProspect, setEditingProspect] = useState(null);
   const [formErrors, setFormErrors] = useState({});
+  const [salesPersons, setSalesPersons] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [viewingProspect, setViewingProspect] = useState(null);
 
   // Get today's date in YYYY-MM-DD format
   const getTodayDate = () => {
@@ -90,49 +100,117 @@ export default function Prospects() {
   useEffect(() => {
     fetchProspects();
     // eslint-disable-next-line
-  }, [currentPage, pageSize, searchTerm]);
+  }, [currentPage, pageSize, searchTerm, statusFilter, monthFilter, yearFilter, startDateFilter, endDateFilter]);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await userService.getUsers();
+        const users = response.data || response.results || response;
+        setAllUsers(users);
+        const salesPersons = users.filter(user => user.role_name === 'sales_person');
+        setSalesPersons(salesPersons);
+      } catch (err) {
+        console.error('Error fetching users:', err);
+      }
+    };
+    fetchUsers();
+  }, []);
 
   const fetchProspects = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await prospectService.getAllProspects({
+      const params = {
         page: currentPage,
         pageSize,
         search: searchTerm,
-      });
+      };
+      if (statusFilter) {
+        params.status = statusFilter;
+      }
+
+      // If month, year, or date range filter is applied, fetch all data for client-side filtering
+      const hasDateFilter = monthFilter || yearFilter || startDateFilter || endDateFilter;
+      if (hasDateFilter) {
+        params.pageSize = 10000; // Large number to get all data
+        params.page = 1;
+      }
+
+      if (monthFilter) {
+        params.month = monthFilter;
+      }
+      if (yearFilter) {
+        params.year = yearFilter;
+      }
+      if (startDateFilter) {
+        params.start_date = startDateFilter;
+      }
+      if (endDateFilter) {
+        params.end_date = endDateFilter;
+      }
+      const response = await prospectService.getAllProspects(params);
       
       console.log('Prospects API Response:', response);
-      
+
+      let prospectsData = [];
+      let totalCountValue = 0;
+
       // Handle Django REST Framework pagination response
       if (response.results) {
         // DRF PageNumberPagination format: { count, next, previous, results }
         console.log('Using DRF format - count:', response.count, 'results length:', response.results.length);
-        setProspects(response.results);
-        setTotalCount(response.count || 0);
-        setTotalPages(Math.ceil((response.count || 0) / pageSize));
+        prospectsData = response.results;
+        totalCountValue = response.count || 0;
       } else if (response.data) {
         console.log('Using data format - data length:', response.data.length);
-        setProspects(response.data);
+        prospectsData = response.data;
         // Extract pagination info from response
         if (response.pagination) {
-          setTotalCount(response.pagination.totalCount || response.pagination.total || 0);
-          setTotalPages(response.pagination.totalPages || response.pagination.pages || 0);
+          totalCountValue = response.pagination.totalCount || response.pagination.total || 0;
         } else if (response.total || response.totalCount) {
           // Pagination info at root level
-          setTotalCount(response.total || response.totalCount);
-          setTotalPages(response.totalPages || Math.ceil((response.total || response.totalCount) / pageSize));
+          totalCountValue = response.total || response.totalCount;
         } else {
           // No pagination info available
-          setTotalCount(response.data.length);
-          setTotalPages(Math.ceil(response.data.length / pageSize));
+          totalCountValue = response.data.length;
         }
       } else if (Array.isArray(response)) {
         console.log('Using array format - length:', response.length);
-        setProspects(response);
-        setTotalCount(response.length);
-        setTotalPages(Math.ceil(response.length / pageSize));
+        prospectsData = response;
+        totalCountValue = response.length;
       }
+
+      // Apply client-side filtering for month, year, and date range if needed
+      if (hasDateFilter) {
+        prospectsData = prospectsData.filter(prospect => {
+          if (!prospect.follow_up_date) return false;
+          const date = new Date(prospect.follow_up_date);
+          const prospectMonth = (date.getMonth() + 1).toString().padStart(2, '0');
+          const prospectYear = date.getFullYear().toString();
+          const prospectDate = prospect.follow_up_date;
+
+          const monthMatch = !monthFilter || prospectMonth === monthFilter;
+          const yearMatch = !yearFilter || prospectYear === yearFilter;
+          const startDateMatch = !startDateFilter || prospectDate >= startDateFilter;
+          const endDateMatch = !endDateFilter || prospectDate <= endDateFilter;
+
+          return monthMatch && yearMatch && startDateMatch && endDateMatch;
+        });
+        totalCountValue = prospectsData.length;
+      }
+
+      // Apply pagination for client-side filtered data
+      if (hasDateFilter) {
+        const startIndex = (currentPage - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+        setProspects(prospectsData.slice(startIndex, endIndex));
+      } else {
+        setProspects(prospectsData);
+      }
+
+      setTotalCount(totalCountValue);
+      setTotalPages(Math.ceil(totalCountValue / pageSize));
     } catch (err) {
       console.error('Error fetching prospects:', err);
       setError(err.message || "Failed to fetch prospects");
@@ -164,6 +242,8 @@ export default function Prospects() {
       setShowForm(false);
       setCurrentPage(1);
       setSearchTerm("");
+      setStatusFilter("");
+      fetchProspects();
     } catch (err) {
       console.error('Create prospect error:', err);
       // Try to parse field-level validation errors
@@ -244,6 +324,17 @@ export default function Prospects() {
       setFormErrors({});
       setShowEditForm(false);
       setEditingProspect(null);
+      setCurrentPage(1);
+      setSearchTerm("");
+      setStatusFilter("");
+      setMonthFilter("");
+      setYearFilter("");
+      setStartDateFilter("");
+      setEndDateFilter("");
+      setMonthFilter("");
+      setYearFilter("");
+      setStartDateFilter("");
+      setEndDateFilter("");
       fetchProspects();
     } catch (err) {
       console.error('Update prospect error:', err);
@@ -267,6 +358,35 @@ export default function Prospects() {
     setEditingProspect(null);
     setFormData(initialForm);
   };
+
+  const handleViewClick = (prospect) => {
+    setViewingProspect(prospect);
+    setShowViewModal(true);
+  };
+
+  const handleViewClose = () => {
+    setShowViewModal(false);
+    setViewingProspect(null);
+  };
+
+  // Define months and years for filters
+  const months = [
+    { value: '01', label: 'January' },
+    { value: '02', label: 'February' },
+    { value: '03', label: 'March' },
+    { value: '04', label: 'April' },
+    { value: '05', label: 'May' },
+    { value: '06', label: 'June' },
+    { value: '07', label: 'July' },
+    { value: '08', label: 'August' },
+    { value: '09', label: 'September' },
+    { value: '10', label: 'October' },
+    { value: '11', label: 'November' },
+    { value: '12', label: 'December' },
+  ];
+
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 5 }, (_, i) => (currentYear - 2 + i).toString());
 
   if (loading && prospects.length === 0) return <LoadingSpinner />;
 
@@ -513,20 +633,23 @@ export default function Prospects() {
                     <option value="contacted">Contacted</option>
                     <option value="qualified">Qualified</option>
                     <option value="lost">Lost</option>
-                    <option value="won">Won</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Sales Person (ID)
+                    Sales Person
                   </label>
-                  <input
-                    type="number"
+                  <select
                     name="sales_person"
                     value={formData.sales_person}
                     onChange={handleInputChange}
                     className="w-full px-4 py-2 rounded-lg border focus:outline-none"
-                  />
+                  >
+                    <option value="">Select Sales Person</option>
+                    {salesPersons.map(user => (
+                      <option key={user.id} value={user.id}>{user.username} ({user.email})</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="md:col-span-2 flex gap-3">
                   <motion.button
@@ -754,20 +877,23 @@ export default function Prospects() {
                     <option value="contacted">Contacted</option>
                     <option value="qualified">Qualified</option>
                     <option value="lost">Lost</option>
-                    <option value="won">Won</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Sales Person (ID)
+                    Sales Person
                   </label>
-                  <input
-                    type="number"
+                  <select
                     name="sales_person"
                     value={formData.sales_person}
                     onChange={handleInputChange}
                     className="w-full px-4 py-2 rounded-lg border focus:outline-none"
-                  />
+                  >
+                    <option value="">Select Sales Person</option>
+                    {salesPersons.map(user => (
+                      <option key={user.id} value={user.id}>{user.username} ({user.email})</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="md:col-span-2 flex gap-3">
                   <motion.button
@@ -797,10 +923,10 @@ export default function Prospects() {
             </motion.div>
           )}
         </AnimatePresence>
-        {/* Search */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        {/* Search and Filter */}
+        <div className="flex flex-wrap gap-4 mb-6">
           <div
-            className={`flex-1 relative ${
+            className={`flex-1 min-w-0 relative ${
               isDark ? "bg-dark-800" : "bg-white"
             } rounded-lg border ${
               isDark ? "border-dark-700" : "border-gold-200"
@@ -822,6 +948,111 @@ export default function Prospects() {
                   ? "bg-dark-800 text-white placeholder-silver-500"
                   : "bg-white text-dark-900 placeholder-gray-400"
               }`}
+            />
+          </div>
+          <div
+            className={`w-full sm:w-48 ${
+              isDark ? "bg-dark-800" : "bg-white"
+            } rounded-lg border ${
+              isDark ? "border-dark-700" : "border-gold-200"
+            }`}
+          >
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className={`w-full px-4 py-2 rounded-lg ${
+                isDark
+                  ? "bg-dark-800 text-white"
+                  : "bg-white text-dark-900"
+              }`}
+            >
+              <option value="">All Statuses</option>
+              <option value="new">New</option>
+              <option value="contacted">Contacted</option>
+              <option value="qualified">Qualified</option>
+              <option value="lost">Lost</option>
+            </select>
+          </div>
+          <div
+            className={`w-full sm:w-48 ${
+              isDark ? "bg-dark-800" : "bg-white"
+            } rounded-lg border ${
+              isDark ? "border-dark-700" : "border-gold-200"
+            }`}
+          >
+            <select
+              value={monthFilter}
+              onChange={(e) => setMonthFilter(e.target.value)}
+              className={`w-full px-4 py-2 rounded-lg ${
+                isDark
+                  ? "bg-dark-800 text-white"
+                  : "bg-white text-dark-900"
+              }`}
+            >
+              <option value="">All Months</option>
+              {months.map(month => (
+                <option key={month.value} value={month.value}>{month.label}</option>
+              ))}
+            </select>
+          </div>
+          {/* <div
+            className={`w-full sm:w-48 ${
+              isDark ? "bg-dark-800" : "bg-white"
+            } rounded-lg border ${
+              isDark ? "border-dark-700" : "border-gold-200"
+            }`}
+          >
+            <select
+              value={yearFilter}
+              onChange={(e) => setYearFilter(e.target.value)}
+              className={`w-full px-4 py-2 rounded-lg ${
+                isDark
+                  ? "bg-dark-800 text-white"
+                  : "bg-white text-dark-900"
+              }`}
+            >
+              <option value="">All Years</option>
+              {years.map(year => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+          </div> */}
+          <div
+            className={`w-full sm:w-48 ${
+              isDark ? "bg-dark-800" : "bg-white"
+            } rounded-lg border ${
+              isDark ? "border-dark-700" : "border-gold-200"
+            }`}
+          >
+            <input
+              type="date"
+              value={startDateFilter}
+              onChange={(e) => setStartDateFilter(e.target.value)}
+              className={`w-full px-4 py-2 rounded-lg ${
+                isDark
+                  ? "bg-dark-800 text-white"
+                  : "bg-white text-dark-900"
+              }`}
+              placeholder="Start Date"
+            />
+          </div>
+          <div
+            className={`w-full sm:w-48 ${
+              isDark ? "bg-dark-800" : "bg-white"
+            } rounded-lg border ${
+              isDark ? "border-dark-700" : "border-gold-200"
+            }`}
+          >
+            <input
+              type="date"
+              value={endDateFilter}
+              onChange={(e) => setEndDateFilter(e.target.value)}
+              className={`w-full px-4 py-2 rounded-lg ${
+                isDark
+                  ? "bg-dark-800 text-white"
+                  : "bg-white text-dark-900"
+              }`}
+              placeholder="End Date"
             />
           </div>
         </div>
@@ -876,6 +1107,19 @@ export default function Prospects() {
                     <td className="px-6 py-4 text-sm">{p.status}</td>
                     <td className="px-6 py-4 text-sm">
                       <div className="flex gap-2">
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleViewClick(p)}
+                          className={`p-2 rounded-lg ${
+                            isDark
+                              ? "bg-dark-700 text-green-400 hover:bg-dark-600"
+                              : "bg-green-50 text-green-600 hover:bg-green-100"
+                          }`}
+                          title="View prospect"
+                        >
+                          <Eye size={16} />
+                        </motion.button>
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.95 }}
@@ -1020,6 +1264,110 @@ export default function Prospects() {
                       className="flex-1 px-4 py-3 rounded-lg font-medium bg-red-600 text-white hover:bg-red-700"
                     >
                       Delete
+                    </motion.button>
+                  </div>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+        {/* View Modal */}
+        <AnimatePresence>
+          {showViewModal && viewingProspect && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={handleViewClose}
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              >
+                <div
+                  className={`w-full max-w-2xl rounded-2xl p-6 shadow-2xl ${isDark ? "bg-dark-800 border border-dark-700" : "bg-white border border-gray-200"}`}
+                >
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className={`text-2xl font-serif font-bold ${isDark ? "text-white" : "text-dark-900"}`}>
+                      Prospect Details
+                    </h3>
+                    <button
+                      onClick={handleViewClose}
+                      className={`p-2 rounded-lg transition-all duration-300 ${isDark ? "bg-gray-700 text-gray-300 hover:bg-gray-600" : "bg-gray-200 text-gray-700 hover:bg-gray-300"}`}
+                    >
+                      <X size={24} />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Name</label>
+                      <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingProspect.name || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Company Name</label>
+                      <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingProspect.company_name || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Email</label>
+                      <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingProspect.email || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Phone</label>
+                      <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingProspect.phone || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Address</label>
+                      <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingProspect.address || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Potential Revenue</label>
+                      <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingProspect.potential_revenue ? `$${viewingProspect.potential_revenue}` : 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Contact Person</label>
+                      <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingProspect.contact_person || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Source</label>
+                      <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingProspect.source || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Follow Up Date</label>
+                      <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingProspect.follow_up_date || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Status</label>
+                      <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingProspect.status || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Sales Person</label>
+                      <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>
+                        {viewingProspect.sales_person
+                          ? (() => {
+                              const salesPerson = allUsers.find(user => user.id === viewingProspect.sales_person);
+                              return salesPerson ? salesPerson.username : viewingProspect.sales_person;
+                            })()
+                          : 'N/A'
+                        }
+                      </p>
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium mb-1">Notes</label>
+                      <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingProspect.notes || 'N/A'}</p>
+                    </div>
+                  </div>
+                  <div className="flex justify-end mt-6">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={handleViewClose}
+                      className={`px-6 py-2 rounded-lg font-medium ${isDark ? "bg-dark-700 text-gold-400 hover:bg-dark-600" : "bg-gray-200 text-gray-700 hover:bg-gray-300"}`}
+                    >
+                      Close
                     </motion.button>
                   </div>
                 </div>

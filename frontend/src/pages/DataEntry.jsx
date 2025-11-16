@@ -29,6 +29,7 @@ export default function DataEntry() {
   const [success, setSuccess] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [bills, setBills] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [showForm, setShowForm] = useState(false);
@@ -73,7 +74,7 @@ export default function DataEntry() {
 
   useEffect(() => {
     fetchBills();
-  }, [currentPage, pageSize, searchTerm]);
+  }, [currentPage, pageSize, searchTerm, statusFilter]);
 
   useEffect(() => {
     fetchCustomers();
@@ -82,11 +83,16 @@ export default function DataEntry() {
   const fetchBills = async () => {
     try {
       setLoading(true);
-      const response = await billService.getAllBills({
+      const params = {
         page: currentPage,
-        pageSize: pageSize,
+        page_size: pageSize,
         search: searchTerm
-      });
+      };
+      if (statusFilter) {
+        params.status = statusFilter;
+      }
+      console.log('Fetching bills with params:', params);
+      const response = await billService.getAllBills(params);
       
       // Handle Django REST Framework paginated response
       if (Array.isArray(response)) {
@@ -1262,6 +1268,29 @@ export default function DataEntry() {
                     : 'bg-white text-dark-900 placeholder-gray-400 focus:outline-none'
                 }`}
               />
+            </div>
+
+            <div className={`relative ${
+              isDark ? 'bg-dark-800' : 'bg-white'
+            } rounded-lg border transition-all duration-300 ${
+              isDark ? 'border-dark-700' : 'border-gold-200'
+            }`}>
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className={`w-full px-4 py-2 rounded-lg transition-all duration-300 ${
+                  isDark
+                    ? 'bg-dark-800 text-white focus:outline-none'
+                    : 'bg-white text-dark-900 focus:outline-none'
+                }`}
+              >
+                <option value="">All Status</option>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
             </div>
 
             <div className="flex items-center space-x-2">
