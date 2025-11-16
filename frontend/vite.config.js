@@ -1,5 +1,10 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+
+
+// http://172.31.82.254
+// http://103.146.220.225:223
+
 // 'http://localhost:8000'
 // VITE_API_URL = 'http://103.146.220.225:223';
 
