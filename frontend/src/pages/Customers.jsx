@@ -28,7 +28,7 @@ import { userService } from "../services/userService";
 export default function Customers() {
   const { isDark } = useTheme();
   const { showSuccess, showError } = useNotification();
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -193,7 +193,7 @@ export default function Customers() {
           assigned_sales_person:
             parseInt(formData.assigned_sales_person) || null,
           status: formData.status || "Active",
-          link_id: formData.link_id || "",
+          link_id: formData.link_id || null,
         };
         console.log("Updating customer:", editingId, customerData);
         const response = await customerService.updateCustomer(
@@ -216,7 +216,7 @@ export default function Customers() {
           assigned_sales_person:
             parseInt(formData.assigned_sales_person) || null,
           status: formData.status || "Active",
-          link_id: formData.link_id || "",
+          link_id: formData.link_id || null,
         };
         await customerService.createCustomer(customerData);
         showSuccess("Customer created successfully");
@@ -522,34 +522,40 @@ export default function Customers() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <label className="relative cursor-pointer px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center space-x-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl">
-                <FileUp size={20} />
-                <span>Import</span>
-                <input
-                  type="file"
-                  accept=".xlsx,.csv"
-                  onChange={handleImport}
-                  className="hidden"
-                />
-              </label>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={handleExport}
-                className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl"
-              >
-                <Download size={20} />
-                <span>Export</span>
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setShowForm(!showForm)}
-                className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl"
-              >
-                <Plus size={20} />
-                <span>New Customer</span>
-              </motion.button>
+              {hasPermission("customers:import") && (
+                <label className="relative cursor-pointer px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center space-x-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl">
+                  <FileUp size={20} />
+                  <span>Import</span>
+                  <input
+                    type="file"
+                    accept=".xlsx,.csv"
+                    onChange={handleImport}
+                    className="hidden"
+                  />
+                </label>
+              )}
+              {hasPermission("customers:export") && (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleExport}
+                  className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl"
+                >
+                  <Download size={20} />
+                  <span>Export</span>
+                </motion.button>
+              )}
+              {hasPermission("customers:update") && (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowForm(!showForm)}
+                  className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl"
+                >
+                  <Plus size={20} />
+                  <span>New Customer</span>
+                </motion.button>
+              )}
             </div>
           </div>
         </div>
@@ -650,7 +656,7 @@ export default function Customers() {
                       isDark ? "text-silver-300" : "text-gray-700"
                     }`}
                   >
-                    Name *
+                    Name of Party *
                   </label>
                   <input
                     type="text"
@@ -673,7 +679,7 @@ export default function Customers() {
                       isDark ? "text-silver-300" : "text-gray-700"
                     }`}
                   >
-                    Company Name *
+                    Proprietor Name *
                   </label>
                   <input
                     type="text"
@@ -725,7 +731,7 @@ export default function Customers() {
                     name="phone"
                     value={formData.phone}
                     onChange={handleInputChange}
-                    placeholder="+4867096587 4-5 35"
+                    placeholder="+880 XXXXXXXXXX"
                     className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
                       isDark
                         ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
@@ -759,11 +765,7 @@ export default function Customers() {
                     <option value="">Select a KAM</option>
                     {salesUsers.map((user) => (
                       <option key={user.id} value={user.id}>
-                        {user.username || user.email} (
-                        {user.role_name
-                          ?.replace("_", " ")
-                          .replace(/\b\w/g, (l) => l.toUpperCase())}
-                        )
+                        {user.username || user.email}
                       </option>
                     ))}
                   </select>
@@ -961,14 +963,14 @@ export default function Customers() {
                           isDark ? "text-silver-300" : "text-gray-700"
                         }`}
                       >
-                        Name
+                        Name of Party
                       </th>
                       <th
                         className={`px-6 py-4 text-left text-sm font-semibold ${
                           isDark ? "text-silver-300" : "text-gray-700"
                         }`}
                       >
-                        Company
+                        Proprietor Name
                       </th>
                       <th
                         className={`px-6 py-4 text-left text-sm font-semibold ${
@@ -1071,30 +1073,43 @@ export default function Customers() {
                         </td>
                         <td className={`px-6 py-4 text-sm`}>
                           <div className="flex items-center space-x-2">
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => handleEdit(customer)}
-                              className={`p-2 rounded-lg transition-all ${
-                                isDark
-                                  ? "bg-dark-700 text-blue-400 hover:bg-dark-600"
-                                  : "bg-blue-50 text-blue-600 hover:bg-blue-100"
-                              }`}
-                            >
-                              <Edit2 size={16} />
-                            </motion.button>
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => handleDeleteClick(customer)}
-                              className={`p-2 rounded-lg transition-all ${
-                                isDark
-                                  ? "bg-dark-700 text-red-400 hover:bg-dark-600"
-                                  : "bg-red-50 text-red-600 hover:bg-red-100"
-                              }`}
-                            >
-                              <Trash2 size={16} />
-                            </motion.button>
+                            {hasPermission("customers:update") && (
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => handleEdit(customer)}
+                                className={`p-2 rounded-lg transition-all ${
+                                  isDark
+                                    ? "bg-dark-700 text-blue-400 hover:bg-dark-600"
+                                    : "bg-blue-50 text-blue-600 hover:bg-blue-100"
+                                }`}
+                              >
+                                <Edit2 size={16} />
+                              </motion.button>
+                            )}
+                            {hasPermission("customers:update") && (
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => handleDeleteClick(customer)}
+                                className={`p-2 rounded-lg transition-all ${
+                                  isDark
+                                    ? "bg-dark-700 text-red-400 hover:bg-dark-600"
+                                    : "bg-red-50 text-red-600 hover:bg-red-100"
+                                }`}
+                              >
+                                <Trash2 size={16} />
+                              </motion.button>
+                            )}
+                            {!hasPermission("customers:update") && (
+                              <span
+                                className={`text-xs ${
+                                  isDark ? "text-gray-500" : "text-gray-400"
+                                }`}
+                              >
+                                No actions
+                              </span>
+                            )}
                           </div>
                         </td>
                       </tr>

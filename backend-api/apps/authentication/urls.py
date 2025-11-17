@@ -7,6 +7,7 @@ from .views import (
     RoleListCreateView,
     RoleDetailView,
     PermissionListView,
+    RoleChoicesView,
     AssignRoleView,
     MenuView,
 )
@@ -19,6 +20,7 @@ urlpatterns = [
 
     path('roles/', RoleListCreateView.as_view(), name='roles-list-create'),
     path('roles/<int:pk>/', RoleDetailView.as_view(), name='roles-detail'),
+    path('role-choices/', RoleChoicesView.as_view(), name='role-choices'),
     path('permissions/', PermissionListView.as_view(), name='permissions-list'),
     path('assign-role/<int:user_id>/', AssignRoleView.as_view(), name='assign-role'),
     path('menu/', MenuView.as_view(), name='menu'),

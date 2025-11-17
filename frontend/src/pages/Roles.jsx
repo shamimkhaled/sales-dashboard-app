@@ -23,6 +23,7 @@ export default function Roles() {
   const [error, setError] = useState(null);
   const [roles, setRoles] = useState([]);
   const [permissions, setPermissions] = useState([]);
+  const [roleChoices, setRoleChoices] = useState([]);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
@@ -42,7 +43,27 @@ export default function Roles() {
   useEffect(() => {
     fetchRoles();
     fetchPermissions();
+    fetchRoleChoices();
   }, [currentPage, pageSize, searchTerm]);
+
+  const fetchRoleChoices = async () => {
+    try {
+      const response = await roleService.getRoleChoices();
+      console.log("Role choices API response:", response);
+
+      // Handle different response formats
+      if (Array.isArray(response)) {
+        setRoleChoices(response);
+      } else if (response?.data && Array.isArray(response.data)) {
+        setRoleChoices(response.data);
+      } else {
+        setRoleChoices([]);
+      }
+    } catch (err) {
+      console.error("Error fetching role choices:", err);
+      setRoleChoices([]);
+    }
+  };
 
   const fetchPermissions = async () => {
     try {
@@ -52,13 +73,22 @@ export default function Roles() {
 
       // Handle different response formats
       if (Array.isArray(response)) {
-        console.log(`Fetched ${response.length} permissions:`, response.map(p => p.name || p));
+        console.log(
+          `Fetched ${response.length} permissions:`,
+          response.map((p) => p.name || p)
+        );
         setPermissions(response);
       } else if (response?.data && Array.isArray(response.data)) {
-        console.log(`Fetched ${response.data.length} permissions from data:`, response.data.map(p => p.name || p));
+        console.log(
+          `Fetched ${response.data.length} permissions from data:`,
+          response.data.map((p) => p.name || p)
+        );
         setPermissions(response.data);
       } else if (response?.results && Array.isArray(response.results)) {
-        console.log(`Fetched ${response.results.length} permissions from results:`, response.results.map(p => p.name || p));
+        console.log(
+          `Fetched ${response.results.length} permissions from results:`,
+          response.results.map((p) => p.name || p)
+        );
         setPermissions(response.results);
       } else {
         console.log("No permissions array found in response:", response);
@@ -72,7 +102,9 @@ export default function Roles() {
 
   const getPermissionName = (permissionId) => {
     if (!permissionId) return permissionId;
-    const permission = permissions.find((p) => p.id === permissionId || p.id === parseInt(permissionId, 10));
+    const permission = permissions.find(
+      (p) => p.id === permissionId || p.id === parseInt(permissionId, 10)
+    );
     return permission ? permission.name : permissionId;
   };
 
@@ -86,7 +118,6 @@ export default function Roles() {
         search: searchTerm || undefined,
       });
 
-
       // Handle different API response formats
       if (Array.isArray(response)) {
         // API returns array directly
@@ -94,7 +125,10 @@ export default function Roles() {
       } else if (response?.data && Array.isArray(response.data)) {
         // API returns { data: [...] }
         setRoles(response.data);
-      } else if (response?.data?.results && Array.isArray(response.data.results)) {
+      } else if (
+        response?.data?.results &&
+        Array.isArray(response.data.results)
+      ) {
         // API returns { data: { results: [...] } }
         setRoles(response.data.results);
       } else if (response?.results && Array.isArray(response.results)) {
@@ -118,7 +152,12 @@ export default function Roles() {
         setTotalPages(paginationData.totalPages || 0);
       } else {
         // Fallback: use count from response or compute from array length
-        const count = response?.count || response?.totalCount || response?.data?.count || response?.data?.totalCount || roles.length;
+        const count =
+          response?.count ||
+          response?.totalCount ||
+          response?.data?.count ||
+          response?.data?.totalCount ||
+          roles.length;
         setTotalCount(count);
       }
     } catch (err) {
@@ -308,7 +347,12 @@ export default function Roles() {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => setShowForm(!showForm)}
+              onClick={() => {
+                setShowForm(!showForm);
+                if (!showForm) {
+                  setFormData(initialForm);
+                }
+              }}
               className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl"
             >
               <Plus size={20} />
@@ -343,7 +387,10 @@ export default function Roles() {
                   New Role
                 </h2>
                 <button
-                  onClick={() => setShowForm(false)}
+                  onClick={() => {
+                    setShowForm(false);
+                    setFormData(initialForm);
+                  }}
                   className={`p-2 rounded-lg transition-all duration-300 ${
                     isDark
                       ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
@@ -358,9 +405,10 @@ export default function Roles() {
                 className="grid grid-cols-1 md:grid-cols-2 gap-6"
               >
                 <div>
-                  <label className="block text-sm font-medium mb-2">Role Name</label>
-                  <input
-                    type="text"
+                  <label className="block text-sm font-medium mb-2">
+                    Role Name
+                  </label>
+                  <select
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
@@ -370,13 +418,24 @@ export default function Roles() {
                         ? "border-red-500 bg-red-50"
                         : "border-gray-300"
                     }`}
-                  />
+                  >
+                    <option value="">Select a role name</option>
+                    {roleChoices.map((choice) => (
+                      <option key={choice.value} value={choice.value}>
+                        {choice.label}
+                      </option>
+                    ))}
+                  </select>
                   {formErrors.name && (
-                    <p className="text-red-500 text-sm mt-1">{formErrors.name}</p>
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.name}
+                    </p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">Description</label>
+                  <label className="block text-sm font-medium mb-2">
+                    Description
+                  </label>
                   <input
                     type="text"
                     name="description"
@@ -390,7 +449,9 @@ export default function Roles() {
                     }`}
                   />
                   {formErrors.description && (
-                    <p className="text-red-500 text-sm mt-1">{formErrors.description}</p>
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.description}
+                    </p>
                   )}
                 </div>
                 <div>
@@ -406,17 +467,32 @@ export default function Roles() {
                   </label>
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium mb-2">Permissions</label>
+                  <label className="block text-sm font-medium mb-2">
+                    Permissions
+                  </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-40 overflow-y-auto border border-gray-300 rounded-lg p-3">
                     {permissions.map((permission) => (
-                      <label key={permission.id || permission.name} className="flex items-center space-x-2">
+                      <label
+                        key={permission.id || permission.name}
+                        className="flex items-center space-x-2"
+                      >
                         <input
                           type="checkbox"
-                          checked={formData.permissions?.includes(permission.id || permission.name) || false}
-                          onChange={() => handlePermissionChange(permission.id || permission.name)}
+                          checked={
+                            formData.permissions?.includes(
+                              permission.id || permission.name
+                            ) || false
+                          }
+                          onChange={() =>
+                            handlePermissionChange(
+                              permission.id || permission.name
+                            )
+                          }
                           className="w-4 h-4 rounded"
                         />
-                        <span className="text-sm">{permission.name || permission}</span>
+                        <span className="text-sm">
+                          {permission.name || permission}
+                        </span>
                       </label>
                     ))}
                   </div>
@@ -435,7 +511,10 @@ export default function Roles() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     type="button"
-                    onClick={() => setShowForm(false)}
+                    onClick={() => {
+                      setShowForm(false);
+                      setFormData(initialForm);
+                    }}
                     className={`flex-1 px-6 py-2 rounded-lg font-medium ${
                       isDark
                         ? "bg-dark-700 text-gold-400 hover:bg-dark-600"
@@ -487,9 +566,10 @@ export default function Roles() {
                 className="grid grid-cols-1 md:grid-cols-2 gap-6"
               >
                 <div>
-                  <label className="block text-sm font-medium mb-2">Role Name</label>
-                  <input
-                    type="text"
+                  <label className="block text-sm font-medium mb-2">
+                    Role Name
+                  </label>
+                  <select
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
@@ -499,13 +579,24 @@ export default function Roles() {
                         ? "border-red-500 bg-red-50"
                         : "border-gray-300"
                     }`}
-                  />
+                  >
+                    <option value="">Select a role name</option>
+                    {roleChoices.map((choice) => (
+                      <option key={choice.value} value={choice.value}>
+                        {choice.label}
+                      </option>
+                    ))}
+                  </select>
                   {formErrors.name && (
-                    <p className="text-red-500 text-sm mt-1">{formErrors.name}</p>
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.name}
+                    </p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">Description</label>
+                  <label className="block text-sm font-medium mb-2">
+                    Description
+                  </label>
                   <input
                     type="text"
                     name="description"
@@ -519,7 +610,9 @@ export default function Roles() {
                     }`}
                   />
                   {formErrors.description && (
-                    <p className="text-red-500 text-sm mt-1">{formErrors.description}</p>
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.description}
+                    </p>
                   )}
                 </div>
                 <div>
@@ -535,17 +628,32 @@ export default function Roles() {
                   </label>
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium mb-2">Permissions</label>
+                  <label className="block text-sm font-medium mb-2">
+                    Permissions
+                  </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-40 overflow-y-auto border border-gray-300 rounded-lg p-3">
                     {permissions.map((permission) => (
-                      <label key={permission.id || permission.name} className="flex items-center space-x-2">
+                      <label
+                        key={permission.id || permission.name}
+                        className="flex items-center space-x-2"
+                      >
                         <input
                           type="checkbox"
-                          checked={formData.permissions?.includes(permission.id || permission.name) || false}
-                          onChange={() => handlePermissionChange(permission.id || permission.name)}
+                          checked={
+                            formData.permissions?.includes(
+                              permission.id || permission.name
+                            ) || false
+                          }
+                          onChange={() =>
+                            handlePermissionChange(
+                              permission.id || permission.name
+                            )
+                          }
                           className="w-4 h-4 rounded"
                         />
-                        <span className="text-sm">{permission.name || permission}</span>
+                        <span className="text-sm">
+                          {permission.name || permission}
+                        </span>
                       </label>
                     ))}
                   </div>
@@ -705,7 +813,9 @@ export default function Roles() {
                         isDark ? "text-silver-300" : "text-gray-700"
                       }`}
                     >
-                      {role.permissions?.map(id => getPermissionName(id)).join(', ') || '-'}
+                      {role.permissions
+                        ?.map((id) => getPermissionName(id))
+                        .join(", ") || "-"}
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <div className="flex items-center space-x-2">
