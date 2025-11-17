@@ -51,6 +51,8 @@ export default function DataEntry() {
   const [expandedRow, setExpandedRow] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [billToDelete, setBillToDelete] = useState(null);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [viewingBill, setViewingBill] = useState(null);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -367,6 +369,16 @@ export default function DataEntry() {
   const handleDeleteCancel = () => {
     setShowDeleteModal(false);
     setBillToDelete(null);
+  };
+
+  const handleViewClick = (bill) => {
+    setViewingBill(bill);
+    setShowViewModal(true);
+  };
+
+  const handleViewClose = () => {
+    setShowViewModal(false);
+    setViewingBill(null);
   };
 
   const handleImport = async (e) => {
@@ -2017,6 +2029,19 @@ export default function DataEntry() {
                             <motion.button
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.95 }}
+                              onClick={() => handleViewClick(bill)}
+                              className={`p-1 sm:p-2 rounded-lg transition-all ${
+                                isDark
+                                  ? "bg-dark-700 text-green-400 hover:bg-dark-600"
+                                  : "bg-green-50 text-green-600 hover:bg-green-100"
+                              }`}
+                              title="View bill details"
+                            >
+                              <Eye size={14} />
+                            </motion.button>
+                            <motion.button
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.95 }}
                               onClick={() => handleEdit(bill)}
                               className={`p-1 sm:p-2 rounded-lg transition-all ${
                                 isDark
@@ -2322,6 +2347,19 @@ export default function DataEntry() {
                       <motion.button
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.95 }}
+                        onClick={() => handleViewClick(bill)}
+                        className={`flex items-center justify-center space-x-1 px-3 py-2 rounded-lg transition-all text-sm ${
+                          isDark
+                            ? "bg-dark-700 text-green-400 hover:bg-dark-600"
+                            : "bg-green-50 text-green-600 hover:bg-green-100"
+                        }`}
+                      >
+                        <Eye size={14} />
+                        <span>View</span>
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
                         onClick={() => handleEdit(bill)}
                         className="flex-1 flex items-center justify-center space-x-1 px-3 py-2 rounded-lg transition-all text-sm bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 shadow-md"
                       >
@@ -2383,6 +2421,197 @@ export default function DataEntry() {
           )}
         </div>
       </div>
+
+      {/* View Modal */}
+      <AnimatePresence>
+        {showViewModal && viewingBill && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={handleViewClose}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            >
+              <div
+                className={`w-full max-w-4xl rounded-2xl p-6 shadow-2xl ${isDark ? "bg-dark-800 border border-dark-700" : "bg-white border border-gray-200"} max-h-[90vh] overflow-y-auto`}
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className={`text-2xl font-serif font-bold ${isDark ? "text-white" : "text-dark-900"}`}>
+                    Bill Details
+                  </h3>
+                  <button
+                    onClick={handleViewClose}
+                    className={`p-2 rounded-lg transition-all duration-300 ${isDark ? "bg-gray-700 text-gray-300 hover:bg-gray-600" : "bg-gray-200 text-gray-700 hover:bg-gray-300"}`}
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* Customer Information */}
+                  <div className="md:col-span-2 lg:col-span-3">
+                    <h4 className={`text-lg font-semibold mb-3 ${isDark ? "text-blue-400" : "text-blue-600"}`}>Customer Information</h4>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Customer Name</label>
+                    <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{getCustomerDetails(viewingBill).name || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Company Name</label>
+                    <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{getCustomerDetails(viewingBill).company_name || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Email</label>
+                    <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{getCustomerDetails(viewingBill).email || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Phone</label>
+                    <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{getCustomerDetails(viewingBill).phone || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Address</label>
+                    <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{getCustomerDetails(viewingBill).address || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">KAM</label>
+                    <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingBill.kam || 'N/A'}</p>
+                  </div>
+
+                  {/* NTTN Information */}
+                  <div className="md:col-span-2 lg:col-span-3">
+                    <h4 className={`text-lg font-semibold mb-3 mt-4 ${isDark ? "text-blue-400" : "text-blue-600"}`}>NTTN Information</h4>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">NTTN CAP</label>
+                    <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingBill.nttn_cap || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">NTTN COM</label>
+                    <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingBill.nttn_com || 'N/A'}</p>
+                  </div>
+
+                  {/* Dates */}
+                  <div className="md:col-span-2 lg:col-span-3">
+                    <h4 className={`text-lg font-semibold mb-3 mt-4 ${isDark ? "text-blue-400" : "text-blue-600"}`}>Dates</h4>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Active Date</label>
+                    <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingBill.active_date ? new Date(viewingBill.active_date).toLocaleDateString() : 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Billing Date</label>
+                    <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingBill.billing_date ? new Date(viewingBill.billing_date).toLocaleDateString() : 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Termination Date</label>
+                    <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingBill.termination_date ? new Date(viewingBill.termination_date).toLocaleDateString() : 'N/A'}</p>
+                  </div>
+
+                  {/* Services */}
+                  <div className="md:col-span-2 lg:col-span-3">
+                    <h4 className={`text-lg font-semibold mb-3 mt-4 ${isDark ? "text-blue-400" : "text-blue-600"}`}>Services</h4>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">IIG-QT</label>
+                    <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingBill.iig_qt || '0'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">IIG-QT Price</label>
+                    <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingBill.iig_qt_price ? `$${viewingBill.iig_qt_price}` : '0'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">FNA</label>
+                    <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingBill.fna || '0'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">FNA Price</label>
+                    <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingBill.fna_price ? `$${viewingBill.fna_price}` : '0'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">GGC</label>
+                    <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingBill.ggc || '0'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">GGC Price</label>
+                    <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingBill.ggc_price ? `$${viewingBill.ggc_price}` : '0'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">CDN</label>
+                    <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingBill.cdn || '0'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">CDN Price</label>
+                    <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingBill.cdn_price ? `$${viewingBill.cdn_price}` : '0'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">BDIX</label>
+                    <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingBill.bdix || '0'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">BDIX Price</label>
+                    <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingBill.bdix_price ? `$${viewingBill.bdix_price}` : '0'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">BAISHAN</label>
+                    <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingBill.baishan || '0'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">BAISHAN Price</label>
+                    <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingBill.baishan_price ? `$${viewingBill.baishan_price}` : '0'}</p>
+                  </div>
+
+                  {/* Financial Summary */}
+                  <div className="md:col-span-2 lg:col-span-3">
+                    <h4 className={`text-lg font-semibold mb-3 mt-4 ${isDark ? "text-blue-400" : "text-blue-600"}`}>Financial Summary</h4>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Total Bill</label>
+                    <p className={`text-sm font-semibold ${isDark ? "text-blue-400" : "text-blue-600"}`}>{viewingBill.total_bill ? `$${viewingBill.total_bill.toLocaleString()}` : '0'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Total Received</label>
+                    <p className={`text-sm font-semibold ${isDark ? "text-green-400" : "text-green-600"}`}>{viewingBill.total_received ? `$${viewingBill.total_received.toLocaleString()}` : '0'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Total Due</label>
+                    <p className={`text-sm font-semibold ${isDark ? "text-red-400" : "text-red-600"}`}>{viewingBill.total_due ? `$${viewingBill.total_due.toLocaleString()}` : '0'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Discount</label>
+                    <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingBill.discount ? `$${viewingBill.discount.toLocaleString()}` : '0'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Status</label>
+                    <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingBill.status || 'N/A'}</p>
+                  </div>
+
+                  {/* Remarks */}
+                  <div className="md:col-span-2 lg:col-span-3">
+                    <label className="block text-sm font-medium mb-1">Remarks</label>
+                    <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingBill.remarks || 'N/A'}</p>
+                  </div>
+                </div>
+                <div className="flex justify-end mt-6">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleViewClose}
+                    className={`px-6 py-2 rounded-lg font-medium ${isDark ? "bg-dark-700 text-gold-400 hover:bg-dark-600" : "bg-gray-200 text-gray-700 hover:bg-gray-300"}`}
+                  >
+                    Close
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
