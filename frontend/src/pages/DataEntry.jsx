@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import { useNotification } from "../context/NotificationContext";
+import { useAuth } from "../context/AuthContext";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorAlert from "../components/ErrorAlert";
 import Pagination from "../components/Pagination";
@@ -35,6 +36,7 @@ import { customerService } from "../services/customerService";
 export default function DataEntry() {
   const { isDark } = useTheme();
   const { showSuccess, showError } = useNotification();
+  const { hasPermission } = useAuth();
   const [viewMode, setViewMode] = useState("table");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -698,8 +700,8 @@ export default function DataEntry() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center space-x-2">
-                {/* <label className="relative cursor-pointer px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 shadow-lg">
+              {hasPermission("bills:import") && (
+                <label className="relative cursor-pointer px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 shadow-lg">
                   <FileUp size={20} />
                   <span>Import</span>
                   <input
@@ -708,8 +710,9 @@ export default function DataEntry() {
                     onChange={handleImport}
                     className="hidden"
                   />
-                </label> */}
-
+                </label>
+              )}
+              {hasPermission("bills:export") && (
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -719,16 +722,18 @@ export default function DataEntry() {
                   <FileDown size={20} />
                   <span>Export CSV</span>
                 </motion.button>
-              </div>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setShowForm(!showForm)}
-                className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 shadow-lg"
-              >
-                <Plus size={20} />
-                <span>New Bill</span>
-              </motion.button>
+              )}
+              {hasPermission("bills:create") && (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowForm(!showForm)}
+                  className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 shadow-lg"
+                >
+                  <Plus size={20} />
+                  <span>New Bill</span>
+                </motion.button>
+              )}
             </div>
           </div>
         </div>
@@ -2014,30 +2019,43 @@ export default function DataEntry() {
                         </td>
                         <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm`}>
                           <div className="flex items-center space-x-1">
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => handleEdit(bill)}
-                              className={`p-1 sm:p-2 rounded-lg transition-all ${
-                                isDark
-                                  ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500"
-                                  : "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500"
-                              }`}
-                            >
-                              <Edit2 size={14} />
-                            </motion.button>
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => handleDeleteClick(bill)}
-                              className={`p-1 sm:p-2 rounded-lg transition-all ${
-                                isDark
-                                  ? "bg-dark-700 text-red-400 hover:bg-dark-600"
-                                  : "bg-red-50 text-red-600 hover:bg-red-100"
-                              }`}
-                            >
-                              <Trash2 size={14} />
-                            </motion.button>
+                            {hasPermission("bills:update") && (
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => handleEdit(bill)}
+                                className={`p-1 sm:p-2 rounded-lg transition-all ${
+                                  isDark
+                                    ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500"
+                                    : "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500"
+                                }`}
+                              >
+                                <Edit2 size={14} />
+                              </motion.button>
+                            )}
+                            {hasPermission("bills:update") && (
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => handleDeleteClick(bill)}
+                                className={`p-1 sm:p-2 rounded-lg transition-all ${
+                                  isDark
+                                    ? "bg-dark-700 text-red-400 hover:bg-dark-600"
+                                    : "bg-red-50 text-red-600 hover:bg-red-100"
+                                }`}
+                              >
+                                <Trash2 size={14} />
+                              </motion.button>
+                            )}
+                            {!hasPermission("bills:update") && (
+                              <span
+                                className={`text-xs ${
+                                  isDark ? "text-gray-500" : "text-gray-400"
+                                }`}
+                              >
+                                No actions
+                              </span>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -2319,28 +2337,41 @@ export default function DataEntry() {
                           : "rgb(229, 231, 235)",
                       }}
                     >
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => handleEdit(bill)}
-                        className="flex-1 flex items-center justify-center space-x-1 px-3 py-2 rounded-lg transition-all text-sm bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 shadow-md"
-                      >
-                        <Edit2 size={14} />
-                        <span>Edit</span>
-                      </motion.button>
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => handleDeleteClick(bill)}
-                        className={`flex-1 flex items-center justify-center space-x-1 px-3 py-2 rounded-lg transition-all text-sm ${
-                          isDark
-                            ? "bg-dark-700 text-red-400 hover:bg-dark-600"
-                            : "bg-red-50 text-red-600 hover:bg-red-100"
-                        }`}
-                      >
-                        <Trash2 size={14} />
-                        <span>Delete</span>
-                      </motion.button>
+                      {hasPermission("bills:update") && (
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleEdit(bill)}
+                          className="flex-1 flex items-center justify-center space-x-1 px-3 py-2 rounded-lg transition-all text-sm bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 shadow-md"
+                        >
+                          <Edit2 size={14} />
+                          <span>Edit</span>
+                        </motion.button>
+                      )}
+                      {hasPermission("bills:update") && (
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleDeleteClick(bill)}
+                          className={`flex-1 flex items-center justify-center space-x-1 px-3 py-2 rounded-lg transition-all text-sm ${
+                            isDark
+                              ? "bg-dark-700 text-red-400 hover:bg-dark-600"
+                              : "bg-red-50 text-red-600 hover:bg-red-100"
+                          }`}
+                        >
+                          <Trash2 size={14} />
+                          <span>Delete</span>
+                        </motion.button>
+                      )}
+                      {!hasPermission("bills:update") && (
+                        <div
+                          className={`flex-1 text-center text-xs ${
+                            isDark ? "text-gray-500" : "text-gray-400"
+                          }`}
+                        >
+                          No actions available
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                 ))}

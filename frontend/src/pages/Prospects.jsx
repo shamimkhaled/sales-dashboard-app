@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Users, Plus, Search, Trash2, X, Edit2, Eye } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import { useNotification } from "../context/NotificationContext";
+import { useAuth } from "../context/AuthContext";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorAlert from "../components/ErrorAlert";
 import Pagination from "../components/Pagination";
@@ -27,6 +28,7 @@ const initialForm = {
 export default function Prospects() {
   const { isDark } = useTheme();
   const { showSuccess, showError } = useNotification();
+  const { hasPermission } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [prospects, setProspects] = useState([]);
@@ -81,10 +83,10 @@ export default function Prospects() {
   // Parse validation errors from API response
   const parseValidationErrors = (errorMessage) => {
     const errors = {};
-    
+
     // Try to extract field errors from error message
     // Format: "field_name: error message; another_field: error message"
-    if (errorMessage && typeof errorMessage === 'string') {
+    if (errorMessage && typeof errorMessage === "string") {
       const fieldErrorPattern = /(\w+):\s*([^;]+)/g;
       let match;
       while ((match = fieldErrorPattern.exec(errorMessage)) !== null) {
@@ -93,14 +95,23 @@ export default function Prospects() {
         errors[fieldName] = errorMsg;
       }
     }
-    
+
     return errors;
   };
 
   useEffect(() => {
     fetchProspects();
     // eslint-disable-next-line
-  }, [currentPage, pageSize, searchTerm, statusFilter, monthFilter, yearFilter, startDateFilter, endDateFilter]);
+  }, [
+    currentPage,
+    pageSize,
+    searchTerm,
+    statusFilter,
+    monthFilter,
+    yearFilter,
+    startDateFilter,
+    endDateFilter,
+  ]);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -108,10 +119,12 @@ export default function Prospects() {
         const response = await userService.getUsers();
         const users = response.data || response.results || response;
         setAllUsers(users);
-        const salesPersons = users.filter(user => user.role_name === 'sales_person');
+        const salesPersons = users.filter(
+          (user) => user.role_name === "sales_person"
+        );
         setSalesPersons(salesPersons);
       } catch (err) {
-        console.error('Error fetching users:', err);
+        console.error("Error fetching users:", err);
       }
     };
     fetchUsers();
@@ -131,7 +144,8 @@ export default function Prospects() {
       }
 
       // If month, year, or date range filter is applied, fetch all data for client-side filtering
-      const hasDateFilter = monthFilter || yearFilter || startDateFilter || endDateFilter;
+      const hasDateFilter =
+        monthFilter || yearFilter || startDateFilter || endDateFilter;
       if (hasDateFilter) {
         params.pageSize = 10000; // Large number to get all data
         params.page = 1;
@@ -150,8 +164,8 @@ export default function Prospects() {
         params.end_date = endDateFilter;
       }
       const response = await prospectService.getAllProspects(params);
-      
-      console.log('Prospects API Response:', response);
+
+      console.log("Prospects API Response:", response);
 
       let prospectsData = [];
       let totalCountValue = 0;
@@ -159,15 +173,21 @@ export default function Prospects() {
       // Handle Django REST Framework pagination response
       if (response.results) {
         // DRF PageNumberPagination format: { count, next, previous, results }
-        console.log('Using DRF format - count:', response.count, 'results length:', response.results.length);
+        console.log(
+          "Using DRF format - count:",
+          response.count,
+          "results length:",
+          response.results.length
+        );
         prospectsData = response.results;
         totalCountValue = response.count || 0;
       } else if (response.data) {
-        console.log('Using data format - data length:', response.data.length);
+        console.log("Using data format - data length:", response.data.length);
         prospectsData = response.data;
         // Extract pagination info from response
         if (response.pagination) {
-          totalCountValue = response.pagination.totalCount || response.pagination.total || 0;
+          totalCountValue =
+            response.pagination.totalCount || response.pagination.total || 0;
         } else if (response.total || response.totalCount) {
           // Pagination info at root level
           totalCountValue = response.total || response.totalCount;
@@ -176,23 +196,26 @@ export default function Prospects() {
           totalCountValue = response.data.length;
         }
       } else if (Array.isArray(response)) {
-        console.log('Using array format - length:', response.length);
+        console.log("Using array format - length:", response.length);
         prospectsData = response;
         totalCountValue = response.length;
       }
 
       // Apply client-side filtering for month, year, and date range if needed
       if (hasDateFilter) {
-        prospectsData = prospectsData.filter(prospect => {
+        prospectsData = prospectsData.filter((prospect) => {
           if (!prospect.follow_up_date) return false;
           const date = new Date(prospect.follow_up_date);
-          const prospectMonth = (date.getMonth() + 1).toString().padStart(2, '0');
+          const prospectMonth = (date.getMonth() + 1)
+            .toString()
+            .padStart(2, "0");
           const prospectYear = date.getFullYear().toString();
           const prospectDate = prospect.follow_up_date;
 
           const monthMatch = !monthFilter || prospectMonth === monthFilter;
           const yearMatch = !yearFilter || prospectYear === yearFilter;
-          const startDateMatch = !startDateFilter || prospectDate >= startDateFilter;
+          const startDateMatch =
+            !startDateFilter || prospectDate >= startDateFilter;
           const endDateMatch = !endDateFilter || prospectDate <= endDateFilter;
 
           return monthMatch && yearMatch && startDateMatch && endDateMatch;
@@ -212,7 +235,7 @@ export default function Prospects() {
       setTotalCount(totalCountValue);
       setTotalPages(Math.ceil(totalCountValue / pageSize));
     } catch (err) {
-      console.error('Error fetching prospects:', err);
+      console.error("Error fetching prospects:", err);
       setError(err.message || "Failed to fetch prospects");
     } finally {
       setLoading(false);
@@ -245,11 +268,11 @@ export default function Prospects() {
       setStatusFilter("");
       fetchProspects();
     } catch (err) {
-      console.error('Create prospect error:', err);
+      console.error("Create prospect error:", err);
       // Try to parse field-level validation errors
       const errorMessage = err.message || "Failed to create prospect";
       const fieldErrors = parseValidationErrors(errorMessage);
-      
+
       if (Object.keys(fieldErrors).length > 0) {
         setFormErrors(fieldErrors);
         showError("Please fix the validation errors");
@@ -337,11 +360,11 @@ export default function Prospects() {
       setEndDateFilter("");
       fetchProspects();
     } catch (err) {
-      console.error('Update prospect error:', err);
+      console.error("Update prospect error:", err);
       // Try to parse field-level validation errors
       const errorMessage = err.message || "Failed to update prospect";
       const fieldErrors = parseValidationErrors(errorMessage);
-      
+
       if (Object.keys(fieldErrors).length > 0) {
         setFormErrors(fieldErrors);
         showError("Please fix the validation errors");
@@ -371,22 +394,24 @@ export default function Prospects() {
 
   // Define months and years for filters
   const months = [
-    { value: '01', label: 'January' },
-    { value: '02', label: 'February' },
-    { value: '03', label: 'March' },
-    { value: '04', label: 'April' },
-    { value: '05', label: 'May' },
-    { value: '06', label: 'June' },
-    { value: '07', label: 'July' },
-    { value: '08', label: 'August' },
-    { value: '09', label: 'September' },
-    { value: '10', label: 'October' },
-    { value: '11', label: 'November' },
-    { value: '12', label: 'December' },
+    { value: "01", label: "January" },
+    { value: "02", label: "February" },
+    { value: "03", label: "March" },
+    { value: "04", label: "April" },
+    { value: "05", label: "May" },
+    { value: "06", label: "June" },
+    { value: "07", label: "July" },
+    { value: "08", label: "August" },
+    { value: "09", label: "September" },
+    { value: "10", label: "October" },
+    { value: "11", label: "November" },
+    { value: "12", label: "December" },
   ];
 
   const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 5 }, (_, i) => (currentYear - 2 + i).toString());
+  const years = Array.from({ length: 5 }, (_, i) =>
+    (currentYear - 2 + i).toString()
+  );
 
   if (loading && prospects.length === 0) return <LoadingSpinner />;
 
@@ -421,15 +446,17 @@ export default function Prospects() {
                 Manage sales prospects and leads
               </p>
             </div>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setShowForm(!showForm)}
-              className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl"
-            >
-              <Plus size={20} />
-              <span>New Prospect</span>
-            </motion.button>
+            {hasPermission("prospects:update") && (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowForm(!showForm)}
+                className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl"
+              >
+                <Plus size={20} />
+                <span>New Prospect</span>
+              </motion.button>
+            )}
           </div>
         </div>
       </div>
@@ -486,7 +513,9 @@ export default function Prospects() {
                     }`}
                   />
                   {formErrors.name && (
-                    <p className="text-red-500 text-sm mt-1">{formErrors.name}</p>
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.name}
+                    </p>
                   )}
                 </div>
                 <div>
@@ -505,7 +534,9 @@ export default function Prospects() {
                     }`}
                   />
                   {formErrors.company_name && (
-                    <p className="text-red-500 text-sm mt-1">{formErrors.company_name}</p>
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.company_name}
+                    </p>
                   )}
                 </div>
                 <div>
@@ -524,7 +555,9 @@ export default function Prospects() {
                     }`}
                   />
                   {formErrors.email && (
-                    <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.email}
+                    </p>
                   )}
                 </div>
                 <div>
@@ -543,7 +576,9 @@ export default function Prospects() {
                     }`}
                   />
                   {formErrors.phone && (
-                    <p className="text-red-500 text-sm mt-1">{formErrors.phone}</p>
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.phone}
+                    </p>
                   )}
                 </div>
                 <div>
@@ -646,8 +681,10 @@ export default function Prospects() {
                     className="w-full px-4 py-2 rounded-lg border focus:outline-none"
                   >
                     <option value="">Select Sales Person</option>
-                    {salesPersons.map(user => (
-                      <option key={user.id} value={user.id}>{user.username} ({user.email})</option>
+                    {salesPersons.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.username} ({user.email})
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -730,7 +767,9 @@ export default function Prospects() {
                     }`}
                   />
                   {formErrors.name && (
-                    <p className="text-red-500 text-sm mt-1">{formErrors.name}</p>
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.name}
+                    </p>
                   )}
                 </div>
                 <div>
@@ -749,7 +788,9 @@ export default function Prospects() {
                     }`}
                   />
                   {formErrors.company_name && (
-                    <p className="text-red-500 text-sm mt-1">{formErrors.company_name}</p>
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.company_name}
+                    </p>
                   )}
                 </div>
                 <div>
@@ -768,7 +809,9 @@ export default function Prospects() {
                     }`}
                   />
                   {formErrors.email && (
-                    <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.email}
+                    </p>
                   )}
                 </div>
                 <div>
@@ -787,7 +830,9 @@ export default function Prospects() {
                     }`}
                   />
                   {formErrors.phone && (
-                    <p className="text-red-500 text-sm mt-1">{formErrors.phone}</p>
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.phone}
+                    </p>
                   )}
                 </div>
                 <div>
@@ -890,8 +935,10 @@ export default function Prospects() {
                     className="w-full px-4 py-2 rounded-lg border focus:outline-none"
                   >
                     <option value="">Select Sales Person</option>
-                    {salesPersons.map(user => (
-                      <option key={user.id} value={user.id}>{user.username} ({user.email})</option>
+                    {salesPersons.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.username} ({user.email})
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -961,9 +1008,7 @@ export default function Prospects() {
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className={`w-full px-4 py-2 rounded-lg ${
-                isDark
-                  ? "bg-dark-800 text-white"
-                  : "bg-white text-dark-900"
+                isDark ? "bg-dark-800 text-white" : "bg-white text-dark-900"
               }`}
             >
               <option value="">All Statuses</option>
@@ -984,14 +1029,14 @@ export default function Prospects() {
               value={monthFilter}
               onChange={(e) => setMonthFilter(e.target.value)}
               className={`w-full px-4 py-2 rounded-lg ${
-                isDark
-                  ? "bg-dark-800 text-white"
-                  : "bg-white text-dark-900"
+                isDark ? "bg-dark-800 text-white" : "bg-white text-dark-900"
               }`}
             >
               <option value="">All Months</option>
-              {months.map(month => (
-                <option key={month.value} value={month.value}>{month.label}</option>
+              {months.map((month) => (
+                <option key={month.value} value={month.value}>
+                  {month.label}
+                </option>
               ))}
             </select>
           </div>
@@ -1029,9 +1074,7 @@ export default function Prospects() {
               value={startDateFilter}
               onChange={(e) => setStartDateFilter(e.target.value)}
               className={`w-full px-4 py-2 rounded-lg ${
-                isDark
-                  ? "bg-dark-800 text-white"
-                  : "bg-white text-dark-900"
+                isDark ? "bg-dark-800 text-white" : "bg-white text-dark-900"
               }`}
               placeholder="Start Date"
             />
@@ -1048,9 +1091,7 @@ export default function Prospects() {
               value={endDateFilter}
               onChange={(e) => setEndDateFilter(e.target.value)}
               className={`w-full px-4 py-2 rounded-lg ${
-                isDark
-                  ? "bg-dark-800 text-white"
-                  : "bg-white text-dark-900"
+                isDark ? "bg-dark-800 text-white" : "bg-white text-dark-900"
               }`}
               placeholder="End Date"
             />
@@ -1120,32 +1161,45 @@ export default function Prospects() {
                         >
                           <Eye size={16} />
                         </motion.button>
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => handleEditClick(p)}
-                          className={`p-2 rounded-lg ${
-                            isDark
-                              ? "bg-dark-700 text-blue-400 hover:bg-dark-600"
-                              : "bg-blue-50 text-blue-600 hover:bg-blue-100"
-                          }`}
-                          title="Edit prospect"
-                        >
-                          <Edit2 size={16} />
-                        </motion.button>
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => handleDeleteClick(p)}
-                          className={`p-2 rounded-lg ${
-                            isDark
-                              ? "bg-dark-700 text-red-400 hover:bg-dark-600"
-                              : "bg-red-50 text-red-600 hover:bg-red-100"
-                          }`}
-                          title="Delete prospect"
-                        >
-                          <Trash2 size={16} />
-                        </motion.button>
+                        {hasPermission("prospects:update") && (
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => handleEditClick(p)}
+                            className={`p-2 rounded-lg ${
+                              isDark
+                                ? "bg-dark-700 text-blue-400 hover:bg-dark-600"
+                                : "bg-blue-50 text-blue-600 hover:bg-blue-100"
+                            }`}
+                            title="Edit prospect"
+                          >
+                            <Edit2 size={16} />
+                          </motion.button>
+                        )}
+                        {hasPermission("prospects:update") && (
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => handleDeleteClick(p)}
+                            className={`p-2 rounded-lg ${
+                              isDark
+                                ? "bg-dark-700 text-red-400 hover:bg-dark-600"
+                                : "bg-red-50 text-red-600 hover:bg-red-100"
+                            }`}
+                            title="Delete prospect"
+                          >
+                            <Trash2 size={16} />
+                          </motion.button>
+                        )}
+                        {!hasPermission("prospects:update") && (
+                          <span
+                            className={`text-xs ${
+                              isDark ? "text-gray-500" : "text-gray-400"
+                            }`}
+                          >
+                            No actions
+                          </span>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -1289,75 +1343,187 @@ export default function Prospects() {
                 className="fixed inset-0 z-50 flex items-center justify-center p-4"
               >
                 <div
-                  className={`w-full max-w-2xl rounded-2xl p-6 shadow-2xl ${isDark ? "bg-dark-800 border border-dark-700" : "bg-white border border-gray-200"}`}
+                  className={`w-full max-w-2xl rounded-2xl p-6 shadow-2xl ${
+                    isDark
+                      ? "bg-dark-800 border border-dark-700"
+                      : "bg-white border border-gray-200"
+                  }`}
                 >
                   <div className="flex items-center justify-between mb-6">
-                    <h3 className={`text-2xl font-serif font-bold ${isDark ? "text-white" : "text-dark-900"}`}>
+                    <h3
+                      className={`text-2xl font-serif font-bold ${
+                        isDark ? "text-white" : "text-dark-900"
+                      }`}
+                    >
                       Prospect Details
                     </h3>
                     <button
                       onClick={handleViewClose}
-                      className={`p-2 rounded-lg transition-all duration-300 ${isDark ? "bg-gray-700 text-gray-300 hover:bg-gray-600" : "bg-gray-200 text-gray-700 hover:bg-gray-300"}`}
+                      className={`p-2 rounded-lg transition-all duration-300 ${
+                        isDark
+                          ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                      }`}
                     >
                       <X size={24} />
                     </button>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-1">Name</label>
-                      <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingProspect.name || 'N/A'}</p>
+                      <label className="block text-sm font-medium mb-1">
+                        Name
+                      </label>
+                      <p
+                        className={`text-sm ${
+                          isDark ? "text-silver-400" : "text-gray-600"
+                        }`}
+                      >
+                        {viewingProspect.name || "N/A"}
+                      </p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Company Name</label>
-                      <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingProspect.company_name || 'N/A'}</p>
+                      <label className="block text-sm font-medium mb-1">
+                        Company Name
+                      </label>
+                      <p
+                        className={`text-sm ${
+                          isDark ? "text-silver-400" : "text-gray-600"
+                        }`}
+                      >
+                        {viewingProspect.company_name || "N/A"}
+                      </p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Email</label>
-                      <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingProspect.email || 'N/A'}</p>
+                      <label className="block text-sm font-medium mb-1">
+                        Email
+                      </label>
+                      <p
+                        className={`text-sm ${
+                          isDark ? "text-silver-400" : "text-gray-600"
+                        }`}
+                      >
+                        {viewingProspect.email || "N/A"}
+                      </p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Phone</label>
-                      <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingProspect.phone || 'N/A'}</p>
+                      <label className="block text-sm font-medium mb-1">
+                        Phone
+                      </label>
+                      <p
+                        className={`text-sm ${
+                          isDark ? "text-silver-400" : "text-gray-600"
+                        }`}
+                      >
+                        {viewingProspect.phone || "N/A"}
+                      </p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Address</label>
-                      <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingProspect.address || 'N/A'}</p>
+                      <label className="block text-sm font-medium mb-1">
+                        Address
+                      </label>
+                      <p
+                        className={`text-sm ${
+                          isDark ? "text-silver-400" : "text-gray-600"
+                        }`}
+                      >
+                        {viewingProspect.address || "N/A"}
+                      </p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Potential Revenue</label>
-                      <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingProspect.potential_revenue ? `$${viewingProspect.potential_revenue}` : 'N/A'}</p>
+                      <label className="block text-sm font-medium mb-1">
+                        Potential Revenue
+                      </label>
+                      <p
+                        className={`text-sm ${
+                          isDark ? "text-silver-400" : "text-gray-600"
+                        }`}
+                      >
+                        {viewingProspect.potential_revenue
+                          ? `$${viewingProspect.potential_revenue}`
+                          : "N/A"}
+                      </p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Contact Person</label>
-                      <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingProspect.contact_person || 'N/A'}</p>
+                      <label className="block text-sm font-medium mb-1">
+                        Contact Person
+                      </label>
+                      <p
+                        className={`text-sm ${
+                          isDark ? "text-silver-400" : "text-gray-600"
+                        }`}
+                      >
+                        {viewingProspect.contact_person || "N/A"}
+                      </p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Source</label>
-                      <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingProspect.source || 'N/A'}</p>
+                      <label className="block text-sm font-medium mb-1">
+                        Source
+                      </label>
+                      <p
+                        className={`text-sm ${
+                          isDark ? "text-silver-400" : "text-gray-600"
+                        }`}
+                      >
+                        {viewingProspect.source || "N/A"}
+                      </p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Follow Up Date</label>
-                      <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingProspect.follow_up_date || 'N/A'}</p>
+                      <label className="block text-sm font-medium mb-1">
+                        Follow Up Date
+                      </label>
+                      <p
+                        className={`text-sm ${
+                          isDark ? "text-silver-400" : "text-gray-600"
+                        }`}
+                      >
+                        {viewingProspect.follow_up_date || "N/A"}
+                      </p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Status</label>
-                      <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingProspect.status || 'N/A'}</p>
+                      <label className="block text-sm font-medium mb-1">
+                        Status
+                      </label>
+                      <p
+                        className={`text-sm ${
+                          isDark ? "text-silver-400" : "text-gray-600"
+                        }`}
+                      >
+                        {viewingProspect.status || "N/A"}
+                      </p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Sales Person</label>
-                      <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>
+                      <label className="block text-sm font-medium mb-1">
+                        Sales Person
+                      </label>
+                      <p
+                        className={`text-sm ${
+                          isDark ? "text-silver-400" : "text-gray-600"
+                        }`}
+                      >
                         {viewingProspect.sales_person
                           ? (() => {
-                              const salesPerson = allUsers.find(user => user.id === viewingProspect.sales_person);
-                              return salesPerson ? salesPerson.username : viewingProspect.sales_person;
+                              const salesPerson = allUsers.find(
+                                (user) =>
+                                  user.id === viewingProspect.sales_person
+                              );
+                              return salesPerson
+                                ? salesPerson.username
+                                : viewingProspect.sales_person;
                             })()
-                          : 'N/A'
-                        }
+                          : "N/A"}
                       </p>
                     </div>
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-medium mb-1">Notes</label>
-                      <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingProspect.notes || 'N/A'}</p>
+                      <label className="block text-sm font-medium mb-1">
+                        Notes
+                      </label>
+                      <p
+                        className={`text-sm ${
+                          isDark ? "text-silver-400" : "text-gray-600"
+                        }`}
+                      >
+                        {viewingProspect.notes || "N/A"}
+                      </p>
                     </div>
                   </div>
                   <div className="flex justify-end mt-6">
@@ -1365,7 +1531,11 @@ export default function Prospects() {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={handleViewClose}
-                      className={`px-6 py-2 rounded-lg font-medium ${isDark ? "bg-dark-700 text-gold-400 hover:bg-dark-600" : "bg-gray-200 text-gray-700 hover:bg-gray-300"}`}
+                      className={`px-6 py-2 rounded-lg font-medium ${
+                        isDark
+                          ? "bg-dark-700 text-gold-400 hover:bg-dark-600"
+                          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                      }`}
                     >
                       Close
                     </motion.button>

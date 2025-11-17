@@ -31,10 +31,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
   const navigate = useNavigate();
 
   // Debug user permissions
-  console.log('Sidebar user:', user);
-  console.log('User permissions:', user?.permissions);
-  console.log('User role:', user?.role);
-  console.log('isAdmin():', isAdmin());
+  console.log("Sidebar user:", user);
+  console.log("User permissions:", user?.permissions);
+  console.log("User role:", user?.role);
+  console.log("isAdmin():", isAdmin());
 
   const [reportsOpen, setReportsOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -68,7 +68,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       name: "Bill Entry",
       path: "/data-entry",
       icon: FileText,
-      permission: "bills:create", // Changed from bills:write to bills:create
+      permission: "bills:read",
     },
     {
       name: "Customers",
@@ -80,7 +80,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       name: "Prospects",
       path: "/prospects",
       icon: Users, // You can change to a more suitable icon if desired
-      permission: "customers:read",
+      permission: "prospects:read",
     },
   ];
 
@@ -122,27 +122,33 @@ export default function Sidebar({ isOpen, setIsOpen }) {
 
   // Filter navigation items based on permissions
   const visibleNavItems = baseNavItems.filter((item) => {
-    let show = !item.permission || hasPermission(item.permission) || hasPermission("all");
-    // Special case for sales_manager to show Bill Entry
-    if (item.name === "Bill Entry" && hasRole("sales_manager")) {
-      show = true;
-    }
-    console.log(`Base nav item "${item.name}": permission="${item.permission}", show=${show}`);
+    const show =
+      !item.permission ||
+      hasPermission(item.permission) ||
+      hasPermission("all");
+    console.log(
+      `Base nav item "${item.name}": permission="${item.permission}", show=${show}`
+    );
     return show;
   });
 
   const visibleAdminItems = isAdmin() ? adminNavItems : [];
 
   const visibleReportsItems = reportsItems.filter((item) => {
-    const show = !item.permission || hasPermission(item.permission) || hasPermission("all");
-    console.log(`Reports item "${item.name}": permission="${item.permission}", show=${show}`);
+    const show =
+      !item.permission ||
+      hasPermission(item.permission) ||
+      hasPermission("all");
+    console.log(
+      `Reports item "${item.name}": permission="${item.permission}", show=${show}`
+    );
     return show;
   });
 
-  console.log('Final visible counts:', {
+  console.log("Final visible counts:", {
     baseNav: visibleNavItems.length,
     adminNav: visibleAdminItems.length,
-    reports: visibleReportsItems.length
+    reports: visibleReportsItems.length,
   });
 
   const NavItem = ({ item, isSubmenu = false }) => (
@@ -151,14 +157,22 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       onClick={() => setIsOpen(false)}
       className={`flex items-center px-3 sm:px-4 py-3 rounded-lg font-medium transition-all duration-300 group ${
         isActive(item.path)
-          ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:text-white shadow-lg'
+          ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:text-white shadow-lg"
           : isDark
-          ? 'text-gray-300 hover:text-gray-300'
-          : 'text-gray-700 hover:text-gray-700'
-      } ${isSubmenu ? 'ml-4 sm:ml-6 text-sm' : ''}`}
+          ? "text-gray-300 hover:text-gray-300"
+          : "text-gray-700 hover:text-gray-700"
+      } ${isSubmenu ? "ml-4 sm:ml-6 text-sm" : ""}`}
     >
-      <item.icon className={`h-5 w-5 mr-3 ${isActive(item.path) ? 'text-white' : ''}`} />
-      <span className={`text-sm sm:text-base ${!isActive(item.path) ? 'group-hover:underline' : ''}`}>{item.name}</span>
+      <item.icon
+        className={`h-5 w-5 mr-3 ${isActive(item.path) ? "text-white" : ""}`}
+      />
+      <span
+        className={`text-sm sm:text-base ${
+          !isActive(item.path) ? "group-hover:underline" : ""
+        }`}
+      >
+        {item.name}
+      </span>
     </Link>
   );
 
@@ -231,8 +245,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                   onClick={() => setReportsOpen(!reportsOpen)}
                   className={`flex items-center w-full px-4 py-3 rounded-lg font-medium transition-all duration-300 group ${
                     isDark
-                      ? 'text-gray-300 hover:text-gray-300'
-                      : 'text-gray-700 hover:text-gray-700'
+                      ? "text-gray-300 hover:text-gray-300"
+                      : "text-gray-700 hover:text-gray-700"
                   }`}
                 >
                   <BarChart3 className="h-5 w-5 mr-3" />
@@ -303,9 +317,9 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                   {user?.username}
                 </p>
                 <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 capitalize">
-                  {typeof user?.role === 'string' 
-                    ? user.role.replace("_", " ") 
-                    : user?.role_name || 'User'}
+                  {typeof user?.role === "string"
+                    ? user.role.replace("_", " ")
+                    : user?.role_name || "User"}
                 </p>
               </div>
               {userMenuOpen ? (
@@ -328,15 +342,21 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                   to="/profile"
                   onClick={() => setIsOpen(false)}
                   className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all duration-300 group ${
-                    isActive('/profile')
-                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:text-white shadow-lg'
+                    isActive("/profile")
+                      ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:text-white shadow-lg"
                       : isDark
-                      ? 'text-gray-300 hover:text-gray-300 hover:bg-gray-700'
-                      : 'text-gray-700 hover:text-gray-700 hover:bg-gray-100'
+                      ? "text-gray-300 hover:text-gray-300 hover:bg-gray-700"
+                      : "text-gray-700 hover:text-gray-700 hover:bg-gray-100"
                   }`}
                 >
                   <User className="h-4 w-4 mr-3" />
-                  <span className={`text-sm ${!isActive('/profile') ? 'group-hover:underline' : ''}`}>Profile</span>
+                  <span
+                    className={`text-sm ${
+                      !isActive("/profile") ? "group-hover:underline" : ""
+                    }`}
+                  >
+                    Profile
+                  </span>
                 </Link>
 
                 {/* Theme Toggle */}
@@ -344,12 +364,18 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                   onClick={toggleTheme}
                   className={`flex items-center w-full px-4 py-2 rounded-lg font-medium transition-all duration-300 group ${
                     isDark
-                      ? 'text-gray-300 hover:text-gray-300 hover:bg-gray-700'
-                      : 'text-gray-700 hover:text-gray-700 hover:bg-gray-100'
+                      ? "text-gray-300 hover:text-gray-300 hover:bg-gray-700"
+                      : "text-gray-700 hover:text-gray-700 hover:bg-gray-100"
                   }`}
                 >
-                  {isDark ? <Sun className="h-4 w-4 mr-3" /> : <Moon className="h-4 w-4 mr-3" />}
-                  <span className="text-sm group-hover:underline">{isDark ? 'Light Mode' : 'Dark Mode'}</span>
+                  {isDark ? (
+                    <Sun className="h-4 w-4 mr-3" />
+                  ) : (
+                    <Moon className="h-4 w-4 mr-3" />
+                  )}
+                  <span className="text-sm group-hover:underline">
+                    {isDark ? "Light Mode" : "Dark Mode"}
+                  </span>
                 </button>
 
                 {/* Settings */}
@@ -357,15 +383,21 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                   to="/settings"
                   onClick={() => setIsOpen(false)}
                   className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all duration-300 group ${
-                    isActive('/settings')
-                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:text-white shadow-lg'
+                    isActive("/settings")
+                      ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:text-white shadow-lg"
                       : isDark
-                      ? 'text-gray-300 hover:text-gray-300 hover:bg-gray-700'
-                      : 'text-gray-700 hover:text-gray-700 hover:bg-gray-100'
+                      ? "text-gray-300 hover:text-gray-300 hover:bg-gray-700"
+                      : "text-gray-700 hover:text-gray-700 hover:bg-gray-100"
                   }`}
                 >
                   <Settings className="h-4 w-4 mr-3" />
-                  <span className={`text-sm ${!isActive('/settings') ? 'group-hover:underline' : ''}`}>Settings</span>
+                  <span
+                    className={`text-sm ${
+                      !isActive("/settings") ? "group-hover:underline" : ""
+                    }`}
+                  >
+                    Settings
+                  </span>
                 </Link>
 
                 {/* Logout */}
@@ -373,8 +405,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                   onClick={handleLogout}
                   className={`flex items-center w-full px-4 py-2 rounded-lg font-medium transition-all duration-300 group ${
                     isDark
-                      ? 'text-gray-300 hover:text-gray-300 hover:bg-gray-700'
-                      : 'text-gray-700 hover:text-gray-700 hover:bg-gray-100'
+                      ? "text-gray-300 hover:text-gray-300 hover:bg-gray-700"
+                      : "text-gray-700 hover:text-gray-700 hover:bg-gray-100"
                   }`}
                 >
                   <LogOut className="h-4 w-4 mr-3" />

@@ -109,28 +109,28 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # }
 
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME', default=''),
-        'USER': config('DB_USER', default=''),
-        'PASSWORD': config('DB_PASSWORD', default=''),
-        'HOST': config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='5432'),
-    }
-}
-
-# Database
 # DATABASES = {
 #     'default': {
-#         'ENGINE': config('DB_ENGINE', default='django.db.backends.sqlite3'),
-#         'NAME': config('DB_NAME', default=BASE_DIR / 'db.sqlite3'),
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': config('DB_NAME', default=''),
 #         'USER': config('DB_USER', default=''),
 #         'PASSWORD': config('DB_PASSWORD', default=''),
 #         'HOST': config('DB_HOST', default='localhost'),
-#         'PORT': config('DB_PORT', default='3306'),
+#         'PORT': config('DB_PORT', default='5432'),
 #     }
 # }
+
+# Database
+DATABASES = {
+    'default': {
+        'ENGINE': config('DB_ENGINE', default='django.db.backends.sqlite3'),
+        'NAME': config('DB_NAME', default=BASE_DIR / 'db.sqlite3'),
+        'USER': config('DB_USER', default=''),
+        'PASSWORD': config('DB_PASSWORD', default=''),
+        'HOST': config('DB_HOST', default='localhost'),
+        'PORT': config('DB_PORT', default='3306'),
+    }
+}
 
 
 # Password validation
@@ -231,7 +231,7 @@ SIMPLE_JWT = {
 
 
 # CORS Configuration
-CORS_ALLOWED_ORIGINS = [origin.strip() for origin in os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://103.146.220.225:223,http://172.31.82.254').split(',') if origin.strip()]
+CORS_ALLOWED_ORIGINS = [origin.strip() for origin in os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174,http://103.146.220.225:223,http://172.31.82.254').split(',') if origin.strip()]
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
     'accept',
@@ -287,7 +287,6 @@ SWAGGER_SETTINGS = {
     'SHOW_EXTENSIONS': True,
     'DEFAULT_MODEL_RENDERING': 'example'
 }
-
 
 
 

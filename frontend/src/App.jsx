@@ -104,9 +104,7 @@ const AppLayout = ({ children }) => {
             </button>
           </div>
         )}
-        <main className="flex-1 overflow-y-auto">
-          {children}
-        </main>
+        <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
       <NotificationContainer />
     </div>
@@ -142,7 +140,7 @@ const AppRoutes = () => {
       <Route
         path="/data-entry"
         element={
-          <ProtectedRoute requiredPermission="bills:create">
+          <ProtectedRoute requiredPermission="bills:read">
             <AppLayout>
               <DataEntry />
             </AppLayout>
@@ -164,7 +162,7 @@ const AppRoutes = () => {
       <Route
         path="/prospects"
         element={
-          <ProtectedRoute requiredPermission="customers:read">
+          <ProtectedRoute requiredPermission="prospects:read">
             <AppLayout>
               <Prospects />
             </AppLayout>

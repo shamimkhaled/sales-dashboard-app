@@ -14,11 +14,21 @@ class MeView(APIView):
 
     def get(self, request):
         user = request.user
+        # Get user permissions
+        permissions_list = []
+        if user.is_superuser:
+            permissions_list = ['all']
+        elif user.role:
+            permissions_list = list(user.role.permissions.values_list('codename', flat=True))
+        
         return Response({
             'id': user.id,
             'email': user.email,
             'username': user.username,
             'role': user.role.name if getattr(user, 'role', None) else None,
+            'role_name': user.role.name if getattr(user, 'role', None) else None,
+            'permissions': permissions_list,
+            'is_superuser': user.is_superuser,
         })
 
 
