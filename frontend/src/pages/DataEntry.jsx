@@ -2034,7 +2034,6 @@ export default function DataEntry() {
                         </td>
                         <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm`}>
                           <div className="flex items-center space-x-1">
-<<<<<<< HEAD
                             {hasPermission("bills:update") && (
                               <motion.button
                                 whileHover={{ scale: 1.1 }}
@@ -2072,45 +2071,6 @@ export default function DataEntry() {
                                 No actions
                               </span>
                             )}
-=======
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => handleViewClick(bill)}
-                              className={`p-1 sm:p-2 rounded-lg transition-all ${
-                                isDark
-                                  ? "bg-dark-700 text-green-400 hover:bg-dark-600"
-                                  : "bg-green-50 text-green-600 hover:bg-green-100"
-                              }`}
-                              title="View bill details"
-                            >
-                              <Eye size={14} />
-                            </motion.button>
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => handleEdit(bill)}
-                              className={`p-1 sm:p-2 rounded-lg transition-all ${
-                                isDark
-                                  ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500"
-                                  : "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500"
-                              }`}
-                            >
-                              <Edit2 size={14} />
-                            </motion.button>
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => handleDeleteClick(bill)}
-                              className={`p-1 sm:p-2 rounded-lg transition-all ${
-                                isDark
-                                  ? "bg-dark-700 text-red-400 hover:bg-dark-600"
-                                  : "bg-red-50 text-red-600 hover:bg-red-100"
-                              }`}
-                            >
-                              <Trash2 size={14} />
-                            </motion.button>
->>>>>>> arman
                           </div>
                         </td>
                       </tr>
@@ -2392,7 +2352,6 @@ export default function DataEntry() {
                           : "rgb(229, 231, 235)",
                       }}
                     >
-<<<<<<< HEAD
                       {hasPermission("bills:update") && (
                         <motion.button
                           whileHover={{ scale: 1.1 }}
@@ -2428,43 +2387,6 @@ export default function DataEntry() {
                           No actions available
                         </div>
                       )}
-=======
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => handleViewClick(bill)}
-                        className={`flex items-center justify-center space-x-1 px-3 py-2 rounded-lg transition-all text-sm ${
-                          isDark
-                            ? "bg-dark-700 text-green-400 hover:bg-dark-600"
-                            : "bg-green-50 text-green-600 hover:bg-green-100"
-                        }`}
-                      >
-                        <Eye size={14} />
-                        <span>View</span>
-                      </motion.button>
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => handleEdit(bill)}
-                        className="flex-1 flex items-center justify-center space-x-1 px-3 py-2 rounded-lg transition-all text-sm bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 shadow-md"
-                      >
-                        <Edit2 size={14} />
-                        <span>Edit</span>
-                      </motion.button>
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => handleDeleteClick(bill)}
-                        className={`flex-1 flex items-center justify-center space-x-1 px-3 py-2 rounded-lg transition-all text-sm ${
-                          isDark
-                            ? "bg-dark-700 text-red-400 hover:bg-dark-600"
-                            : "bg-red-50 text-red-600 hover:bg-red-100"
-                        }`}
-                      >
-                        <Trash2 size={14} />
-                        <span>Delete</span>
-                      </motion.button>
->>>>>>> arman
                     </div>
                   </motion.div>
                 ))}
