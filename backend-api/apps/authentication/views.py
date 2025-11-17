@@ -63,6 +63,7 @@ class PermissionListView(generics.ListAPIView):
     queryset = Permission.objects.all()
     serializer_class = PermissionSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdminOrSuperAdmin]
+    pagination_class = None  # Disable pagination for permissions
 
 
 class RoleChoicesView(APIView):

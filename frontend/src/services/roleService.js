@@ -39,7 +39,24 @@ export const roleService = {
 
         // Check for pagination
         if (response?.next) {
-          nextUrl = response.next.replace(api.defaults.baseURL, ""); // Remove base URL
+          // Extract only the path and query string from the next URL
+          // This prevents port/domain mismatch issues
+          try {
+            const url = new URL(response.next);
+            // Remove any duplicate /api prefix from the path
+            let path = url.pathname + url.search;
+            if (path.startsWith("/api/")) {
+              path = path.substring(4); // Remove the first /api
+            }
+            nextUrl = path;
+          } catch (e) {
+            // If it's already a relative URL, use it as is
+            let path = response.next;
+            if (path.startsWith("/api/")) {
+              path = path.substring(4); // Remove the first /api
+            }
+            nextUrl = path;
+          }
           page++;
         } else {
           nextUrl = null;
