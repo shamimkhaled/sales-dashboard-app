@@ -79,6 +79,7 @@ class Customer(models.Model):
     STATUS_CHOICES = (
         ('Active', 'Active'),
         ('Inactive', 'Inactive'),
+        ('Lost', 'Lost'),
     )
 
     name = models.CharField(max_length=255)
