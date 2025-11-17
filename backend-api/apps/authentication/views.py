@@ -65,6 +65,18 @@ class PermissionListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated, IsAdminOrSuperAdmin]
 
 
+class RoleChoicesView(APIView):
+    """Get predefined role name choices"""
+    permission_classes = [permissions.IsAuthenticated, IsAdminOrSuperAdmin]
+
+    def get(self, request):
+        choices = [
+            {'value': value, 'label': label}
+            for value, label in Role.ROLE_CHOICES
+        ]
+        return Response(choices, status=status.HTTP_200_OK)
+
+
 class AssignRoleView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsAdminOrSuperAdmin]
 

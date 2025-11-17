@@ -1,5 +1,5 @@
 // Role Service - handles role management API calls
-import api from './api';
+import api from "./api";
 
 export const roleService = {
   // Get all roles
@@ -7,7 +7,7 @@ export const roleService = {
     try {
       // For now, call without query params to avoid 404
       // TODO: Add pagination support when backend implements it
-      const response = await api.get('/auth/roles/');
+      const response = await api.get("/auth/roles/");
       return response;
     } catch (error) {
       throw error;
@@ -19,10 +19,11 @@ export const roleService = {
     try {
       // Try to get all permissions, handle pagination if present
       let allPermissions = [];
-      let nextUrl = '/auth/permissions/';
+      let nextUrl = "/auth/permissions/";
       let page = 1;
 
-      while (nextUrl && page <= 10) { // Limit to 10 pages to prevent infinite loops
+      while (nextUrl && page <= 10) {
+        // Limit to 10 pages to prevent infinite loops
         const response = await api.get(nextUrl);
 
         let permissions = [];
@@ -38,7 +39,7 @@ export const roleService = {
 
         // Check for pagination
         if (response?.next) {
-          nextUrl = response.next.replace(api.defaults.baseURL, ''); // Remove base URL
+          nextUrl = response.next.replace(api.defaults.baseURL, ""); // Remove base URL
           page++;
         } else {
           nextUrl = null;
@@ -46,6 +47,16 @@ export const roleService = {
       }
 
       return allPermissions;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get predefined role name choices
+  async getRoleChoices() {
+    try {
+      const response = await api.get("/auth/role-choices/");
+      return response;
     } catch (error) {
       throw error;
     }
@@ -64,7 +75,7 @@ export const roleService = {
   // Create new role
   async createRole(roleData) {
     try {
-      const response = await api.post('/auth/roles/', roleData);
+      const response = await api.post("/auth/roles/", roleData);
       return response;
     } catch (error) {
       throw error;
