@@ -193,7 +193,7 @@ export default function Customers() {
           assigned_sales_person:
             parseInt(formData.assigned_sales_person) || null,
           status: formData.status || "Active",
-          link_id: formData.link_id || "",
+          link_id: formData.link_id || null,
         };
         console.log("Updating customer:", editingId, customerData);
         const response = await customerService.updateCustomer(
@@ -216,7 +216,7 @@ export default function Customers() {
           assigned_sales_person:
             parseInt(formData.assigned_sales_person) || null,
           status: formData.status || "Active",
-          link_id: formData.link_id || "",
+          link_id: formData.link_id || null,
         };
         await customerService.createCustomer(customerData);
         showSuccess("Customer created successfully");
@@ -656,7 +656,7 @@ export default function Customers() {
                       isDark ? "text-silver-300" : "text-gray-700"
                     }`}
                   >
-                    Name *
+                    Name of Party *
                   </label>
                   <input
                     type="text"
@@ -679,7 +679,7 @@ export default function Customers() {
                       isDark ? "text-silver-300" : "text-gray-700"
                     }`}
                   >
-                    Company Name *
+                    Proprietor Name *
                   </label>
                   <input
                     type="text"
@@ -731,7 +731,7 @@ export default function Customers() {
                     name="phone"
                     value={formData.phone}
                     onChange={handleInputChange}
-                    placeholder="+4867096587 4-5 35"
+                    placeholder="+880 XXXXXXXXXX"
                     className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
                       isDark
                         ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
@@ -765,11 +765,7 @@ export default function Customers() {
                     <option value="">Select a KAM</option>
                     {salesUsers.map((user) => (
                       <option key={user.id} value={user.id}>
-                        {user.username || user.email} (
-                        {user.role_name
-                          ?.replace("_", " ")
-                          .replace(/\b\w/g, (l) => l.toUpperCase())}
-                        )
+                        {user.username || user.email}
                       </option>
                     ))}
                   </select>
@@ -967,14 +963,14 @@ export default function Customers() {
                           isDark ? "text-silver-300" : "text-gray-700"
                         }`}
                       >
-                        Name
+                        Name of Party
                       </th>
                       <th
                         className={`px-6 py-4 text-left text-sm font-semibold ${
                           isDark ? "text-silver-300" : "text-gray-700"
                         }`}
                       >
-                        Company
+                        Proprietor Name
                       </th>
                       <th
                         className={`px-6 py-4 text-left text-sm font-semibold ${
