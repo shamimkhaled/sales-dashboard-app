@@ -2464,7 +2464,6 @@ export default function DataEntry() {
                         <Trash2 size={14} />
                         <span>Delete</span>
                       </motion.button>
->>>>>>> arman
                     </div>
                   </motion.div>
                 ))}
