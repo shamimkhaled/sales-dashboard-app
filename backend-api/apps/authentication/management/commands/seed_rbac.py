@@ -21,6 +21,11 @@ PERMISSIONS = [
     ('bills:update', 'bills', 'update', 'Update bills'),
     ('bills:import', 'bills', 'import', 'Import bills'),
     ('bills:export', 'bills', 'export', 'Export bills'),
+    # Invoices
+    ('invoices:read', 'invoices', 'read', 'Read invoices'),
+    ('invoices:create', 'invoices', 'create', 'Create invoices'),
+    ('invoices:update', 'invoices', 'update', 'Update invoices'),
+    ('invoices:delete', 'invoices', 'delete', 'Delete invoices'),
     # Reports & Logs
     ('reports:read', 'reports', 'read', 'Read reports'),
     ('logs:read', 'logs', 'read', 'Read logs'),
@@ -44,6 +49,7 @@ ROLES = {
             'customers:read','customers:update','customers:import','customers:export',
             'prospects:read','prospects:update',
             'bills:read','bills:create','bills:update','bills:import','bills:export',
+            'invoices:read','invoices:create','invoices:update','invoices:delete',
             'reports:read','logs:read','settings:read', 'role:read', 'role:write'
         ],
     },
@@ -53,6 +59,7 @@ ROLES = {
             'customers:read','customers:update','customers:export',
             'prospects:read','prospects:update',
             'bills:read','bills:create','bills:update',
+            'invoices:read','invoices:create','invoices:update',
             'reports:read'
         ],
     },
@@ -90,7 +97,11 @@ MENU = [
         'required_permissions': ['bills:read'], 'children': []
     },
     {
-        'slug': 'reports', 'title': 'Reports', 'path': '/reports', 'icon': 'chart', 'order': 5,
+        'slug': 'invoices', 'title': 'Invoices', 'path': '/invoices', 'icon': 'receipt', 'order': 5,
+        'required_permissions': ['invoices:read'], 'children': []
+    },
+    {
+        'slug': 'reports', 'title': 'Reports', 'path': '/reports', 'icon': 'chart', 'order': 6,
         'required_permissions': ['reports:read'], 'children': []
     },
     {
