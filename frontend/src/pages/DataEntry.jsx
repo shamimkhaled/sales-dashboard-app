@@ -2007,7 +2007,10 @@ export default function DataEntry() {
                             isDark ? "text-silver-300" : "text-gray-700"
                           }`}
                         >
-                          {bill.kam || "-"}
+                          {(() => {
+                            const customer = customers.find((c) => c.id === (bill.customer || bill.customer_id));
+                            return customer?.assigned_sales_person_details?.username || "-";
+                          })()}
                         </td>
                         <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm`}>
                           <span
@@ -2480,7 +2483,12 @@ export default function DataEntry() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1">KAM</label>
-                    <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>{viewingBill.kam || 'N/A'}</p>
+                    <p className={`text-sm ${isDark ? "text-silver-400" : "text-gray-600"}`}>
+                      {(() => {
+                        const customer = customers.find((c) => c.id === (viewingBill.customer || viewingBill.customer_id));
+                        return customer?.assigned_sales_person_details?.username || "N/A";
+                      })()}
+                    </p>
                   </div>
 
                   {/* NTTN Information */}
