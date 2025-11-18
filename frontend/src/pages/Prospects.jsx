@@ -664,15 +664,18 @@ export default function Prospects() {
                     onChange={handleInputChange}
                     className="w-full px-4 py-2 rounded-lg border focus:outline-none"
                   >
-                    <option value="new">New</option>
-                    <option value="contacted">Contacted</option>
-                    <option value="qualified">Qualified</option>
-                    <option value="lost">Lost</option>
+                    <option value="suspect">Suspect</option>
+                    <option value="prospects">Prospects</option>
+                    <option value="approach">Approach</option>
+                    <option value="negotiate">Negotiate</option>
+                    <option value="order">Order</option>
+                    <option value="ongoing">Ongoing</option>
+                    <option value="confirm">Confirm</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Sales Person
+                    Sales 
                   </label>
                   <select
                     name="sales_person"
@@ -680,10 +683,10 @@ export default function Prospects() {
                     onChange={handleInputChange}
                     className="w-full px-4 py-2 rounded-lg border focus:outline-none"
                   >
-                    <option value="">Select Sales Person</option>
+                    <option value="">Select Sales </option>
                     {salesPersons.map((user) => (
                       <option key={user.id} value={user.id}>
-                        {user.username} ({user.email})
+                        {user.username}
                       </option>
                     ))}
                   </select>
@@ -918,15 +921,18 @@ export default function Prospects() {
                     onChange={handleInputChange}
                     className="w-full px-4 py-2 rounded-lg border focus:outline-none"
                   >
-                    <option value="new">New</option>
-                    <option value="contacted">Contacted</option>
-                    <option value="qualified">Qualified</option>
-                    <option value="lost">Lost</option>
+                    <option value="suspect">Suspect</option>
+                    <option value="prospects">Prospects</option>
+                    <option value="approach">Approach</option>
+                    <option value="negotiate">Negotiate</option>
+                    <option value="order">Order</option>
+                    <option value="ongoing">Ongoing</option>
+                    <option value="confirm">Confirm</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Sales Person
+                    Sales
                   </label>
                   <select
                     name="sales_person"
@@ -934,7 +940,7 @@ export default function Prospects() {
                     onChange={handleInputChange}
                     className="w-full px-4 py-2 rounded-lg border focus:outline-none"
                   >
-                    <option value="">Select Sales Person</option>
+                    <option value="">Select Sales </option>
                     {salesPersons.map((user) => (
                       <option key={user.id} value={user.id}>
                         {user.username} ({user.email})

@@ -102,7 +102,7 @@ const dashboardService = {
 
       const totalRevenue = monthly.reduce((sum, item) => sum + (item.revenue || 0), 0);
       const totalCustomers = customerWise.length;
-      const activeCustomers = customerWise.filter(c => c.status === 'Active').length;
+      const activeCustomers = customerWise.length;
       const collectionRate = customerWise.length > 0
         ? (customerWise.filter(c => c.collectionRate > 0).length / customerWise.length * 100).toFixed(1)
         : 0;

@@ -10,6 +10,9 @@ import { useAuth } from '../context/AuthContext';
 import KPICard from '../components/KPICard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorAlert from '../components/ErrorAlert';
+import { dashboardService } from '../services/dashboardService';
+import { customerService } from '../services/customerService';
+import { billService } from '../services/billService';
 
 const CompanyReports = () => {
   const { isDark } = useTheme();
@@ -31,7 +34,11 @@ const CompanyReports = () => {
       bills: [],
       customers: []
     },
-    data_entry_performance: []
+    data_entry_performance: [],
+    rawMetrics: {
+      totalRevenue: 0,
+      totalReceived: 0
+    }
   });
   const [dateRange, setDateRange] = useState({
     start_date: '',
@@ -47,37 +54,76 @@ const CompanyReports = () => {
       setLoading(true);
       setError(null);
 
-      // Mock data - replace with actual API call
+      // Fetch data from multiple services
+      const [kpisRes, monthlyRes, customerWiseRes, billsRes, customersRes] = await Promise.all([
+        dashboardService.getKPIs(),
+        dashboardService.getMonthlyRevenue(),
+        dashboardService.getCustomerWiseRevenue(),
+        billService.getAllBills({ limit: 10 }),
+        customerService.getAllCustomers({ limit: 10 })
+      ]);
+
+      const kpis = kpisRes.data || kpisRes;
+      const monthly = monthlyRes.data || monthlyRes;
+      const customerWise = customerWiseRes.data || customerWiseRes;
+      const bills = billsRes.data || billsRes;
+      const customers = customersRes.data || customersRes;
+
+      // Use KPI data from API
+      const totalRevenue = kpis.total_revenue || 0;
+      const totalCustomers = kpis.total_customers || 0;
+      const activeCustomers = kpis.active_customers || 0;
+      const collectionRate = kpis.collection_rate || 0;
+
+      // Calculate additional metrics for display
+      const monthlyArray = Array.isArray(monthly) ? monthly : [];
+      const customerWiseArray = Array.isArray(customerWise) ? customerWise : [];
+      const totalReceived = customerWiseArray.reduce((sum, customer) => sum + (customer.totalReceived || 0), 0);
+      const totalDue = customerWiseArray.reduce((sum, customer) => sum + (customer.totalDue || 0), 0);
+      const billsArray = Array.isArray(bills) ? bills : [];
+      const totalBills = billsRes.data?.count || billsArray.length;
+      const avgBill = totalBills > 0 ? totalRevenue / totalBills : 0;
+
+      // Format currency values
+      const formatCurrency = (amount) => `৳${amount.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+
       setReportData({
         revenue: {
-          total_bills: 245,
-          total_amount: '৳2,450,000',
-          total_received: '৳2,125,000',
-          total_due: '৳325,000',
-          avg_bill: '৳10,000'
+          total_bills: totalBills,
+          total_amount: formatCurrency(totalRevenue),
+          total_received: formatCurrency(totalReceived),
+          total_due: formatCurrency(totalDue),
+          avg_bill: formatCurrency(avgBill)
         },
         customers: {
-          total_active: 89
+          total_active: activeCustomers
         },
+        kpis: kpis,
         recent_entries: {
-          bills: [
-            { id: 1, customer_name: 'ABC Corp', amount: 15000, date: '2024-01-15' },
-            { id: 2, customer_name: 'XYZ Ltd', amount: 25000, date: '2024-01-14' },
-            { id: 3, customer_name: 'Tech Solutions', amount: 12000, date: '2024-01-13' }
-          ],
-          customers: [
-            { id: 1, name: 'New Client Inc', join_date: '2024-01-15' },
-            { id: 2, name: 'Startup Co', join_date: '2024-01-12' }
-          ]
+          bills: billsArray.slice(0, 3).map(bill => ({
+            id: bill.id,
+            customer_name: bill.customer?.name || 'Unknown Customer',
+            amount: bill.total_bill || 0,
+            date: bill.billing_date || bill.created_at
+          })),
+          customers: (Array.isArray(customers) ? customers.slice(0, 2) : []).map(customer => ({
+            id: customer.id,
+            name: customer.name,
+            join_date: customer.created_at
+          }))
         },
         data_entry_performance: [
           { user: 'john_doe', entries: 45, accuracy: 98.5 },
           { user: 'admin', entries: 32, accuracy: 99.2 },
           { user: 'manager', entries: 28, accuracy: 97.8 }
-        ]
+        ],
+        rawMetrics: {
+          totalRevenue,
+          totalReceived
+        }
       });
     } catch (err) {
-      setError('Failed to fetch company reports');
+      setError(err.message || 'Failed to fetch company reports');
     } finally {
       setLoading(false);
     }
@@ -138,7 +184,7 @@ const CompanyReports = () => {
               >
                 <RefreshCw size={20} />
               </motion.button>
-              <motion.button
+              {/* <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
@@ -149,7 +195,7 @@ const CompanyReports = () => {
               >
                 <Download size={18} />
                 <span>Export Report</span>
-              </motion.button>
+              </motion.button> */}
             </div>
           </div>
         </div>
@@ -222,41 +268,41 @@ const CompanyReports = () => {
           <motion.div variants={itemVariants}>
             <KPICard
               title="Total Revenue"
-              value={reportData.revenue.total_amount}
+              value={`৳${(reportData.kpis?.total_revenue || 0).toLocaleString("en-US", { maximumFractionDigits: 0 })}`}
               icon={DollarSign}
               color="green"
               trend="up"
-              trendValue="+12.5%"
+              trendValue={`${reportData.kpis?.total_revenue_change || 0}%`}
             />
           </motion.div>
           <motion.div variants={itemVariants}>
             <KPICard
-              title="Total Bills"
-              value={reportData.revenue.total_bills}
-              icon={FileText}
+              title="Total Customers"
+              value={reportData.kpis?.total_customers || 0}
+              icon={Users}
               color="blue"
               trend="up"
-              trendValue="+8.2%"
+              trendValue={`${reportData.kpis?.total_customers_change || 0}%`}
             />
           </motion.div>
           <motion.div variants={itemVariants}>
             <KPICard
               title="Active Customers"
-              value={reportData.customers.total_active}
-              icon={Users}
-              color="purple"
+              value={reportData.kpis?.active_customers || 0}
+              icon={TrendingUp}
+              color="green"
               trend="up"
-              trendValue="+5.1%"
+              trendValue={`${reportData.kpis?.active_customers_change || 0}%`}
             />
           </motion.div>
           <motion.div variants={itemVariants}>
             <KPICard
-              title="Outstanding Due"
-              value={reportData.revenue.total_due}
-              icon={TrendingUp}
-              color="red"
-              trend="down"
-              trendValue="-3.2%"
+              title="Collection Rate"
+              value={`${reportData.kpis?.collection_rate || 0}%`}
+              icon={Calendar}
+              color="purple"
+              trend="up"
+              trendValue={`${reportData.kpis?.collection_rate_change || 0}%`}
             />
           </motion.div>
         </motion.div>
@@ -437,7 +483,7 @@ const CompanyReports = () => {
             </div>
             <div className="text-center">
               <div className={`text-2xl font-bold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
-                {reportData.customers.total_active}
+                {reportData.kpis?.active_customers || 0}
               </div>
               <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                 Active Customers
@@ -445,8 +491,7 @@ const CompanyReports = () => {
             </div>
             <div className="text-center">
               <div className={`text-2xl font-bold ${isDark ? 'text-purple-400' : 'text-purple-600'}`}>
-                {Math.round((parseFloat(reportData.revenue.total_received.replace('৳', '').replace(',', '')) /
-                  parseFloat(reportData.revenue.total_amount.replace('৳', '').replace(',', ''))) * 100)}%
+                {reportData.kpis?.collection_rate || 0}%
               </div>
               <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                 Collection Rate
