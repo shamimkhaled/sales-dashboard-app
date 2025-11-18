@@ -10,6 +10,9 @@ import { useAuth } from '../context/AuthContext';
 import KPICard from '../components/KPICard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorAlert from '../components/ErrorAlert';
+import { dashboardService } from '../services/dashboardService';
+import { customerService } from '../services/customerService';
+import { billService } from '../services/billService';
 
 const CompanyReports = () => {
   const { isDark } = useTheme();
@@ -31,7 +34,11 @@ const CompanyReports = () => {
       bills: [],
       customers: []
     },
-    data_entry_performance: []
+    data_entry_performance: [],
+    rawMetrics: {
+      totalRevenue: 0,
+      totalReceived: 0
+    }
   });
   const [dateRange, setDateRange] = useState({
     start_date: '',
@@ -47,37 +54,69 @@ const CompanyReports = () => {
       setLoading(true);
       setError(null);
 
-      // Mock data - replace with actual API call
+      // Fetch data from multiple services
+      const [monthlyRes, customerWiseRes, billsRes, customersRes] = await Promise.all([
+        dashboardService.getMonthlyRevenue(),
+        dashboardService.getCustomerWiseRevenue(),
+        billService.getAllBills({ limit: 10 }),
+        customerService.getAllCustomers({ limit: 10 })
+      ]);
+
+      const monthly = Array.isArray(monthlyRes.data) ? monthlyRes.data : [];
+      const customerWise = Array.isArray(customerWiseRes.data) ? customerWiseRes.data : [];
+      const bills = Array.isArray(billsRes.data) ? billsRes.data : (billsRes.data?.results || []);
+      const customers = Array.isArray(customersRes.data) ? customersRes.data : (customersRes.data?.results || []);
+
+      // Calculate revenue metrics
+      const totalRevenue = monthly.reduce((sum, item) => sum + (item.revenue || 0), 0);
+      const totalReceived = customerWise.reduce((sum, customer) => sum + (customer.totalReceived || 0), 0);
+      const totalDue = customerWise.reduce((sum, customer) => sum + (customer.totalDue || 0), 0);
+      const totalBills = billsRes.data?.count || bills.length;
+      const avgBill = totalBills > 0 ? totalRevenue / totalBills : 0;
+
+      // Calculate active customers
+      const activeCustomers = customerWise.filter((c) => c.status === 'Active').length;
+      const totalCustomers = customerWise.length;
+
+      // Format currency values
+      const formatCurrency = (amount) => `৳${amount.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+
       setReportData({
         revenue: {
-          total_bills: 245,
-          total_amount: '৳2,450,000',
-          total_received: '৳2,125,000',
-          total_due: '৳325,000',
-          avg_bill: '৳10,000'
+          total_bills: totalBills,
+          total_amount: formatCurrency(totalRevenue),
+          total_received: formatCurrency(totalReceived),
+          total_due: formatCurrency(totalDue),
+          avg_bill: formatCurrency(avgBill)
         },
         customers: {
-          total_active: 89
+          total_active: activeCustomers
         },
         recent_entries: {
-          bills: [
-            { id: 1, customer_name: 'ABC Corp', amount: 15000, date: '2024-01-15' },
-            { id: 2, customer_name: 'XYZ Ltd', amount: 25000, date: '2024-01-14' },
-            { id: 3, customer_name: 'Tech Solutions', amount: 12000, date: '2024-01-13' }
-          ],
-          customers: [
-            { id: 1, name: 'New Client Inc', join_date: '2024-01-15' },
-            { id: 2, name: 'Startup Co', join_date: '2024-01-12' }
-          ]
+          bills: bills.slice(0, 3).map(bill => ({
+            id: bill.id,
+            customer_name: bill.customer?.name || 'Unknown Customer',
+            amount: bill.total_bill || 0,
+            date: bill.billing_date || bill.created_at
+          })),
+          customers: customers.slice(0, 2).map(customer => ({
+            id: customer.id,
+            name: customer.name,
+            join_date: customer.created_at
+          }))
         },
         data_entry_performance: [
           { user: 'john_doe', entries: 45, accuracy: 98.5 },
           { user: 'admin', entries: 32, accuracy: 99.2 },
           { user: 'manager', entries: 28, accuracy: 97.8 }
-        ]
+        ],
+        rawMetrics: {
+          totalRevenue,
+          totalReceived
+        }
       });
     } catch (err) {
-      setError('Failed to fetch company reports');
+      setError(err.message || 'Failed to fetch company reports');
     } finally {
       setLoading(false);
     }
@@ -445,8 +484,7 @@ const CompanyReports = () => {
             </div>
             <div className="text-center">
               <div className={`text-2xl font-bold ${isDark ? 'text-purple-400' : 'text-purple-600'}`}>
-                {Math.round((parseFloat(reportData.revenue.total_received.replace('৳', '').replace(',', '')) /
-                  parseFloat(reportData.revenue.total_amount.replace('৳', '').replace(',', ''))) * 100)}%
+                {reportData.rawMetrics.totalRevenue > 0 ? Math.round((reportData.rawMetrics.totalReceived / reportData.rawMetrics.totalRevenue) * 100) : 0}%
               </div>
               <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                 Collection Rate

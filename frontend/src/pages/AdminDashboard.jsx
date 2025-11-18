@@ -95,7 +95,7 @@ export default function Dashboard() {
           }
           kamMap[customer.kam].customers += 1;
           kamMap[customer.kam].totalRevenue += customer.totalRevenue || 0;
-          if (!customer.leaveDate) {
+          if (customer.status === 'Active') {
             kamMap[customer.kam].activeCustomers += 1;
           }
         }
@@ -111,7 +111,7 @@ export default function Dashboard() {
         0
       );
       const totalCustomers = customerWise.length;
-      const activeCustomers = customerWise.filter((c) => !c.leaveDate).length;
+      const activeCustomers = customerWise.filter((c) => c.status === 'Active').length;
       const collectionRate =
         customerWise.length > 0
           ? (
@@ -452,7 +452,7 @@ export default function Dashboard() {
                   data={[
                     { name: "Active", value: kpiData.activeCustomers },
                     {
-                      name: "Inactive",
+                      name: "Inactive/Lost",
                       value: kpiData.totalCustomers - kpiData.activeCustomers,
                     },
                   ]}
@@ -628,16 +628,20 @@ export default function Dashboard() {
                     <td className={`px-4 py-3 text-sm`}>
                       <span
                         className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                          customer.leaveDate
+                          customer.status === 'Active'
                             ? isDark
-                              ? "bg-red-900/30 text-red-400"
-                              : "bg-red-100 text-red-700"
+                              ? "bg-green-900/30 text-green-400"
+                              : "bg-green-100 text-green-700"
+                            : customer.status === 'Inactive'
+                            ? isDark
+                              ? "bg-yellow-900/30 text-yellow-400"
+                              : "bg-yellow-100 text-yellow-700"
                             : isDark
-                            ? "bg-green-900/30 text-green-400"
-                            : "bg-green-100 text-green-700"
+                            ? "bg-red-900/30 text-red-400"
+                            : "bg-red-100 text-red-700"
                         }`}
                       >
-                        {customer.leaveDate ? "Inactive" : "Active"}
+                        {customer.status}
                       </span>
                     </td>
                     <td
