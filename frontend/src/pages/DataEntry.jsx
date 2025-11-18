@@ -1567,7 +1567,7 @@ export default function DataEntry() {
                           isDark ? "text-silver-300" : "text-gray-700"
                         }`}
                       >
-                        S/L
+                        Bill Number
                       </th>
                       <th
                         className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
@@ -1797,11 +1797,18 @@ export default function DataEntry() {
                         } ${isDark ? "border-dark-700" : "border-gray-100"}`}
                       >
                         <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
-                            isDark ? "text-silver-300" : "text-gray-700"
-                          }`}
+                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap`}
                         >
-                          {index + 1}
+                          <button
+                            onClick={() => handleViewClick(bill)}
+                            className={`font-medium underline decoration-dotted underline-offset-2 transition-colors duration-200 hover:no-underline ${
+                              isDark 
+                                ? "text-blue-400 hover:text-blue-300" 
+                                : "text-blue-600 hover:text-blue-700"
+                            }`}
+                          >
+                            {bill.bill_number || "-"}
+                          </button>
                         </td>
                         <td
                           className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap ${
@@ -2480,6 +2487,24 @@ export default function DataEntry() {
                   </button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* Bill Number - Featured */}
+                  <div className="md:col-span-2 lg:col-span-3">
+                    <div className={`p-4 rounded-lg ${
+                      isDark ? "bg-blue-900/20 border border-blue-800" : "bg-blue-50 border border-blue-200"
+                    }`}>
+                      <label className="block text-sm font-medium mb-1">
+                        Bill Number
+                      </label>
+                      <p
+                        className={`text-lg font-semibold ${
+                          isDark ? "text-blue-400" : "text-blue-600"
+                        }`}
+                      >
+                        {viewingBill.bill_number || "N/A"}
+                      </p>
+                    </div>
+                  </div>
+
                   {/* Customer Information */}
                   <div className="md:col-span-2 lg:col-span-3">
                     <h4

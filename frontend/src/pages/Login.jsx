@@ -7,6 +7,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Eye, EyeOff, LogIn, AlertCircle } from 'lucide-react';
 import KTLLogo from '../components/KTLLogo';
+import kloudLogo from '../assets/kloud_tech.png';
 
 // Validation schema
 const loginSchema = yup.object({
@@ -73,9 +74,9 @@ const Login = () => {
         <div className="text-center">
           <div className="flex justify-center mb-4">
             <img 
-                  src="https://kloud.com.bd/netband/assets/img/logo/kloud-logo1.png" 
+                  src={kloudLogo} 
                   alt="Kloud Logo" 
-                  className="h-12 w-auto object-contain"
+                  className="h-10 w-auto object-contain"
                 />
           </div>
           <h2 className="mt-4 sm:mt-6 text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white">
