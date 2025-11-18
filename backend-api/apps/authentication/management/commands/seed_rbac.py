@@ -26,6 +26,11 @@ PERMISSIONS = [
     ('invoices:create', 'invoices', 'create', 'Create invoices'),
     ('invoices:update', 'invoices', 'update', 'Update invoices'),
     ('invoices:delete', 'invoices', 'delete', 'Delete invoices'),
+    # Feedback
+    ('feedback:read', 'feedback', 'read', 'Read feedback'),
+    ('feedback:create', 'feedback', 'create', 'Create feedback'),
+    ('feedback:update', 'feedback', 'update', 'Update feedback'),
+    ('feedback:delete', 'feedback', 'delete', 'Delete feedback'),
     # Reports & Logs
     ('reports:read', 'reports', 'read', 'Read reports'),
     ('logs:read', 'logs', 'read', 'Read logs'),
@@ -50,6 +55,7 @@ ROLES = {
             'prospects:read','prospects:update',
             'bills:read','bills:create','bills:update','bills:import','bills:export',
             'invoices:read','invoices:create','invoices:update','invoices:delete',
+            'feedback:read','feedback:create','feedback:update','feedback:delete',
             'reports:read','logs:read','settings:read', 'role:read', 'role:write'
         ],
     },
@@ -60,6 +66,7 @@ ROLES = {
             'prospects:read','prospects:update',
             'bills:read','bills:create','bills:update',
             'invoices:read','invoices:create','invoices:update',
+            'feedback:read','feedback:create','feedback:update',
             'reports:read'
         ],
     },
@@ -68,13 +75,16 @@ ROLES = {
         'permissions': [
             'customers:read','prospects:read','prospects:update', 'sales_person:update',
             # 'bills:read','bills:create','bills:update',
+            'feedback:read','feedback:create',
             'reports:read'
         ],
     },
     'user': {
         'description': 'Regular user with limited access',
         'permissions': [
-            'customers:read','bills:read','reports:read'
+            'customers:read','bills:read',
+            'feedback:read','feedback:create',
+            'reports:read'
         ],
     },
 }
@@ -101,7 +111,11 @@ MENU = [
         'required_permissions': ['invoices:read'], 'children': []
     },
     {
-        'slug': 'reports', 'title': 'Reports', 'path': '/reports', 'icon': 'chart', 'order': 6,
+        'slug': 'feedback', 'title': 'Feedback', 'path': '/feedback', 'icon': 'message-square', 'order': 6,
+        'required_permissions': ['feedback:read'], 'children': []
+    },
+    {
+        'slug': 'reports', 'title': 'Reports', 'path': '/reports', 'icon': 'chart', 'order': 7,
         'required_permissions': ['reports:read'], 'children': []
     },
     {
