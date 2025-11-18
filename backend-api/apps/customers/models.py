@@ -92,6 +92,14 @@ class Customer(models.Model):
     address = models.TextField(blank=True)
     assigned_sales_person = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='customers')
     link_id = models.CharField(max_length=100, unique=True, null=True, blank=True, default=None)
+    customer_number = models.CharField(
+        max_length=50,
+        unique=True,
+        db_index=True,
+        blank=True,
+        null=True,
+        help_text='Auto-generated customer number: KTL-{8 chars customer name}-{customer id}'
+    )
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='Active', db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -106,7 +114,35 @@ class Customer(models.Model):
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['email']),
+            models.Index(fields=['customer_number']),
         ]
+
+    def save(self, *args, **kwargs):
+        """Auto-generate customer_number on creation if not provided"""
+        if not self.customer_number:
+            from .utils import generate_customer_number
+            # Use company_name if available, otherwise use name
+            customer_name = self.company_name or self.name
+            # Generate customer number (will use self.id after save, so we'll update it)
+            if self.pk is None:
+                # First save to get the ID
+                super().save(*args, **kwargs)
+                # Now generate with the ID
+                self.customer_number = generate_customer_number(
+                    customer_name=customer_name,
+                    customer_id=self.id
+                )
+                # Save again with the customer_number
+                super().save(update_fields=['customer_number'])
+            else:
+                # If updating and customer_number is missing, generate it
+                self.customer_number = generate_customer_number(
+                    customer_name=customer_name,
+                    customer_id=self.id
+                )
+                super().save(*args, **kwargs)
+        else:
+            super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name

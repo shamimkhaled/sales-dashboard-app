@@ -1,11 +1,34 @@
 """
 Utility functions for customer operations
 """
-from .models import Customer
 import uuid
 import logging
+import re
 
 logger = logging.getLogger(__name__)
+
+
+def generate_customer_number(customer_name, customer_id):
+    """
+    Generate unique customer number in format: KTL-{8 chars customer name}-{customer id}
+    
+    Example: KTL-CyberXTe-5
+    
+    Args:
+        customer_name: Customer name or company name
+        customer_id: Customer ID
+    
+    Returns:
+        str: Generated customer number
+    """
+    # Clean customer name: remove special characters, take first 8 characters
+    clean_name = re.sub(r'[^a-zA-Z0-9]', '', customer_name or 'CUSTOMER')
+    clean_name = clean_name[:8].upper() if len(clean_name) >= 8 else clean_name.upper().ljust(8, 'X')
+    
+    # Generate customer number: KTL-{8 chars}-{customer_id}
+    customer_number = f"KTL-{clean_name}-{customer_id}"
+    
+    return customer_number
 
 
 def convert_prospect_to_customer(prospect, link_id=None):
@@ -13,6 +36,8 @@ def convert_prospect_to_customer(prospect, link_id=None):
     Convert a prospect to a customer when they take service
     Returns the created customer object or None if conversion fails
     """
+    from .models import Customer
+    
     try:
         # Email is required for Customer model (unique constraint)
         if not prospect.email:
@@ -57,4 +82,3 @@ def convert_prospect_to_customer(prospect, link_id=None):
     except Exception as e:
         logger.error(f"Failed to convert prospect to customer: {str(e)}")
         return None
-

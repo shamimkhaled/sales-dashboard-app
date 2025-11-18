@@ -11,7 +11,7 @@ class BillRecordSerializer(serializers.ModelSerializer):
     class Meta:
         model = BillRecord
         fields = '__all__'
-        read_only_fields = ['created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at', 'bill_number']
 
     def get_customer_details(self, obj):
         """Return customer details including name and company info"""

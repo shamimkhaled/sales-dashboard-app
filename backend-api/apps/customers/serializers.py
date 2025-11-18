@@ -49,7 +49,7 @@ class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer
         fields = '__all__'
-        read_only_fields = ['created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at', 'customer_number']
     
     def get_assigned_sales_person_details(self, obj):
         if obj.assigned_sales_person:
