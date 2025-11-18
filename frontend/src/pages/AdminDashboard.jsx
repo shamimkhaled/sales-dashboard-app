@@ -21,6 +21,7 @@ import {
   DollarSign,
   Users,
   TrendingUp,
+  TrendingDown,
   Calendar,
   Download,
   Filter,
@@ -44,6 +45,7 @@ export default function Dashboard() {
     totalCustomers: 0,
     activeCustomers: 0,
     collectionRate: 0,
+    totalDue: 0,
   });
 
   // Chart Data
@@ -120,6 +122,10 @@ export default function Dashboard() {
               100
             ).toFixed(1)
           : 0;
+      const totalDue = customerWise.reduce(
+        (sum, c) => sum + (c.totalDue || 0),
+        0
+      );
 
       setKpiData({
         totalRevenue: totalRevenue.toLocaleString("en-US", {
@@ -128,6 +134,9 @@ export default function Dashboard() {
         totalCustomers,
         activeCustomers,
         collectionRate: `${collectionRate}%`,
+        totalDue: totalDue.toLocaleString("en-US", {
+          maximumFractionDigits: 0,
+        }),
       });
     } catch (err) {
       setError(err.message || "Failed to fetch dashboard data");
@@ -213,7 +222,7 @@ export default function Dashboard() {
               <select
                 value={dateRange}
                 onChange={(e) => setDateRange(e.target.value)}
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 border ${
+                className={`px-4 py-2 pe-8 rounded-lg font-medium transition-all duration-300 border ${
                   isDark
                     ? "bg-dark-800 border-dark-700 text-blue-400 hover:border-blue-500"
                     : "bg-white border-blue-200 text-blue-600 hover:border-blue-400"
@@ -279,6 +288,16 @@ export default function Dashboard() {
               trendValue="+3.2%"
             />
           </motion.div>
+          <motion.div variants={itemVariants}>
+            <KPICard
+              title="Total Due"
+              value={`৳${kpiData.totalDue}`}
+              icon={TrendingDown}
+              color="red"
+              trend="down"
+              trendValue="-2.1%"
+            />
+          </motion.div>
         </motion.div>
 
         {/* Charts Grid */}
@@ -289,146 +308,152 @@ export default function Dashboard() {
           className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8"
         >
           {/* Weekly Revenue Chart */}
-          <motion.div
-            variants={itemVariants}
-            className={`rounded-2xl p-6 transition-all duration-300 ${
-              isDark
-                ? "bg-dark-800 border border-dark-700"
-                : "bg-white border border-gold-100"
-            }`}
-          >
-            <h3
-              className={`text-lg font-semibold mb-4 ${
-                isDark ? "text-white" : "text-dark-900"
+          {dateRange === 'week' && (
+            <motion.div
+              variants={itemVariants}
+              className={`rounded-2xl p-6 transition-all duration-300 ${
+                isDark
+                  ? "bg-dark-800 border border-dark-700"
+                  : "bg-white border border-gold-100"
               }`}
             >
-              Weekly Revenue
-            </h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={weeklyData}>
-                <defs>
-                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop
-                      offset="5%"
-                      stopColor={chartColors.primary}
-                      stopOpacity={0.8}
-                    />
-                    <stop
-                      offset="95%"
-                      stopColor={chartColors.primary}
-                      stopOpacity={0}
-                    />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke={isDark ? "#374151" : "#e5e7eb"}
-                />
-                <XAxis stroke={isDark ? "#9ca3af" : "#6b7280"} />
-                <YAxis stroke={isDark ? "#9ca3af" : "#6b7280"} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: isDark ? "#1f2937" : "#ffffff",
-                    border: `1px solid ${isDark ? "#374151" : "#e5e7eb"}`,
-                    borderRadius: "8px",
-                  }}
-                  labelStyle={{ color: isDark ? "#d4af37" : "#d4af37" }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke={chartColors.primary}
-                  fillOpacity={1}
-                  fill="url(#colorRevenue)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </motion.div>
+              <h3
+                className={`text-lg font-semibold mb-4 ${
+                  isDark ? "text-white" : "text-dark-900"
+                }`}
+              >
+                Weekly Revenue
+              </h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={weeklyData}>
+                  <defs>
+                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                      <stop
+                        offset="5%"
+                        stopColor={chartColors.primary}
+                        stopOpacity={0.8}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor={chartColors.primary}
+                        stopOpacity={0}
+                      />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke={isDark ? "#374151" : "#e5e7eb"}
+                  />
+                  <XAxis stroke={isDark ? "#9ca3af" : "#6b7280"} />
+                  <YAxis stroke={isDark ? "#9ca3af" : "#6b7280"} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: isDark ? "#1f2937" : "#ffffff",
+                      border: `1px solid ${isDark ? "#374151" : "#e5e7eb"}`,
+                      borderRadius: "8px",
+                    }}
+                    labelStyle={{ color: isDark ? "#d4af37" : "#d4af37" }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke={chartColors.primary}
+                    fillOpacity={1}
+                    fill="url(#colorRevenue)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </motion.div>
+          )}
 
           {/* Monthly Revenue Chart */}
-          <motion.div
-            variants={itemVariants}
-            className={`rounded-2xl p-6 transition-all duration-300 ${
-              isDark
-                ? "bg-dark-800 border border-dark-700"
-                : "bg-white border border-gold-100"
-            }`}
-          >
-            <h3
-              className={`text-lg font-semibold mb-4 ${
-                isDark ? "text-white" : "text-dark-900"
+          {dateRange === 'month' && (
+            <motion.div
+              variants={itemVariants}
+              className={`rounded-2xl p-6 transition-all duration-300 ${
+                isDark
+                  ? "bg-dark-800 border border-dark-700"
+                  : "bg-white border border-gold-100"
               }`}
             >
-              Monthly Revenue
-            </h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={monthlyData}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke={isDark ? "#374151" : "#e5e7eb"}
-                />
-                <XAxis stroke={isDark ? "#9ca3af" : "#6b7280"} />
-                <YAxis stroke={isDark ? "#9ca3af" : "#6b7280"} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: isDark ? "#1f2937" : "#ffffff",
-                    border: `1px solid ${isDark ? "#374151" : "#e5e7eb"}`,
-                    borderRadius: "8px",
-                  }}
-                  labelStyle={{ color: isDark ? "#d4af37" : "#d4af37" }}
-                />
-                <Bar
-                  dataKey="revenue"
-                  fill={chartColors.primary}
-                  radius={[8, 8, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </motion.div>
+              <h3
+                className={`text-lg font-semibold mb-4 ${
+                  isDark ? "text-white" : "text-dark-900"
+                }`}
+              >
+                Monthly Revenue
+              </h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={monthlyData}>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke={isDark ? "#374151" : "#e5e7eb"}
+                  />
+                  <XAxis stroke={isDark ? "#9ca3af" : "#6b7280"} />
+                  <YAxis stroke={isDark ? "#9ca3af" : "#6b7280"} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: isDark ? "#1f2937" : "#ffffff",
+                      border: `1px solid ${isDark ? "#374151" : "#e5e7eb"}`,
+                      borderRadius: "8px",
+                    }}
+                    labelStyle={{ color: isDark ? "#d4af37" : "#d4af37" }}
+                  />
+                  <Bar
+                    dataKey="revenue"
+                    fill={chartColors.primary}
+                    radius={[8, 8, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </motion.div>
+          )}
 
           {/* Yearly Revenue Chart */}
-          <motion.div
-            variants={itemVariants}
-            className={`rounded-2xl p-6 transition-all duration-300 ${
-              isDark
-                ? "bg-dark-800 border border-dark-700"
-                : "bg-white border border-gold-100"
-            }`}
-          >
-            <h3
-              className={`text-lg font-semibold mb-4 ${
-                isDark ? "text-white" : "text-dark-900"
+          {dateRange === 'year' && (
+            <motion.div
+              variants={itemVariants}
+              className={`rounded-2xl p-6 transition-all duration-300 ${
+                isDark
+                  ? "bg-dark-800 border border-dark-700"
+                  : "bg-white border border-gold-100"
               }`}
             >
-              Yearly Revenue
-            </h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={yearlyData}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke={isDark ? "#374151" : "#e5e7eb"}
-                />
-                <XAxis stroke={isDark ? "#9ca3af" : "#6b7280"} />
-                <YAxis stroke={isDark ? "#9ca3af" : "#6b7280"} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: isDark ? "#1f2937" : "#ffffff",
-                    border: `1px solid ${isDark ? "#374151" : "#e5e7eb"}`,
-                    borderRadius: "8px",
-                  }}
-                  labelStyle={{ color: isDark ? "#d4af37" : "#d4af37" }}
-                />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke={chartColors.primary}
-                  strokeWidth={2}
-                  dot={{ fill: chartColors.primary }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </motion.div>
+              <h3
+                className={`text-lg font-semibold mb-4 ${
+                  isDark ? "text-white" : "text-dark-900"
+                }`}
+              >
+                Yearly Revenue
+              </h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={yearlyData}>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke={isDark ? "#374151" : "#e5e7eb"}
+                  />
+                  <XAxis stroke={isDark ? "#9ca3af" : "#6b7280"} />
+                  <YAxis stroke={isDark ? "#9ca3af" : "#6b7280"} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: isDark ? "#1f2937" : "#ffffff",
+                      border: `1px solid ${isDark ? "#374151" : "#e5e7eb"}`,
+                      borderRadius: "8px",
+                    }}
+                    labelStyle={{ color: isDark ? "#d4af37" : "#d4af37" }}
+                  />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke={chartColors.primary}
+                    strokeWidth={2}
+                    dot={{ fill: chartColors.primary }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </motion.div>
+          )}
 
           {/* Customer Distribution */}
           <motion.div
@@ -544,7 +569,7 @@ export default function Dashboard() {
             >
               Top Customers by Revenue
             </h3>
-            <motion.button
+            {/* <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
@@ -555,7 +580,7 @@ export default function Dashboard() {
             >
               <Download size={18} />
               <span>Export</span>
-            </motion.button>
+            </motion.button> */}
           </div>
 
           <div className="overflow-x-auto">
@@ -667,7 +692,7 @@ export default function Dashboard() {
           {/* KAM Performance Table */}
           <motion.div
             variants={itemVariants}
-            className={`rounded-2xl p-6 transition-all duration-300 ${
+            className={`rounded-2xl p-6 mt-8 transition-all duration-300 ${
               isDark
                 ? "bg-dark-800 border border-dark-700"
                 : "bg-white border border-gold-100"

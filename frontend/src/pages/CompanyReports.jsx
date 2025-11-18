@@ -184,7 +184,7 @@ const CompanyReports = () => {
               >
                 <RefreshCw size={20} />
               </motion.button>
-              <motion.button
+              {/* <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
@@ -195,7 +195,7 @@ const CompanyReports = () => {
               >
                 <Download size={18} />
                 <span>Export Report</span>
-              </motion.button>
+              </motion.button> */}
             </div>
           </div>
         </div>
