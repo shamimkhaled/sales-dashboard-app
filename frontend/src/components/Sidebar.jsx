@@ -19,7 +19,7 @@ import {
   ChevronUp,
   Shield,
 } from "lucide-react";
-import KTLLogo from "./KTLLogo";
+import kloudLogo from "../assets/kloud_logo.jpg";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
 import { motion } from "framer-motion";
@@ -206,15 +206,15 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           <div className="flex items-center justify-between p-8 border-b border-gray-200 dark:border-gray-700">
             <Link
               to="/dashboard"
-              className="flex flex-col items-center space-y-2 group flex-1"
+              className="flex items-center space-x-3 group flex-1"
             >
               <img
-                src="https://kloud.com.bd/netband/assets/img/logo/kloud-logo1.png"
+                src={kloudLogo}
                 alt="Kloud Logo"
-                className="h-12 w-auto object-contain"
+                className="h-14 w-10 object-contain rounded"
               />
               <div
-                className={`font-bold text-sm text-center ${
+                className={`font-bold text-base ${
                   isDark ? "text-white" : "text-gray-900"
                 }`}
               >

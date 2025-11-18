@@ -22,6 +22,7 @@ import Customers from "./pages/Customers";
 import Users from "./pages/Users";
 import Roles from "./pages/Roles";
 import Prospects from "./pages/Prospects";
+import Invoices from "./pages/Invoices";
 import Profile from "./pages/Profile";
 import "./App.css";
 
@@ -143,6 +144,17 @@ const AppRoutes = () => {
           <ProtectedRoute requiredPermission="bills:read">
             <AppLayout>
               <DataEntry />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/invoices"
+        element={
+          <ProtectedRoute requiredPermission="bills:read">
+            <AppLayout>
+              <Invoices />
             </AppLayout>
           </ProtectedRoute>
         }
