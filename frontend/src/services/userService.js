@@ -20,6 +20,16 @@ export const userService = {
     }
   },
 
+  // Get sales users (sales_manager and sales_person) - available to all authenticated users
+  async getSalesUsers() {
+    try {
+      const response = await api.get('/users/sales-users/');
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  },
+
   // Get user by ID
   async getUserById(id) {
     try {

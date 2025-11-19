@@ -50,3 +50,26 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdminOrSuperAdmin]
+
+
+class SalesUsersView(APIView):
+    """Endpoint to fetch sales users (sales_manager and sales_person) for KAM dropdown.
+    Available to all authenticated users."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        # Get all users with sales_manager or sales_person role
+        sales_users = User.objects.filter(
+            role__name__in=['sales_manager', 'sales_person'],
+            is_active=True
+        ).select_related('role').order_by('username')
+        
+        # Return simplified user data
+        users_data = [{
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'role_name': user.role.name if user.role else None,
+        } for user in sales_users]
+        
+        return Response(users_data)

@@ -143,7 +143,8 @@ export default function Customers() {
 
   const fetchSalesUsers = async () => {
     try {
-      const response = await userService.getUsers();
+      // Use the new sales-users endpoint that's available to all authenticated users
+      const response = await userService.getSalesUsers();
       // Handle different response formats
       let users = [];
       if (Array.isArray(response)) {
@@ -154,13 +155,8 @@ export default function Customers() {
         users = response.results;
       }
 
-      // Filter to only show users with sales_manager or sales_person role_name
-      const filteredUsers = users.filter(
-        (user) =>
-          user.role_name === "sales_manager" ||
-          user.role_name === "sales_person"
-      );
-      setSalesUsers(filteredUsers);
+      // The endpoint already filters for sales_manager and sales_person
+      setSalesUsers(users);
     } catch (err) {
       console.error("Error fetching sales users:", err);
       setSalesUsers([]);
@@ -649,6 +645,29 @@ export default function Customers() {
                 onSubmit={handleSubmit}
                 className="grid grid-cols-1 md:grid-cols-2 gap-6"
               >
+
+              {/* Company Name */}
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 ${
+                      isDark ? "text-silver-300" : "text-gray-700"
+                    }`}
+                  >
+                    Company Name *
+                  </label>
+                  <input
+                    type="text"
+                    name="company_name"
+                    value={formData.company_name}
+                    onChange={handleInputChange}
+                    required
+                    className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                      isDark
+                        ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                        : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                    } focus:outline-none`}
+                  />
+                </div>
                 {/* Name */}
                 <div>
                   <label
@@ -656,7 +675,7 @@ export default function Customers() {
                       isDark ? "text-silver-300" : "text-gray-700"
                     }`}
                   >
-                    Name of Party *
+                    Client Name *
                   </label>
                   <input
                     type="text"
@@ -672,28 +691,7 @@ export default function Customers() {
                   />
                 </div>
 
-                {/* Company Name */}
-                <div>
-                  <label
-                    className={`block text-sm font-medium mb-2 ${
-                      isDark ? "text-silver-300" : "text-gray-700"
-                    }`}
-                  >
-                    Proprietor Name *
-                  </label>
-                  <input
-                    type="text"
-                    name="company_name"
-                    value={formData.company_name}
-                    onChange={handleInputChange}
-                    required
-                    className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                      isDark
-                        ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                        : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                    } focus:outline-none`}
-                  />
-                </div>
+                
 
                 {/* Email */}
                 <div>

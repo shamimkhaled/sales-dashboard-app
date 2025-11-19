@@ -884,7 +884,7 @@ export default function DataEntry() {
                           isDark ? "text-silver-300" : "text-gray-700"
                         }`}
                       >
-                        NTTN CAP
+                        NTTN Capacity
                       </label>
                       <input
                         type="text"
@@ -902,7 +902,7 @@ export default function DataEntry() {
                           isDark ? "text-silver-300" : "text-gray-700"
                         }`}
                       >
-                        NTTN COM
+                        NTTN Company
                       </label>
                       <input
                         type="text"
