@@ -1,4 +1,4 @@
-from rest_framework import generics, permissions, filters
+from rest_framework import generics, permissions, filters, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -6,8 +6,13 @@ from django.http import StreamingHttpResponse, HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
 import pandas as pd
 from io import BytesIO
-from .models import BillRecord
-from .serializers import BillRecordSerializer
+from .models import BillRecord, PricingPeriod, DailyBillAmount
+from .serializers import (
+    BillRecordSerializer,
+    PricingPeriodSerializer,
+    DailyBillAmountSerializer,
+    DailyBillAmountListSerializer
+)
 from apps.authentication.permissions import RequirePermissions
 from apps.customers.models import Customer
 from django.utils.dateparse import parse_date
@@ -275,3 +280,198 @@ class BillExportView(APIView):
             response = StreamingHttpResponse(row_iter(), content_type='text/csv')
             response['Content-Disposition'] = 'attachment; filename="bill_records.csv"'
             return response
+
+
+# Pricing Period Views
+class PricingPeriodListCreateView(generics.ListCreateAPIView):
+    """List all pricing periods or create a new pricing period"""
+    serializer_class = PricingPeriodSerializer
+    permission_classes = [permissions.IsAuthenticated, RequirePermissions]
+    required_permissions = ['bills:read']
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['bill_record']
+    ordering_fields = ['start_day', 'end_day', 'created_at']
+    ordering = ['bill_record', 'start_day']
+    
+    def get_queryset(self):
+        qs = PricingPeriod.objects.select_related('bill_record', 'bill_record__customer').all()
+        user = self.request.user
+        
+        # Sales person restriction via assigned customers
+        if user.role and user.role.name == 'sales_person':
+            qs = qs.filter(bill_record__customer__assigned_sales_person=user)
+        
+        # Filter by bill_record if provided
+        bill_record_id = self.request.query_params.get('bill_record')
+        if bill_record_id:
+            qs = qs.filter(bill_record_id=bill_record_id)
+        
+        return qs
+    
+    def perform_create(self, serializer):
+        self.required_permissions = ['bills:create']
+        serializer.save()
+
+
+class PricingPeriodDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """Retrieve, update, or delete a pricing period"""
+    queryset = PricingPeriod.objects.select_related('bill_record', 'bill_record__customer').all()
+    serializer_class = PricingPeriodSerializer
+    permission_classes = [permissions.IsAuthenticated, RequirePermissions]
+    required_permissions = ['bills:update']
+
+
+class PricingPeriodsByBillView(generics.ListAPIView):
+    """Get all pricing periods for a specific bill record"""
+    serializer_class = PricingPeriodSerializer
+    permission_classes = [permissions.IsAuthenticated, RequirePermissions]
+    required_permissions = ['bills:read']
+    
+    def get_queryset(self):
+        bill_id = self.kwargs['bill_id']
+        qs = PricingPeriod.objects.filter(bill_record_id=bill_id).select_related(
+            'bill_record', 'bill_record__customer'
+        ).order_by('start_day')
+        
+        user = self.request.user
+        if user.role and user.role.name == 'sales_person':
+            qs = qs.filter(bill_record__customer__assigned_sales_person=user)
+        
+        return qs
+
+
+# Daily Bill Amount Views
+class DailyBillAmountListCreateView(generics.ListCreateAPIView):
+    """List all daily bill amounts or create a new one"""
+    serializer_class = DailyBillAmountSerializer
+    permission_classes = [permissions.IsAuthenticated, RequirePermissions]
+    required_permissions = ['bills:read']
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['bill_record', 'date', 'pricing_period']
+    ordering_fields = ['date', 'day_number', 'daily_amount']
+    ordering = ['bill_record', 'date']
+    
+    def get_queryset(self):
+        qs = DailyBillAmount.objects.select_related(
+            'bill_record', 'bill_record__customer', 'pricing_period'
+        ).all()
+        user = self.request.user
+        
+        # Sales person restriction via assigned customers
+        if user.role and user.role.name == 'sales_person':
+            qs = qs.filter(bill_record__customer__assigned_sales_person=user)
+        
+        # Filter by bill_record if provided
+        bill_record_id = self.request.query_params.get('bill_record')
+        if bill_record_id:
+            qs = qs.filter(bill_record_id=bill_record_id)
+        
+        # Filter by date range if provided
+        start_date = self.request.query_params.get('start_date')
+        end_date = self.request.query_params.get('end_date')
+        if start_date:
+            qs = qs.filter(date__gte=start_date)
+        if end_date:
+            qs = qs.filter(date__lte=end_date)
+        
+        return qs
+    
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return DailyBillAmountListSerializer
+        return DailyBillAmountSerializer
+    
+    def perform_create(self, serializer):
+        self.required_permissions = ['bills:create']
+        serializer.save()
+
+
+class DailyBillAmountDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """Retrieve, update, or delete a daily bill amount"""
+    queryset = DailyBillAmount.objects.select_related(
+        'bill_record', 'bill_record__customer', 'pricing_period'
+    ).all()
+    serializer_class = DailyBillAmountSerializer
+    permission_classes = [permissions.IsAuthenticated, RequirePermissions]
+    required_permissions = ['bills:update']
+
+
+class DailyBillAmountsByBillView(generics.ListAPIView):
+    """Get all daily bill amounts for a specific bill record"""
+    serializer_class = DailyBillAmountListSerializer
+    permission_classes = [permissions.IsAuthenticated, RequirePermissions]
+    required_permissions = ['bills:read']
+    
+    def get_queryset(self):
+        bill_id = self.kwargs['bill_id']
+        qs = DailyBillAmount.objects.filter(bill_record_id=bill_id).select_related(
+            'bill_record', 'bill_record__customer', 'pricing_period'
+        ).order_by('date')
+        
+        user = self.request.user
+        if user.role and user.role.name == 'sales_person':
+            qs = qs.filter(bill_record__customer__assigned_sales_person=user)
+        
+        return qs
+
+
+class CalculateDailyAmountsView(APIView):
+    """Calculate daily amounts for a bill record"""
+    permission_classes = [permissions.IsAuthenticated, RequirePermissions]
+    required_permissions = ['bills:create']
+    
+    def post(self, request, bill_id):
+        from .utils import calculate_daily_amounts_for_bill
+        
+        try:
+            bill_record = BillRecord.objects.get(pk=bill_id)
+        except BillRecord.DoesNotExist:
+            return Response(
+                {'detail': 'Bill record not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        recalculate = request.data.get('recalculate', False)
+        created_count, updated_count, errors = calculate_daily_amounts_for_bill(
+            bill_record, recalculate=recalculate
+        )
+        
+        return Response({
+            'success': len(errors) == 0,
+            'message': f'Calculated daily amounts: {created_count} created, {updated_count} updated',
+            'created': created_count,
+            'updated': updated_count,
+            'errors': errors
+        }, status=status.HTTP_200_OK if len(errors) == 0 else status.HTTP_207_MULTI_STATUS)
+
+
+class FinalizeBillRecordView(APIView):
+    """Finalize bill record by updating values from pricing periods"""
+    permission_classes = [permissions.IsAuthenticated, RequirePermissions]
+    required_permissions = ['bills:update']
+    
+    def post(self, request, bill_id):
+        from .utils import finalize_bill_record_from_periods
+        
+        try:
+            bill_record = BillRecord.objects.get(pk=bill_id)
+        except BillRecord.DoesNotExist:
+            return Response(
+                {'detail': 'Bill record not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        summary = finalize_bill_record_from_periods(bill_record)
+        
+        if summary['updated']:
+            return Response({
+                'success': True,
+                'message': 'Bill record finalized successfully',
+                'summary': summary
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({
+                'success': False,
+                'message': summary.get('message', 'Failed to finalize bill record'),
+                'summary': summary
+            }, status=status.HTTP_400_BAD_REQUEST)
