@@ -2722,7 +2722,7 @@ export default function DataEntry() {
                       }`}
                     >
                       {viewingBill.iig_qt_price
-                        ? `$${viewingBill.iig_qt_price}`
+                        ? `BDT ${viewingBill.iig_qt_price}`
                         : "0"}
                     </p>
                   </div>
@@ -2748,7 +2748,7 @@ export default function DataEntry() {
                       }`}
                     >
                       {viewingBill.fna_price
-                        ? `$${viewingBill.fna_price}`
+                        ? `BDT ${viewingBill.fna_price}`
                         : "0"}
                     </p>
                   </div>
@@ -2774,7 +2774,7 @@ export default function DataEntry() {
                       }`}
                     >
                       {viewingBill.ggc_price
-                        ? `$${viewingBill.ggc_price}`
+                        ? `BDT ${viewingBill.ggc_price}`
                         : "0"}
                     </p>
                   </div>
@@ -2800,7 +2800,7 @@ export default function DataEntry() {
                       }`}
                     >
                       {viewingBill.cdn_price
-                        ? `$${viewingBill.cdn_price}`
+                        ? `BDT ${viewingBill.cdn_price}`
                         : "0"}
                     </p>
                   </div>
@@ -2826,7 +2826,7 @@ export default function DataEntry() {
                       }`}
                     >
                       {viewingBill.bdix_price
-                        ? `$${viewingBill.bdix_price}`
+                        ? `BDT ${viewingBill.bdix_price}`
                         : "0"}
                     </p>
                   </div>
@@ -2852,7 +2852,7 @@ export default function DataEntry() {
                       }`}
                     >
                       {viewingBill.baishan_price
-                        ? `$${viewingBill.baishan_price}`
+                        ? `BDT ${viewingBill.baishan_price}`
                         : "0"}
                     </p>
                   </div>
@@ -2877,7 +2877,7 @@ export default function DataEntry() {
                       }`}
                     >
                       {viewingBill.total_bill
-                        ? `$${viewingBill.total_bill.toLocaleString()}`
+                        ? `BDT ${viewingBill.total_bill.toLocaleString()}`
                         : "0"}
                     </p>
                   </div>
@@ -2891,7 +2891,7 @@ export default function DataEntry() {
                       }`}
                     >
                       {viewingBill.total_received
-                        ? `$${viewingBill.total_received.toLocaleString()}`
+                        ? `BDT ${viewingBill.total_received.toLocaleString()}`
                         : "0"}
                     </p>
                   </div>
@@ -2905,7 +2905,7 @@ export default function DataEntry() {
                       }`}
                     >
                       {viewingBill.total_due
-                        ? `$${viewingBill.total_due.toLocaleString()}`
+                        ? `BDT ${viewingBill.total_due.toLocaleString()}`
                         : "0"}
                     </p>
                   </div>
@@ -2919,7 +2919,7 @@ export default function DataEntry() {
                       }`}
                     >
                       {viewingBill.discount
-                        ? `$${viewingBill.discount.toLocaleString()}`
+                        ? `BDT ${viewingBill.discount.toLocaleString()}`
                         : "0"}
                     </p>
                   </div>
