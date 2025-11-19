@@ -348,7 +348,7 @@ const CompanyReports = () => {
           </motion.div>
 
           {/* Data Entry Performance */}
-          <motion.div
+          {/* <motion.div
             variants={itemVariants}
             className={`rounded-2xl p-6 transition-all duration-300 ${
               isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
@@ -386,7 +386,7 @@ const CompanyReports = () => {
                 </div>
               ))}
             </div>
-          </motion.div>
+          </motion.div> */}
 
           {/* Revenue Breakdown */}
           <motion.div
