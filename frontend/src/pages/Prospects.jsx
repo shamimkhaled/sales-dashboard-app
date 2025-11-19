@@ -116,11 +116,13 @@ export default function Prospects() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await userService.getUsers();
+        // Use the sales-users endpoint that's available to all authenticated users
+        const response = await userService.getSalesUsers();
         const users = response.data || response.results || response;
         setAllUsers(users);
+        // Filter for sales_person and sales_manager
         const salesPersons = users.filter(
-          (user) => user.role_name === "sales_person"
+          (user) => user.role_name === "sales_person" || user.role_name === "sales_manager"
         );
         setSalesPersons(salesPersons);
       } catch (err) {
@@ -675,7 +677,7 @@ export default function Prospects() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Sales 
+                    KAM 
                   </label>
                   <select
                     name="sales_person"
