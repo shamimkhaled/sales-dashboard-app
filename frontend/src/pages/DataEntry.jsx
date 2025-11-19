@@ -884,7 +884,7 @@ export default function DataEntry() {
                           isDark ? "text-silver-300" : "text-gray-700"
                         }`}
                       >
-                        NTTN CAP
+                        NTTN Capacity
                       </label>
                       <input
                         type="text"
@@ -902,7 +902,7 @@ export default function DataEntry() {
                           isDark ? "text-silver-300" : "text-gray-700"
                         }`}
                       >
-                        NTTN COM
+                        NTTN Company
                       </label>
                       <input
                         type="text"
@@ -978,274 +978,293 @@ export default function DataEntry() {
                       />
                     </div>
 
-                    {/* Pricing Fields - IIG QT */}
-                    <div>
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        IIG-QT
-                      </label>
-                      <input
-                        type="number"
-                        name="iig_qt"
-                        value={formData.iig_qt}
-                        onChange={handleInputChange}
-                        step="0.01"
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                        } focus:outline-none`}
-                      />
+                    {/* Pricing Groups: metric + price on same row */}
+                    {/* IIG-QT + Price */}
+                    <div className="lg:col-span-1">
+                      <div className="flex gap-3">
+                        <div className="flex-1">
+                          <label
+                            className={`block text-sm font-medium mb-2 ${
+                              isDark ? "text-silver-300" : "text-gray-700"
+                            }`}
+                          >
+                            IIG-QT
+                          </label>
+                          <input
+                            type="number"
+                            name="iig_qt"
+                            value={formData.iig_qt}
+                            onChange={handleInputChange}
+                            step="0.01"
+                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                              isDark
+                                ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                                : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                            } focus:outline-none`}
+                          />
+                        </div>
+                        <div className="w-40">
+                          <label
+                            className={`block text-sm font-medium mb-2 ${
+                              isDark ? "text-silver-300" : "text-gray-700"
+                            }`}
+                          >
+                            IIG-QT Price
+                          </label>
+                          <input
+                            type="number"
+                            name="iig_qt_price"
+                            value={formData.iig_qt_price}
+                            onChange={handleInputChange}
+                            step="0.01"
+                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                              isDark
+                                ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                                : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                            } focus:outline-none`}
+                          />
+                        </div>
+                      </div>
                     </div>
 
-                    <div>
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        IIG-QT Price
-                      </label>
-                      <input
-                        type="number"
-                        name="iig_qt_price"
-                        value={formData.iig_qt_price}
-                        onChange={handleInputChange}
-                        step="0.01"
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                        } focus:outline-none`}
-                      />
+                    {/* FNA + Price */}
+                    <div className="lg:col-span-1">
+                      <div className="flex gap-3">
+                        <div className="flex-1">
+                          <label
+                            className={`block text-sm font-medium mb-2 ${
+                              isDark ? "text-silver-300" : "text-gray-700"
+                            }`}
+                          >
+                            FNA
+                          </label>
+                          <input
+                            type="number"
+                            name="fna"
+                            value={formData.fna}
+                            onChange={handleInputChange}
+                            step="0.01"
+                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                              isDark
+                                ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                                : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                            } focus:outline-none`}
+                          />
+                        </div>
+                        <div className="w-40">
+                          <label
+                            className={`block text-sm font-medium mb-2 ${
+                              isDark ? "text-silver-300" : "text-gray-700"
+                            }`}
+                          >
+                            FNA Price
+                          </label>
+                          <input
+                            type="number"
+                            name="fna_price"
+                            value={formData.fna_price}
+                            onChange={handleInputChange}
+                            step="0.01"
+                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                              isDark
+                                ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                                : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                            } focus:outline-none`}
+                          />
+                        </div>
+                      </div>
                     </div>
 
-                    {/* FNA */}
-                    <div>
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        FNA
-                      </label>
-                      <input
-                        type="number"
-                        name="fna"
-                        value={formData.fna}
-                        onChange={handleInputChange}
-                        step="0.01"
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                        } focus:outline-none`}
-                      />
+                    {/* GGC + Price */}
+                    <div className="lg:col-span-1">
+                      <div className="flex gap-3">
+                        <div className="flex-1">
+                          <label
+                            className={`block text-sm font-medium mb-2 ${
+                              isDark ? "text-silver-300" : "text-gray-700"
+                            }`}
+                          >
+                            GGC
+                          </label>
+                          <input
+                            type="number"
+                            name="ggc"
+                            value={formData.ggc}
+                            onChange={handleInputChange}
+                            step="0.01"
+                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                              isDark
+                                ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                                : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                            } focus:outline-none`}
+                          />
+                        </div>
+                        <div className="w-40">
+                          <label
+                            className={`block text-sm font-medium mb-2 ${
+                              isDark ? "text-silver-300" : "text-gray-700"
+                            }`}
+                          >
+                            GGC Price
+                          </label>
+                          <input
+                            type="number"
+                            name="ggc_price"
+                            value={formData.ggc_price}
+                            onChange={handleInputChange}
+                            step="0.01"
+                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                              isDark
+                                ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                                : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                            } focus:outline-none`}
+                          />
+                        </div>
+                      </div>
                     </div>
 
-                    <div>
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        FNA Price
-                      </label>
-                      <input
-                        type="number"
-                        name="fna_price"
-                        value={formData.fna_price}
-                        onChange={handleInputChange}
-                        step="0.01"
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                        } focus:outline-none`}
-                      />
+                    {/* CDN + Price */}
+                    <div className="lg:col-span-1">
+                      <div className="flex gap-3">
+                        <div className="flex-1">
+                          <label
+                            className={`block text-sm font-medium mb-2 ${
+                              isDark ? "text-silver-300" : "text-gray-700"
+                            }`}
+                          >
+                            CDN
+                          </label>
+                          <input
+                            type="number"
+                            name="cdn"
+                            value={formData.cdn}
+                            onChange={handleInputChange}
+                            step="0.01"
+                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                              isDark
+                                ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                                : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                            } focus:outline-none`}
+                          />
+                        </div>
+                        <div className="w-40">
+                          <label
+                            className={`block text-sm font-medium mb-2 ${
+                              isDark ? "text-silver-300" : "text-gray-700"
+                            }`}
+                          >
+                            CDN Price
+                          </label>
+                          <input
+                            type="number"
+                            name="cdn_price"
+                            value={formData.cdn_price}
+                            onChange={handleInputChange}
+                            step="0.01"
+                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                              isDark
+                                ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                                : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                            } focus:outline-none`}
+                          />
+                        </div>
+                      </div>
                     </div>
 
-                    {/* GGC */}
-                    <div>
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        GGC
-                      </label>
-                      <input
-                        type="number"
-                        name="ggc"
-                        value={formData.ggc}
-                        onChange={handleInputChange}
-                        step="0.01"
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                        } focus:outline-none`}
-                      />
+                    {/* BDIX + Price */}
+                    <div className="lg:col-span-1">
+                      <div className="flex gap-3">
+                        <div className="flex-1">
+                          <label
+                            className={`block text-sm font-medium mb-2 ${
+                              isDark ? "text-silver-300" : "text-gray-700"
+                            }`}
+                          >
+                            BDIX
+                          </label>
+                          <input
+                            type="number"
+                            name="bdix"
+                            value={formData.bdix}
+                            onChange={handleInputChange}
+                            step="0.01"
+                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                              isDark
+                                ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                                : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                            } focus:outline-none`}
+                          />
+                        </div>
+                        <div className="w-40">
+                          <label
+                            className={`block text-sm font-medium mb-2 ${
+                              isDark ? "text-silver-300" : "text-gray-700"
+                            }`}
+                          >
+                            BDIX Price
+                          </label>
+                          <input
+                            type="number"
+                            name="bdix_price"
+                            value={formData.bdix_price}
+                            onChange={handleInputChange}
+                            step="0.01"
+                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                              isDark
+                                ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                                : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                            } focus:outline-none`}
+                          />
+                        </div>
+                      </div>
                     </div>
 
-                    <div>
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        GGC Price
-                      </label>
-                      <input
-                        type="number"
-                        name="ggc_price"
-                        value={formData.ggc_price}
-                        onChange={handleInputChange}
-                        step="0.01"
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                        } focus:outline-none`}
-                      />
-                    </div>
-
-                    {/* CDN */}
-                    <div>
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        CDN
-                      </label>
-                      <input
-                        type="number"
-                        name="cdn"
-                        value={formData.cdn}
-                        onChange={handleInputChange}
-                        step="0.01"
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                        } focus:outline-none`}
-                      />
-                    </div>
-
-                    <div>
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        CDN Price
-                      </label>
-                      <input
-                        type="number"
-                        name="cdn_price"
-                        value={formData.cdn_price}
-                        onChange={handleInputChange}
-                        step="0.01"
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                        } focus:outline-none`}
-                      />
-                    </div>
-
-                    {/* BDIX */}
-                    <div>
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        BDIX
-                      </label>
-                      <input
-                        type="number"
-                        name="bdix"
-                        value={formData.bdix}
-                        onChange={handleInputChange}
-                        step="0.01"
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                        } focus:outline-none`}
-                      />
-                    </div>
-
-                    <div>
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        BDIX Price
-                      </label>
-                      <input
-                        type="number"
-                        name="bdix_price"
-                        value={formData.bdix_price}
-                        onChange={handleInputChange}
-                        step="0.01"
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                        } focus:outline-none`}
-                      />
-                    </div>
-
-                    {/* BAISHAN */}
-                    <div>
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        BAISHAN
-                      </label>
-                      <input
-                        type="number"
-                        name="baishan"
-                        value={formData.baishan}
-                        onChange={handleInputChange}
-                        step="0.01"
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                        } focus:outline-none`}
-                      />
-                    </div>
-
-                    <div>
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        BAISHAN Price
-                      </label>
-                      <input
-                        type="number"
-                        name="baishan_price"
-                        value={formData.baishan_price}
-                        onChange={handleInputChange}
-                        step="0.01"
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                        } focus:outline-none`}
-                      />
+                    {/* BAISHAN + Price */}
+                    <div className="lg:col-span-1">
+                      <div className="flex gap-3">
+                        <div className="flex-1">
+                          <label
+                            className={`block text-sm font-medium mb-2 ${
+                              isDark ? "text-silver-300" : "text-gray-700"
+                            }`}
+                          >
+                            BAISHAN
+                          </label>
+                          <input
+                            type="number"
+                            name="baishan"
+                            value={formData.baishan}
+                            onChange={handleInputChange}
+                            step="0.01"
+                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                              isDark
+                                ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                                : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                            } focus:outline-none`}
+                          />
+                        </div>
+                        <div className="w-40">
+                          <label
+                            className={`block text-sm font-medium mb-2 ${
+                              isDark ? "text-silver-300" : "text-gray-700"
+                            }`}
+                          >
+                            BAISHAN Price
+                          </label>
+                          <input
+                            type="number"
+                            name="baishan_price"
+                            value={formData.baishan_price}
+                            onChange={handleInputChange}
+                            step="0.01"
+                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                              isDark
+                                ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                                : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                            } focus:outline-none`}
+                          />
+                        </div>
+                      </div>
                     </div>
 
                     {/* Bill Summary */}
@@ -2722,7 +2741,7 @@ export default function DataEntry() {
                       }`}
                     >
                       {viewingBill.iig_qt_price
-                        ? `$${viewingBill.iig_qt_price}`
+                        ? `BDT ${viewingBill.iig_qt_price}`
                         : "0"}
                     </p>
                   </div>
@@ -2748,7 +2767,7 @@ export default function DataEntry() {
                       }`}
                     >
                       {viewingBill.fna_price
-                        ? `$${viewingBill.fna_price}`
+                        ? `BDT ${viewingBill.fna_price}`
                         : "0"}
                     </p>
                   </div>
@@ -2774,7 +2793,7 @@ export default function DataEntry() {
                       }`}
                     >
                       {viewingBill.ggc_price
-                        ? `$${viewingBill.ggc_price}`
+                        ? `BDT ${viewingBill.ggc_price}`
                         : "0"}
                     </p>
                   </div>
@@ -2800,7 +2819,7 @@ export default function DataEntry() {
                       }`}
                     >
                       {viewingBill.cdn_price
-                        ? `$${viewingBill.cdn_price}`
+                        ? `BDT ${viewingBill.cdn_price}`
                         : "0"}
                     </p>
                   </div>
@@ -2826,7 +2845,7 @@ export default function DataEntry() {
                       }`}
                     >
                       {viewingBill.bdix_price
-                        ? `$${viewingBill.bdix_price}`
+                        ? `BDT ${viewingBill.bdix_price}`
                         : "0"}
                     </p>
                   </div>
@@ -2852,7 +2871,7 @@ export default function DataEntry() {
                       }`}
                     >
                       {viewingBill.baishan_price
-                        ? `$${viewingBill.baishan_price}`
+                        ? `BDT ${viewingBill.baishan_price}`
                         : "0"}
                     </p>
                   </div>
@@ -2877,7 +2896,7 @@ export default function DataEntry() {
                       }`}
                     >
                       {viewingBill.total_bill
-                        ? `$${viewingBill.total_bill.toLocaleString()}`
+                        ? `BDT ${viewingBill.total_bill.toLocaleString()}`
                         : "0"}
                     </p>
                   </div>
@@ -2891,7 +2910,7 @@ export default function DataEntry() {
                       }`}
                     >
                       {viewingBill.total_received
-                        ? `$${viewingBill.total_received.toLocaleString()}`
+                        ? `BDT ${viewingBill.total_received.toLocaleString()}`
                         : "0"}
                     </p>
                   </div>
@@ -2905,7 +2924,7 @@ export default function DataEntry() {
                       }`}
                     >
                       {viewingBill.total_due
-                        ? `$${viewingBill.total_due.toLocaleString()}`
+                        ? `BDT ${viewingBill.total_due.toLocaleString()}`
                         : "0"}
                     </p>
                   </div>
@@ -2919,7 +2938,7 @@ export default function DataEntry() {
                       }`}
                     >
                       {viewingBill.discount
-                        ? `$${viewingBill.discount.toLocaleString()}`
+                        ? `BDT ${viewingBill.discount.toLocaleString()}`
                         : "0"}
                     </p>
                   </div>

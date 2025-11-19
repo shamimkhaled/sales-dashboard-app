@@ -1,5 +1,5 @@
 // Login Page Component
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
@@ -32,18 +32,43 @@ const Login = () => {
 
   const from = location.state?.from?.pathname || '/';
 
+  // Load saved credentials from localStorage
+  const getSavedCredentials = () => {
+    try {
+      const savedEmail = localStorage.getItem('rememberedEmail');
+      const savedPassword = localStorage.getItem('rememberedPassword');
+      const rememberMe = localStorage.getItem('rememberMe') === 'true';
+      
+      return {
+        email: savedEmail || '',
+        password: savedPassword || '',
+        rememberMe: rememberMe
+      };
+    } catch (error) {
+      console.error('Error loading saved credentials:', error);
+      return { email: '', password: '', rememberMe: false };
+    }
+  };
+
   const {
     register,
     handleSubmit,
-    formState: { errors }
+    formState: { errors },
+    setValue
   } = useForm({
     resolver: yupResolver(loginSchema),
-    defaultValues: {
-      email: 'admin@kloud.com',
-      password: 'admin9999',
-      rememberMe: false
-    }
+    defaultValues: getSavedCredentials()
   });
+
+  // Load saved credentials when component mounts
+  useEffect(() => {
+    const savedCredentials = getSavedCredentials();
+    if (savedCredentials.rememberMe) {
+      setValue('email', savedCredentials.email);
+      setValue('password', savedCredentials.password);
+      setValue('rememberMe', savedCredentials.rememberMe);
+    }
+  }, [setValue]);
 
   const onSubmit = async (data) => {
     setIsLoading(true);
@@ -53,6 +78,19 @@ const Login = () => {
       const result = await login(data.email, data.password, data.rememberMe);
 
       if (result.success) {
+        // Handle Remember Me functionality
+        if (data.rememberMe) {
+          // Store credentials securely in localStorage
+          localStorage.setItem('rememberedEmail', data.email);
+          localStorage.setItem('rememberedPassword', data.password);
+          localStorage.setItem('rememberMe', 'true');
+        } else {
+          // Clear stored credentials if Remember Me is not checked
+          localStorage.removeItem('rememberedEmail');
+          localStorage.removeItem('rememberedPassword');
+          localStorage.removeItem('rememberMe');
+        }
+
         // Force a one-time full page refresh into the target route to ensure
         // all role/permission-dependent UI initializes consistently.
         const target = from && from !== '/login' ? from : '/dashboard';

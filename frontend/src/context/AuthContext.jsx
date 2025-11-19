@@ -121,7 +121,7 @@ export const AuthProvider = ({ children }) => {
 
   // Logout function
   const logout = () => {
-    // Clear localStorage
+    // Clear localStorage (but keep remembered credentials if rememberMe is true)
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
 
