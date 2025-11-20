@@ -83,7 +83,6 @@ return ( <div className="p-6">
 {/* Controls — hidden in print */} <div className="flex items-center justify-between mb-4 print:hidden"> <h1 className="text-2xl font-semibold">Invoices</h1> <div className="flex gap-2">
 <button onClick={() => navigate(-1)} className="px-3 py-2 rounded bg-gray-200 hover:bg-gray-300 text-sm">Back</button> </div> </div>
 
-```
   <div className="mb-4 flex gap-2 items-center print:hidden">
     <input
       type="text"
@@ -135,7 +134,7 @@ return ( <div className="p-6">
 
       {/* COMPANY INFO */}
       <div style={{ marginBottom: "20px" }}>
-        <p><strong>REGISTERED PERSON NAME:</strong> LINK3 TECHNOLOGIES LIMITED</p>
+        <p><strong>REGISTERED PERSON NAME:</strong> KLOUD TECHNOLOGIES LIMITED</p>
         <p><strong>BIN NUMBER:</strong> 000002141-0101</p>
         <p><strong>INVOICE ISSUING ADDRESS:</strong> Police Plaza Concord, Tower-1, Plot-02, Road-144, Gulshan, Dhaka-1212, Bangladesh. Helpdesk # +8809678123123</p>
         <p><strong>MUSHAK- 6.3</strong></p>
