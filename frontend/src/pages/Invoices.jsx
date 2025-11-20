@@ -174,104 +174,134 @@ export default function Invoices() {
 
       {invoice && (
         <div ref={printRef} className="bg-white p-6 border rounded shadow-sm">
-          <div className="flex items-start justify-between">
-            <div>
-              <h2 className="text-xl font-bold">{invoice.company?.name}</h2>
-              <div className="text-sm text-gray-600">
-                <div>{invoice.company?.address}</div>
-                <div>{invoice.company?.phone}</div>
-                <div>{invoice.company?.email}</div>
-              </div>
-            </div>
 
-            <div className="text-right">
-              <div className="text-sm text-gray-600">Invoice No.</div>
-              <div className="font-mono font-semibold text-lg">{invoice.id}</div>
-              <div className="text-sm text-gray-600 mt-2">
-                <div>Issue: {invoice.date}</div>
-                <div>Due: {invoice.due_date}</div>
-              </div>
-            </div>
-          </div>
+  {/* HEADER */}
+  <div className="header" style={{
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderBottom: "1px solid #000",
+    paddingBottom: "10px",
+    marginBottom: "20px"
+  }}>
+    <img src="/left.PNG" alt="Left" className="header-image" style={{ width: "100px", height: "auto" }} />
+    
+    <div className="header-text" style={{ textAlign: "center", flex: 1 }}>
+      <h1 style={{ fontSize: "16px", margin: 0 }}>
+        GOVERNMENT OF THE PEOPLE'S REPUBLIC OF BANGLADESH
+      </h1>
+      <p style={{ margin: "5px 0" }}>NATIONAL BOARD OF REVENUE, DHAKA</p>
+      <h2>TAX INVOICE</h2>
+      <p>[REF RULE 40, (1) (GHA) & (CHA)]</p>
+    </div>
 
-          <hr className="my-4" />
+    <img src="/right.PNG" alt="Right" className="header-image" style={{ width: "100px", height: "auto" }} />
+  </div>
 
-          <div className="flex justify-between mb-4">
-            <div>
-              <div className="text-sm text-gray-600">Bill To</div>
-              <div className="font-medium">{invoice.customer?.name}</div>
-              <div className="text-sm text-gray-600">{invoice.customer?.address}</div>
-              <div className="text-sm text-gray-600">{invoice.customer?.phone}</div>
-              <div className="text-sm text-gray-600">{invoice.customer?.email}</div>
-            </div>
+  {/* COMPANY INFO */}
+  <div className="company-info" style={{ marginBottom: "20px" }}>
+    <p><strong>REGISTERED PERSON NAME:</strong> LINK3 TECHNOLOGIES LIMITED</p>
+    <p><strong>BIN NUMBER:</strong> 000002141-0101</p>
+    <p>
+      <strong>INVOICE ISSUING ADDRESS:</strong> Police Plaza Concord, Tower -1 (13th floor), 
+      Plot-02, Road-144, Gulshan, Dhaka-1212, Bangladesh. Helpdesk # +8809678123123
+    </p>
+    <p><strong>MUSHAK- 6.3</strong></p>
+  </div>
 
-            <div className="text-sm text-gray-600">
-              <div>Payment terms: Net 7</div>
-              <div>Reference: {invoice.reference || "-"}</div>
-            </div>
-          </div>
+  {/* INVOICE DETAILS */}
+  <div className="invoice-details" style={{
+    display: "flex",
+    justifyContent: "space-between",
+    marginBottom: "20px"
+  }}>
+    <div style={{ width: "48%" }}>
+      <p><strong>INVOICE NUMBER:</strong> {invoice.id}</p>
+      <p><strong>BIN NUMBER:</strong> 000002141-0101</p>
+      <p><strong>BILLING PERIOD:</strong> {invoice.billing_period || "N/A"}</p>
+      <p><strong>INVOICE ISSUE DATE:</strong> {invoice.date}</p>
+      <p><strong>INVOICE DUE DATE:</strong> {invoice.due_date}</p>
+    </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr>
-                  <th className="border-b pb-2 text-sm">Description</th>
-                  <th className="border-b pb-2 text-sm">Qty</th>
-                  <th className="border-b pb-2 text-sm">Unit Price</th>
-                  <th className="border-b pb-2 text-sm text-right">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {invoice.items.map((it, idx) => (
-                  <tr key={idx} className="align-top">
-                    <td className="py-2 text-sm border-b">{it.description}</td>
-                    <td className="py-2 text-sm border-b">{it.quantity}</td>
-                    <td className="py-2 text-sm border-b">{formatCurrency(it.unit_price)}</td>
-                    <td className="py-2 text-sm border-b text-right">
-                      {formatCurrency((it.quantity || 1) * (it.unit_price || 0))}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+    <div style={{ width: "48%" }}>
+      <p><strong>SUBSCRIBER CODE:</strong> {invoice.customer?.subscriber_code || "-"}</p>
+      <p><strong>SUBSCRIBER NAME:</strong> {invoice.customer?.name}</p>
+      <p><strong>ADDRESS:</strong> {invoice.customer?.address}</p>
+      <p><strong>VEHICLE NATURE & NO:</strong> -</p>
+      <p><strong>SUPPLY DESTINATION:</strong> -</p>
+    </div>
+  </div>
 
-          <div className="flex justify-end mt-4">
-            <div className="w-full sm:w-1/3">
-              <div className="flex justify-between text-sm py-1">
-                <div>Subtotal</div>
-                <div>{formatCurrency(subtotal(invoice.items))}</div>
-              </div>
-              <div className="flex justify-between text-sm py-1">
-                <div>Tax ({invoice.tax_percent}%)</div>
-                <div>
-                  {formatCurrency((subtotal(invoice.items) * (invoice.tax_percent || 0)) / 100)
-                }
-                </div>
-              </div>
-              <div className="flex justify-between font-semibold text-base py-2 border-t mt-2">
-                <div>Total</div>
-                <div>
-                  {formatCurrency(
-                    subtotal(invoice.items) +
-                      (subtotal(invoice.items) * (invoice.tax_percent || 0)) / 100
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+  {/* ITEMS TABLE */}
+  <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "20px" }}>
+    <thead>
+      <tr>
+        {["SL No.","Description","Qty","Per Unit Price (Taka)","Amount (Taka)","VAT Rate","VAT Amount (Taka)","SD Rate","SD Amount (Taka)","Total Price (Taka)"]
+        .map((h,i)=>(
+          <th key={i} style={{ border: "1px solid #000", padding: "5px", background: "#f0f0f0" }}>{h}</th>
+        ))}
+      </tr>
+    </thead>
 
-          {invoice.notes && (
-            <div className="mt-6 text-sm text-gray-700">
-              <strong>Notes:</strong>
-              <div>{invoice.notes}</div>
-            </div>
-          )}
+    <tbody>
+      {invoice.items.map((item, idx) => {
+        const amount = (item.quantity || 1) * (item.unit_price || 0);
+        const vatAmount = item.vat ? (amount * item.vat) / 100 : 0;
+        return (
+          <tr key={idx}>
+            <td style={{ border: "1px solid #000", padding: "5px" }}>{idx + 1}</td>
+            <td style={{ border: "1px solid #000", padding: "5px" }}>{item.description}</td>
+            <td style={{ border: "1px solid #000", padding: "5px" }}>{item.quantity}</td>
+            <td style={{ border: "1px solid #000", padding: "5px" }}>{item.unit_price}</td>
+            <td style={{ border: "1px solid #000", padding: "5px" }}>{amount.toFixed(2)}</td>
+            <td style={{ border: "1px solid #000", padding: "5px" }}>{item.vat || "-"}</td>
+            <td style={{ border: "1px solid #000", padding: "5px" }}>{vatAmount.toFixed(2)}</td>
+            <td style={{ border: "1px solid #000", padding: "5px" }}>-</td>
+            <td style={{ border: "1px solid #000", padding: "5px" }}>-</td>
+            <td style={{ border: "1px solid #000", padding: "5px" }}>{(amount + vatAmount).toFixed(2)}</td>
+          </tr>
+        );
+      })}
+    </tbody>
+  </table>
 
-          <div className="mt-6 text-xs text-gray-500">
-            This is a system generated invoice. Please keep it for your records.
-          </div>
-        </div>
+  {/* TOTALS */}
+  <div className="totals" style={{ marginBottom: "20px" }}>
+    <table style={{ borderCollapse: "collapse", width: "auto", marginLeft: "auto" }}>
+      <tbody>
+        <tr><td>Previous Balance</td><td>-</td></tr>
+        <tr><td>Adjustment</td><td>-</td></tr>
+        <tr><td>Payments</td><td>-</td></tr>
+        <tr>
+          <td>Current Charges</td>
+          <td>{formatCurrency(subtotal(invoice.items))}</td>
+        </tr>
+        <tr>
+          <td><strong>Total Amount Due</strong></td>
+          <td><strong>{formatCurrency(subtotal(invoice.items))}</strong></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>In Word:</strong> {invoice.amount_in_words || "N/A"}</p>
+  </div>
+
+  {/* FOOTER NOTES */}
+  <div className="footer" style={{ borderTop: "1px solid #000", paddingTop: "10px", fontSize: "10px" }}>
+    <p>Please advise of discrepancies within 10 days at billing@link3.net</p>
+    <p><strong>Payment Instruction:</strong></p>
+    <p>i. Pay before expiry to avoid interruption.</p>
+    <p>ii. Failure to pay results in automatic disconnection.</p>
+    <p>1. Per unit price excluding all taxes.</p>
+    <p><strong>Name, Designation & Signature of Seller</strong></p>
+    <p>This computer-generated invoice requires no signature.</p>
+    <p>For info: https://selfcare.link3.net</p>
+    <p>A/C#: 01777776660 • A/C# 3333 3242 (Payee: LINK3)</p>
+    <p>Page 1 of 1</p>
+  </div>
+
+</div>
+
       )}
 
       <style jsx>{`
