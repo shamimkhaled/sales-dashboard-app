@@ -64,6 +64,7 @@ export default function DataEntry() {
 
   const [formData, setFormData] = useState({
     customer_id: "",
+    type: "",
     nttn_cap: "",
     nttn_com: "",
     active_date: "",
@@ -71,16 +72,22 @@ export default function DataEntry() {
     termination_date: "",
     iig_qt: "",
     iig_qt_price: "",
+    igt_qt_total: "",
     fna: "",
     fna_price: "",
+    fna_total: "",
     ggc: "",
     ggc_price: "",
+    ggc_total: "",
     cdn: "",
     cdn_price: "",
+    cdn_total: "",
     bdix: "",
     bdix_price: "",
+    bdix_total: "",
     baishan: "",
     baishan_price: "",
+    baishan_total: "",
     total_bill: "",
     total_received: "",
     total_due: "",
@@ -201,10 +208,31 @@ export default function DataEntry() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => {
+      const newData = { ...prev, [name]: value };
+
+      // Calculate totals
+      if (name === 'iig_qt' || name === 'iig_qt_price') {
+        newData.igt_qt_total = (parseFloat(newData.iig_qt) || 0) * (parseFloat(newData.iig_qt_price) || 0);
+      }
+      if (name === 'fna' || name === 'fna_price') {
+        newData.fna_total = (parseFloat(newData.fna) || 0) * (parseFloat(newData.fna_price) || 0);
+      }
+      if (name === 'ggc' || name === 'ggc_price') {
+        newData.ggc_total = (parseFloat(newData.ggc) || 0) * (parseFloat(newData.ggc_price) || 0);
+      }
+      if (name === 'cdn' || name === 'cdn_price') {
+        newData.cdn_total = (parseFloat(newData.cdn) || 0) * (parseFloat(newData.cdn_price) || 0);
+      }
+      if (name === 'bdix' || name === 'bdix_price') {
+        newData.bdix_total = (parseFloat(newData.bdix) || 0) * (parseFloat(newData.bdix_price) || 0);
+      }
+      if (name === 'baishan' || name === 'baishan_price') {
+        newData.baishan_total = (parseFloat(newData.baishan) || 0) * (parseFloat(newData.baishan_price) || 0);
+      }
+
+      return newData;
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -217,6 +245,7 @@ export default function DataEntry() {
       // Filter out only the bill-specific fields (exclude customer fields from joins)
       const billData = {
         customer: parseInt(formData.customer_id) || null,
+        type: formData.type || "",
         nttn_cap: formData.nttn_cap || "",
         nttn_com: formData.nttn_com || "",
         active_date: formData.active_date || null,
@@ -224,16 +253,22 @@ export default function DataEntry() {
         termination_date: formData.termination_date || null,
         iig_qt: parseFloat(formData.iig_qt) || 0,
         iig_qt_price: parseFloat(formData.iig_qt_price) || 0,
+        igt_qt_total: parseFloat(formData.igt_qt_total) || 0,
         fna: parseFloat(formData.fna) || 0,
         fna_price: parseFloat(formData.fna_price) || 0,
+        fna_total: parseFloat(formData.fna_total) || 0,
         ggc: parseFloat(formData.ggc) || 0,
         ggc_price: parseFloat(formData.ggc_price) || 0,
+        ggc_total: parseFloat(formData.ggc_total) || 0,
         cdn: parseFloat(formData.cdn) || 0,
         cdn_price: parseFloat(formData.cdn_price) || 0,
+        cdn_total: parseFloat(formData.cdn_total) || 0,
         bdix: parseFloat(formData.bdix) || 0,
         bdix_price: parseFloat(formData.bdix_price) || 0,
+        bdix_total: parseFloat(formData.bdix_total) || 0,
         baishan: parseFloat(formData.baishan) || 0,
         baishan_price: parseFloat(formData.baishan_price) || 0,
+        baishan_total: parseFloat(formData.baishan_total) || 0,
         total_bill: parseFloat(formData.total_bill) || 0,
         total_received: parseFloat(formData.total_received) || 0,
         total_due: parseFloat(formData.total_due) || 0,
@@ -276,6 +311,7 @@ export default function DataEntry() {
   const resetForm = () => {
     setFormData({
       customer_id: "",
+      type: "",
       nttn_cap: "",
       nttn_com: "",
       active_date: "",
@@ -283,16 +319,22 @@ export default function DataEntry() {
       termination_date: "",
       iig_qt: "",
       iig_qt_price: "",
+      igt_qt_total: "",
       fna: "",
       fna_price: "",
+      fna_total: "",
       ggc: "",
       ggc_price: "",
+      ggc_total: "",
       cdn: "",
       cdn_price: "",
+      cdn_total: "",
       bdix: "",
       bdix_price: "",
+      bdix_total: "",
       baishan: "",
       baishan_price: "",
+      baishan_total: "",
       total_bill: "",
       total_received: "",
       total_due: "",
@@ -314,6 +356,13 @@ export default function DataEntry() {
     setFormData({
       ...bill,
       customer_id: customerIdValue,
+      type: bill.type || "",
+      igt_qt_total: bill.igt_qt_total || "",
+      fna_total: bill.fna_total || "",
+      ggc_total: bill.ggc_total || "",
+      cdn_total: bill.cdn_total || "",
+      bdix_total: bill.bdix_total || "",
+      baishan_total: bill.baishan_total || "",
     });
     setEditingId(bill.id);
     setShowForm(true);
@@ -877,6 +926,32 @@ export default function DataEntry() {
                       )}
                     </div>
 
+                    {/* Type Selection */}
+                    <div>
+                      <label
+                        className={`block text-sm font-medium mb-2 ${
+                          isDark ? "text-silver-300" : "text-gray-700"
+                        }`}
+                      >
+                        Type
+                      </label>
+                      <select
+                        name="type"
+                        value={formData.type}
+                        onChange={handleInputChange}
+                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                          isDark
+                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                        } focus:outline-none`}
+                      >
+                        <option value="">Select Type</option>
+                        <option value="Channel Partner">Channel Partner</option>
+                        <option value="Reseller Customer">Reseller Customer</option>
+                        <option value="SOHO Customer">SOHO Customer</option>
+                      </select>
+                    </div>
+
                     {/* NTTN Fields */}
                     <div>
                       <label
@@ -957,7 +1032,7 @@ export default function DataEntry() {
                       />
                     </div>
 
-                    <div>
+                    {/* <div>
                       <label
                         className={`block text-sm font-medium mb-2 ${
                           isDark ? "text-silver-300" : "text-gray-700"
@@ -976,19 +1051,23 @@ export default function DataEntry() {
                             : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
                         } focus:outline-none`}
                       />
-                    </div>
+                    </div> */}
 
-                    {/* Pricing Groups: metric + price on same row */}
+                    {/* Break after Termination Date */}
+                    <div className="lg:col-span-3 h-4"></div>
+
+                     {/* Pricing Groups: metric + price on same row */}
                     {/* IIG-QT + Price */}
-                    <div className="lg:col-span-1">
-                      <div className="flex gap-3">
-                        <div className="flex-1">
+                    {formData.type === "Reseller Customer" && (
+                      <>
+
+                        <div className="lg:col-span-1">
                           <label
                             className={`block text-sm font-medium mb-2 ${
                               isDark ? "text-silver-300" : "text-gray-700"
                             }`}
                           >
-                            IIG-QT
+                            IPT
                           </label>
                           <input
                             type="number"
@@ -1003,13 +1082,13 @@ export default function DataEntry() {
                             } focus:outline-none`}
                           />
                         </div>
-                        <div className="w-40">
+                        <div className="lg:col-span-1">
                           <label
                             className={`block text-sm font-medium mb-2 ${
                               isDark ? "text-silver-300" : "text-gray-700"
                             }`}
                           >
-                            IIG-QT Price
+                            IPT Price
                           </label>
                           <input
                             type="number"
@@ -1024,251 +1103,352 @@ export default function DataEntry() {
                             } focus:outline-none`}
                           />
                         </div>
-                      </div>
+                        <div className="lg:col-span-1">
+                          <label
+                            className={`block text-sm font-medium mb-2 ${
+                              isDark ? "text-silver-300" : "text-gray-700"
+                            }`}
+                          >
+                            IPT Total
+                          </label>
+                          <input
+                            type="number"
+                            value={formData.igt_qt_total}
+                            readOnly
+                            disabled
+                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 cursor-not-allowed opacity-75 ${
+                              isDark
+                                ? "bg-dark-700 border-dark-600 text-white"
+                                : "bg-gray-100 border-gold-200 text-dark-900"
+                            } focus:outline-none`}
+                          />
+                        </div>
+
+                    {/* FNA + Price + Total */}
+                    <div className="lg:col-span-1">
+                      <label
+                        className={`block text-sm font-medium mb-2 ${
+                          isDark ? "text-silver-300" : "text-gray-700"
+                        }`}
+                      >
+                        FNA
+                      </label>
+                      <input
+                        type="number"
+                        name="fna"
+                        value={formData.fna}
+                        onChange={handleInputChange}
+                        step="0.01"
+                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                          isDark
+                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                        } focus:outline-none`}
+                      />
+                    </div>
+                    <div className="lg:col-span-1">
+                      <label
+                        className={`block text-sm font-medium mb-2 ${
+                          isDark ? "text-silver-300" : "text-gray-700"
+                        }`}
+                      >
+                        FNA Price
+                      </label>
+                      <input
+                        type="number"
+                        name="fna_price"
+                        value={formData.fna_price}
+                        onChange={handleInputChange}
+                        step="0.01"
+                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                          isDark
+                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                        } focus:outline-none`}
+                      />
+                    </div>
+                    <div className="lg:col-span-1">
+                      <label
+                        className={`block text-sm font-medium mb-2 ${
+                          isDark ? "text-silver-300" : "text-gray-700"
+                        }`}
+                      >
+                        FNA Total
+                      </label>
+                      <input
+                        type="number"
+                        value={formData.fna_total}
+                        readOnly
+                        disabled
+                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 cursor-not-allowed opacity-75 ${
+                          isDark
+                            ? "bg-dark-700 border-dark-600 text-white"
+                            : "bg-gray-100 border-gold-200 text-dark-900"
+                        } focus:outline-none`}
+                      />
                     </div>
 
-                    {/* FNA + Price */}
+                    {/* GGC + Price + Total */}
                     <div className="lg:col-span-1">
-                      <div className="flex gap-3">
-                        <div className="flex-1">
-                          <label
-                            className={`block text-sm font-medium mb-2 ${
-                              isDark ? "text-silver-300" : "text-gray-700"
-                            }`}
-                          >
-                            FNA
-                          </label>
-                          <input
-                            type="number"
-                            name="fna"
-                            value={formData.fna}
-                            onChange={handleInputChange}
-                            step="0.01"
-                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                              isDark
-                                ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                                : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                            } focus:outline-none`}
-                          />
-                        </div>
-                        <div className="w-40">
-                          <label
-                            className={`block text-sm font-medium mb-2 ${
-                              isDark ? "text-silver-300" : "text-gray-700"
-                            }`}
-                          >
-                            FNA Price
-                          </label>
-                          <input
-                            type="number"
-                            name="fna_price"
-                            value={formData.fna_price}
-                            onChange={handleInputChange}
-                            step="0.01"
-                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                              isDark
-                                ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                                : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                            } focus:outline-none`}
-                          />
-                        </div>
-                      </div>
+                      <label
+                        className={`block text-sm font-medium mb-2 ${
+                          isDark ? "text-silver-300" : "text-gray-700"
+                        }`}
+                      >
+                        GGC
+                      </label>
+                      <input
+                        type="number"
+                        name="ggc"
+                        value={formData.ggc}
+                        onChange={handleInputChange}
+                        step="0.01"
+                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                          isDark
+                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                        } focus:outline-none`}
+                      />
+                    </div>
+                    <div className="lg:col-span-1">
+                      <label
+                        className={`block text-sm font-medium mb-2 ${
+                          isDark ? "text-silver-300" : "text-gray-700"
+                        }`}
+                      >
+                        GGC Price
+                      </label>
+                      <input
+                        type="number"
+                        name="ggc_price"
+                        value={formData.ggc_price}
+                        onChange={handleInputChange}
+                        step="0.01"
+                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                          isDark
+                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                        } focus:outline-none`}
+                      />
+                    </div>
+                    <div className="lg:col-span-1">
+                      <label
+                        className={`block text-sm font-medium mb-2 ${
+                          isDark ? "text-silver-300" : "text-gray-700"
+                        }`}
+                      >
+                        GGC Total
+                      </label>
+                      <input
+                        type="number"
+                        value={formData.ggc_total}
+                        readOnly
+                        disabled
+                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 cursor-not-allowed opacity-75 ${
+                          isDark
+                            ? "bg-dark-700 border-dark-600 text-white"
+                            : "bg-gray-100 border-gold-200 text-dark-900"
+                        } focus:outline-none`}
+                      />
                     </div>
 
-                    {/* GGC + Price */}
+                    {/* CDN + Price + Total */}
                     <div className="lg:col-span-1">
-                      <div className="flex gap-3">
-                        <div className="flex-1">
-                          <label
-                            className={`block text-sm font-medium mb-2 ${
-                              isDark ? "text-silver-300" : "text-gray-700"
-                            }`}
-                          >
-                            GGC
-                          </label>
-                          <input
-                            type="number"
-                            name="ggc"
-                            value={formData.ggc}
-                            onChange={handleInputChange}
-                            step="0.01"
-                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                              isDark
-                                ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                                : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                            } focus:outline-none`}
-                          />
-                        </div>
-                        <div className="w-40">
-                          <label
-                            className={`block text-sm font-medium mb-2 ${
-                              isDark ? "text-silver-300" : "text-gray-700"
-                            }`}
-                          >
-                            GGC Price
-                          </label>
-                          <input
-                            type="number"
-                            name="ggc_price"
-                            value={formData.ggc_price}
-                            onChange={handleInputChange}
-                            step="0.01"
-                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                              isDark
-                                ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                                : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                            } focus:outline-none`}
-                          />
-                        </div>
-                      </div>
+                      <label
+                        className={`block text-sm font-medium mb-2 ${
+                          isDark ? "text-silver-300" : "text-gray-700"
+                        }`}
+                      >
+                        CDN
+                      </label>
+                      <input
+                        type="number"
+                        name="cdn"
+                        value={formData.cdn}
+                        onChange={handleInputChange}
+                        step="0.01"
+                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                          isDark
+                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                        } focus:outline-none`}
+                      />
+                    </div>
+                    <div className="lg:col-span-1">
+                      <label
+                        className={`block text-sm font-medium mb-2 ${
+                          isDark ? "text-silver-300" : "text-gray-700"
+                        }`}
+                      >
+                        CDN Price
+                      </label>
+                      <input
+                        type="number"
+                        name="cdn_price"
+                        value={formData.cdn_price}
+                        onChange={handleInputChange}
+                        step="0.01"
+                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                          isDark
+                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                        } focus:outline-none`}
+                      />
+                    </div>
+                    <div className="lg:col-span-1">
+                      <label
+                        className={`block text-sm font-medium mb-2 ${
+                          isDark ? "text-silver-300" : "text-gray-700"
+                        }`}
+                      >
+                        CDN Total
+                      </label>
+                      <input
+                        type="number"
+                        value={formData.cdn_total}
+                        readOnly
+                        disabled
+                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 cursor-not-allowed opacity-75 ${
+                          isDark
+                            ? "bg-dark-700 border-dark-600 text-white"
+                            : "bg-gray-100 border-gold-200 text-dark-900"
+                        } focus:outline-none`}
+                      />
                     </div>
 
-                    {/* CDN + Price */}
+                    {/* BDIX + Price + Total */}
                     <div className="lg:col-span-1">
-                      <div className="flex gap-3">
-                        <div className="flex-1">
-                          <label
-                            className={`block text-sm font-medium mb-2 ${
-                              isDark ? "text-silver-300" : "text-gray-700"
-                            }`}
-                          >
-                            CDN
-                          </label>
-                          <input
-                            type="number"
-                            name="cdn"
-                            value={formData.cdn}
-                            onChange={handleInputChange}
-                            step="0.01"
-                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                              isDark
-                                ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                                : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                            } focus:outline-none`}
-                          />
-                        </div>
-                        <div className="w-40">
-                          <label
-                            className={`block text-sm font-medium mb-2 ${
-                              isDark ? "text-silver-300" : "text-gray-700"
-                            }`}
-                          >
-                            CDN Price
-                          </label>
-                          <input
-                            type="number"
-                            name="cdn_price"
-                            value={formData.cdn_price}
-                            onChange={handleInputChange}
-                            step="0.01"
-                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                              isDark
-                                ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                                : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                            } focus:outline-none`}
-                          />
-                        </div>
-                      </div>
+                      <label
+                        className={`block text-sm font-medium mb-2 ${
+                          isDark ? "text-silver-300" : "text-gray-700"
+                        }`}
+                      >
+                        NIX
+                      </label>
+                      <input
+                        type="number"
+                        name="bdix"
+                        value={formData.bdix}
+                        onChange={handleInputChange}
+                        step="0.01"
+                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                          isDark
+                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                        } focus:outline-none`}
+                      />
+                    </div>
+                    <div className="lg:col-span-1">
+                      <label
+                        className={`block text-sm font-medium mb-2 ${
+                          isDark ? "text-silver-300" : "text-gray-700"
+                        }`}
+                      >
+                        NIX Price
+                      </label>
+                      <input
+                        type="number"
+                        name="bdix_price"
+                        value={formData.bdix_price}
+                        onChange={handleInputChange}
+                        step="0.01"
+                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                          isDark
+                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                        } focus:outline-none`}
+                      />
+                    </div>
+                    <div className="lg:col-span-1">
+                      <label
+                        className={`block text-sm font-medium mb-2 ${
+                          isDark ? "text-silver-300" : "text-gray-700"
+                        }`}
+                      >
+                        NIX Total
+                      </label>
+                      <input
+                        type="number"
+                        value={formData.bdix_total}
+                        readOnly
+                        disabled
+                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 cursor-not-allowed opacity-75 ${
+                          isDark
+                            ? "bg-dark-700 border-dark-600 text-white"
+                            : "bg-gray-100 border-gold-200 text-dark-900"
+                        } focus:outline-none`}
+                      />
                     </div>
 
-                    {/* BDIX + Price */}
+                    {/* BAISHAN + Price + Total */}
                     <div className="lg:col-span-1">
-                      <div className="flex gap-3">
-                        <div className="flex-1">
-                          <label
-                            className={`block text-sm font-medium mb-2 ${
-                              isDark ? "text-silver-300" : "text-gray-700"
-                            }`}
-                          >
-                            BDIX
-                          </label>
-                          <input
-                            type="number"
-                            name="bdix"
-                            value={formData.bdix}
-                            onChange={handleInputChange}
-                            step="0.01"
-                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                              isDark
-                                ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                                : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                            } focus:outline-none`}
-                          />
-                        </div>
-                        <div className="w-40">
-                          <label
-                            className={`block text-sm font-medium mb-2 ${
-                              isDark ? "text-silver-300" : "text-gray-700"
-                            }`}
-                          >
-                            BDIX Price
-                          </label>
-                          <input
-                            type="number"
-                            name="bdix_price"
-                            value={formData.bdix_price}
-                            onChange={handleInputChange}
-                            step="0.01"
-                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                              isDark
-                                ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                                : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                            } focus:outline-none`}
-                          />
-                        </div>
-                      </div>
+                      <label
+                        className={`block text-sm font-medium mb-2 ${
+                          isDark ? "text-silver-300" : "text-gray-700"
+                        }`}
+                      >
+                        BAISHAN
+                      </label>
+                      <input
+                        type="number"
+                        name="baishan"
+                        value={formData.baishan}
+                        onChange={handleInputChange}
+                        step="0.01"
+                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                          isDark
+                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                        } focus:outline-none`}
+                      />
                     </div>
-
-                    {/* BAISHAN + Price */}
                     <div className="lg:col-span-1">
-                      <div className="flex gap-3">
-                        <div className="flex-1">
-                          <label
-                            className={`block text-sm font-medium mb-2 ${
-                              isDark ? "text-silver-300" : "text-gray-700"
-                            }`}
-                          >
-                            BAISHAN
-                          </label>
-                          <input
-                            type="number"
-                            name="baishan"
-                            value={formData.baishan}
-                            onChange={handleInputChange}
-                            step="0.01"
-                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                              isDark
-                                ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                                : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                            } focus:outline-none`}
-                          />
-                        </div>
-                        <div className="w-40">
-                          <label
-                            className={`block text-sm font-medium mb-2 ${
-                              isDark ? "text-silver-300" : "text-gray-700"
-                            }`}
-                          >
-                            BAISHAN Price
-                          </label>
-                          <input
-                            type="number"
-                            name="baishan_price"
-                            value={formData.baishan_price}
-                            onChange={handleInputChange}
-                            step="0.01"
-                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                              isDark
-                                ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                                : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                            } focus:outline-none`}
-                          />
-                        </div>
-                      </div>
+                      <label
+                        className={`block text-sm font-medium mb-2 ${
+                          isDark ? "text-silver-300" : "text-gray-700"
+                        }`}
+                      >
+                        BAISHAN Price
+                      </label>
+                      <input
+                        type="number"
+                        name="baishan_price"
+                        value={formData.baishan_price}
+                        onChange={handleInputChange}
+                        step="0.01"
+                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                          isDark
+                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                        } focus:outline-none`}
+                      />
                     </div>
+                    <div className="lg:col-span-1">
+                      <label
+                        className={`block text-sm font-medium mb-2 ${
+                          isDark ? "text-silver-300" : "text-gray-700"
+                        }`}
+                      >
+                        BAISHAN Total
+                      </label>
+                      <input
+                        type="number"
+                        value={formData.baishan_total}
+                        readOnly
+                        disabled
+                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 cursor-not-allowed opacity-75 ${
+                          isDark
+                            ? "bg-dark-700 border-dark-600 text-white"
+                            : "bg-gray-100 border-gold-200 text-dark-900"
+                        } focus:outline-none`}
+                      />
+                    </div>
+                    
+                      </>
+                    )}
 
                     {/* Bill Summary */}
-                    <div>
+                    {/* <div>
                       <label
                         className={`block text-sm font-medium mb-2 ${
                           isDark ? "text-silver-300" : "text-gray-700"
@@ -1288,9 +1468,9 @@ export default function DataEntry() {
                             : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
                         } focus:outline-none`}
                       />
-                    </div>
+                    </div> */}
 
-                    <div>
+                    {/* <div>
                       <label
                         className={`block text-sm font-medium mb-2 ${
                           isDark ? "text-silver-300" : "text-gray-700"
@@ -1310,8 +1490,8 @@ export default function DataEntry() {
                             : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
                         } focus:outline-none`}
                       />
-                    </div>
-
+                    </div> */}
+{/* 
                     <div>
                       <label
                         className={`block text-sm font-medium mb-2 ${
@@ -1332,7 +1512,7 @@ export default function DataEntry() {
                             : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
                         } focus:outline-none`}
                       />
-                    </div>
+                    </div> */}
 
                     <div>
                       <label
@@ -1340,7 +1520,7 @@ export default function DataEntry() {
                           isDark ? "text-silver-300" : "text-gray-700"
                         }`}
                       >
-                        Discount
+                        Discount 
                       </label>
                       <input
                         type="number"
@@ -2664,7 +2844,7 @@ export default function DataEntry() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1">
-                      Active Date
+                      Active Date 
                     </label>
                     <p
                       className={`text-sm ${
@@ -2692,7 +2872,8 @@ export default function DataEntry() {
                         : "N/A"}
                     </p>
                   </div>
-                  <div>
+
+                  {/* <div>
                     <label className="block text-sm font-medium mb-1">
                       Termination Date
                     </label>
@@ -2707,7 +2888,7 @@ export default function DataEntry() {
                           ).toLocaleDateString()
                         : "N/A"}
                     </p>
-                  </div>
+                  </div> */}
 
                   {/* Services */}
                   <div className="md:col-span-2 lg:col-span-3">
