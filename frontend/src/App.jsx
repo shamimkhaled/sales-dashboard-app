@@ -24,6 +24,7 @@ import Roles from "./pages/Roles";
 import Prospects from "./pages/Prospects";
 import Invoices from "./pages/Invoices";
 import Profile from "./pages/Profile";
+import Packages from "./pages/Packages";
 import "./App.css";
 
 // Protected Route Component
@@ -177,6 +178,17 @@ const AppRoutes = () => {
           <ProtectedRoute requiredPermission="prospects:read">
             <AppLayout>
               <Prospects />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/packages"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <Packages />
             </AppLayout>
           </ProtectedRoute>
         }
