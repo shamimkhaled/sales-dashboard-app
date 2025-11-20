@@ -24,6 +24,7 @@ import Roles from "./pages/Roles";
 import Prospects from "./pages/Prospects";
 import Invoices from "./pages/Invoices";
 import Profile from "./pages/Profile";
+import Packages from "./pages/Packages";
 import "./App.css";
 
 // Protected Route Component
@@ -84,7 +85,7 @@ const AppLayout = ({ children }) => {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Mobile menu button */}
         {!sidebarOpen && (
-          <div className="lg:hidden fixed top-4 left-4 z-50">
+          <div className="lg:hidden fixed top-4 right-4 z-50">
             <button
               onClick={() => setSidebarOpen(true)}
               className="p-2 rounded-md bg-gray-800 text-white shadow-lg"
@@ -177,6 +178,17 @@ const AppRoutes = () => {
           <ProtectedRoute requiredPermission="prospects:read">
             <AppLayout>
               <Prospects />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/packages"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <Packages />
             </AppLayout>
           </ProtectedRoute>
         }

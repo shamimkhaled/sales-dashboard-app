@@ -18,6 +18,7 @@ import {
   ChevronRight,
   ChevronUp,
   Shield,
+  Package,
 } from "lucide-react";
 import kloudLogo from "../assets/kloud_logo.jpg";
 import { useTheme } from "../context/ThemeContext";
@@ -81,6 +82,12 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       path: "/prospects",
       icon: Users, // You can change to a more suitable icon if desired
       permission: "prospects:read",
+    },
+    {
+      name: "Packages",
+      path: "/packages",
+      icon: Package,
+      permission: null,
     },
   ];
 
