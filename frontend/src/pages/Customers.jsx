@@ -924,7 +924,7 @@ export default function Customers() {
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className={`pl-10 pr-4 py-2 rounded-lg transition-all duration-300 ${
+                className={`pl-10 pr-4 pe-10 py-2 rounded-lg transition-all duration-300 ${
                   isDark
                     ? "bg-dark-800 text-white focus:outline-none"
                     : "bg-white text-dark-900 focus:outline-none"

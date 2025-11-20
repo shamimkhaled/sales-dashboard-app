@@ -84,7 +84,7 @@ const AppLayout = ({ children }) => {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Mobile menu button */}
         {!sidebarOpen && (
-          <div className="lg:hidden fixed top-4 left-4 z-50">
+          <div className="lg:hidden fixed top-4 right-4 z-50">
             <button
               onClick={() => setSidebarOpen(true)}
               className="p-2 rounded-md bg-gray-800 text-white shadow-lg"
