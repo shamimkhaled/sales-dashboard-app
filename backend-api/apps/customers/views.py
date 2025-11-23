@@ -36,7 +36,11 @@ class ProspectListCreateView(generics.ListCreateAPIView):
         return qs
 
     def perform_create(self, serializer):
-        serializer.save(sales_person=self.request.user)
+        # Only set sales_person to current user if not provided in the request
+        if not serializer.validated_data.get('sales_person'):
+            serializer.save(sales_person=self.request.user)
+        else:
+            serializer.save()
 
 
 class ProspectDetailView(generics.RetrieveUpdateDestroyAPIView):

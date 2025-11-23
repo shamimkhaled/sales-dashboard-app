@@ -69,6 +69,8 @@ class SalesUsersView(APIView):
             'id': user.id,
             'username': user.username,
             'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
             'role_name': user.role.name if user.role else None,
         } for user in sales_users]
         
