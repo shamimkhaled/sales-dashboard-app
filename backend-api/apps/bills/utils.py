@@ -5,7 +5,76 @@ import re
 from datetime import datetime, timedelta
 from calendar import monthrange
 from django.utils import timezone
-from django.db import transaction
+from django.db import transaction, models
+
+
+def generate_mac_partner_number(partner_name, partner_id):
+    """
+    Generate unique MAC partner number in format: KTL-MAC-{8 chars partner name}-{partner id}
+    
+    Example: KTL-MAC-SHAMIMXX-5
+    
+    Args:
+        partner_name: MAC partner name
+        partner_id: MAC partner ID
+    
+    Returns:
+        str: Generated MAC partner number
+    """
+    # Clean partner name: remove special characters, take first 8 characters
+    clean_name = re.sub(r'[^a-zA-Z0-9]', '', partner_name or 'MACPARTNER')
+    clean_name = clean_name[:8].upper() if len(clean_name) >= 8 else clean_name.upper().ljust(8, 'X')
+    
+    # Generate MAC partner number: KTL-MAC-{8 chars}-{partner_id}
+    mac_partner_number = f"KTL-MAC-{clean_name}-{partner_id}"
+    
+    return mac_partner_number
+
+
+def generate_mac_end_customer_number(customer_name, customer_id):
+    """
+    Generate unique MAC end customer number in format: KTL-MACEC-{8 chars customer name}-{customer id}
+    
+    Example: KTL-MACEC-JOHNDOEX-10
+    
+    Args:
+        customer_name: End customer name
+        customer_id: End customer ID
+    
+    Returns:
+        str: Generated MAC end customer number
+    """
+    # Clean customer name: remove special characters, take first 8 characters
+    clean_name = re.sub(r'[^a-zA-Z0-9]', '', customer_name or 'MACENDCUST')
+    clean_name = clean_name[:8].upper() if len(clean_name) >= 8 else clean_name.upper().ljust(8, 'X')
+    
+    # Generate MAC end customer number: KTL-MACEC-{8 chars}-{customer_id}
+    mac_end_customer_number = f"KTL-MACEC-{clean_name}-{customer_id}"
+    
+    return mac_end_customer_number
+
+
+def generate_soho_customer_number(customer_name, customer_id):
+    """
+    Generate unique SOHO customer number in format: KTL-SOHO-{8 chars customer name}-{customer id}
+    
+    Example: KTL-SOHO-JANEDOEX-15
+    
+    Args:
+        customer_name: SOHO customer name
+        customer_id: SOHO customer ID
+    
+    Returns:
+        str: Generated SOHO customer number
+    """
+    # Clean customer name: remove special characters, take first 8 characters
+    clean_name = re.sub(r'[^a-zA-Z0-9]', '', customer_name or 'SHOCUSTOMER')
+    clean_name = clean_name[:8].upper() if len(clean_name) >= 8 else clean_name.upper().ljust(8, 'X')
+    
+    # Generate SOHO customer number: KTL-SOHO-{8 chars}-{customer_id}
+    soho_customer_number = f"KTL-SOHO-{clean_name}-{customer_id}"
+    
+    return soho_customer_number
 
 
 def generate_bill_number(customer_name, bill_id, billing_date=None):
@@ -446,4 +515,451 @@ def get_yearly_revenue_from_daily_amounts(year, customer=None):
         end_date=end_date,
         customer=customer
     )
+
+
+# ============================================================================
+# MAC / SOHO Billing Utility Functions
+# ============================================================================
+
+def calculate_mac_bill(mac_partner, bill_date):
+    """
+    Calculate MAC bill for a partner based on active end-customers.
+    Handles customers with different activation dates and individual bill dates.
+    
+    Args:
+        mac_partner: MACPartner instance
+        bill_date: Date for billing calculation (default bill date)
+    
+    Returns:
+        dict: Calculation results with total_client, total_revenue, commission, total_bill, customer_details
+    """
+    from .models import MACEndCustomer
+    from decimal import Decimal
+    
+    # Get all active end-customers
+    # Include customers where:
+    # 1. activation_date <= bill_date (customer is active)
+    # 2. bill_date is NULL (use partner bill_date) OR bill_date <= bill_date (customer's bill date has passed)
+    active_customers = MACEndCustomer.objects.filter(
+        mac_partner=mac_partner,
+        status='Active',
+        activation_date__lte=bill_date
+    ).filter(
+        models.Q(bill_date__isnull=True) | models.Q(bill_date__lte=bill_date)
+    ).select_related('package')
+    
+    total_client = active_customers.count()
+    total_revenue = Decimal('0')
+    customer_details = []
+    
+    # Calculate total revenue from all active customers
+    for customer in active_customers:
+        effective_rate = customer.effective_rate
+        total_revenue += effective_rate
+        
+        # Track individual customer details
+        customer_details.append({
+            'id': customer.id,
+            'name': customer.name,
+            'package': customer.package.name if customer.package else None,
+            'effective_rate': float(effective_rate),
+            'activation_date': str(customer.activation_date),
+            'bill_date': str(customer.bill_date) if customer.bill_date else None,
+        })
+    
+    # Get percentage share from MAC partner
+    percentage_share = mac_partner.percentage_share or Decimal('0')
+    
+    # Calculate commission
+    commission = (total_revenue * percentage_share) / 100 if total_revenue > 0 else Decimal('0')
+    
+    # Calculate total bill (revenue - commission)
+    total_bill = total_revenue - commission
+    
+    return {
+        'total_client': total_client,
+        'total_revenue': total_revenue,
+        'percentage_share': percentage_share,
+        'commission': commission,
+        'total_bill': total_bill,
+        'active_customers_count': total_client,
+        'customer_details': customer_details
+    }
+
+
+def generate_mac_bill(mac_partner, bill_date, notes=''):
+    """
+    Generate and save a MAC bill record.
+    
+    Args:
+        mac_partner: MACPartner instance
+        bill_date: Date for billing
+        notes: Optional notes
+    
+    Returns:
+        MACBill instance
+    """
+    from .models import MACBill
+    
+    # Calculate bill
+    calculation = calculate_mac_bill(mac_partner, bill_date)
+    
+    # Create bill record
+    mac_bill = MACBill.objects.create(
+        mac_partner=mac_partner,
+        bill_date=bill_date,
+        total_client=calculation['total_client'],
+        total_revenue=calculation['total_revenue'],
+        percentage_share=calculation['percentage_share'],
+        commission=calculation['commission'],
+        total_bill=calculation['total_bill'],
+        notes=notes
+    )
+    
+    return mac_bill
+
+
+def get_revenue_by_customer_type(start_date=None, end_date=None):
+    """
+    Get total revenue by customer type (MAC, SOHO, Bandwidth/Reseller).
+    
+    Args:
+        start_date: Optional start date filter
+        end_date: Optional end date filter
+    
+    Returns:
+        dict: Revenue breakdown by customer type
+    """
+    from .models import MACBill, SOHOBill, BillRecord
+    from django.db.models import Sum, Q
+    
+    # MAC Revenue (from MAC bills - total_revenue is the gross revenue before commission)
+    mac_query = MACBill.objects.all()
+    if start_date:
+        mac_query = mac_query.filter(bill_date__gte=start_date)
+    if end_date:
+        mac_query = mac_query.filter(bill_date__lte=end_date)
+    mac_revenue = mac_query.aggregate(total=Sum('total_revenue'))['total'] or 0
+    
+    # SOHO Revenue (from SOHO bills)
+    soho_query = SOHOBill.objects.all()
+    if start_date:
+        soho_query = soho_query.filter(bill_date__gte=start_date)
+    if end_date:
+        soho_query = soho_query.filter(bill_date__lte=end_date)
+    soho_revenue = soho_query.aggregate(total=Sum('total_bill'))['total'] or 0
+    
+    # Bandwidth/Reseller Revenue (from BillRecord - existing system)
+    bandwidth_query = BillRecord.objects.filter(status='Active')
+    if start_date:
+        bandwidth_query = bandwidth_query.filter(billing_date__gte=start_date)
+    if end_date:
+        bandwidth_query = bandwidth_query.filter(billing_date__lte=end_date)
+    bandwidth_revenue = bandwidth_query.aggregate(total=Sum('total_bill'))['total'] or 0
+    
+    total_revenue = mac_revenue + soho_revenue + bandwidth_revenue
+    
+    return {
+        'mac_revenue': float(mac_revenue),
+        'soho_revenue': float(soho_revenue),
+        'bandwidth_reseller_revenue': float(bandwidth_revenue),
+        'total_revenue': float(total_revenue),
+        'mac_percentage': (float(mac_revenue) / float(total_revenue) * 100) if total_revenue > 0 else 0,
+        'soho_percentage': (float(soho_revenue) / float(total_revenue) * 100) if total_revenue > 0 else 0,
+        'bandwidth_percentage': (float(bandwidth_revenue) / float(total_revenue) * 100) if total_revenue > 0 else 0,
+    }
+
+
+def get_daily_revenue_by_customer_type(start_date, end_date):
+    """
+    Get daily revenue breakdown by customer type for a date range.
+    
+    Args:
+        start_date: Start date
+        end_date: End date
+    
+    Returns:
+        list: Daily revenue data with breakdown by customer type
+    """
+    from .models import MACBill, SOHOBill, BillRecord
+    from django.db.models import Sum
+    from datetime import timedelta
+    
+    daily_data = []
+    current_date = start_date
+    
+    while current_date <= end_date:
+        # MAC Revenue for this day
+        mac_revenue = MACBill.objects.filter(bill_date=current_date).aggregate(
+            total=Sum('total_revenue')
+        )['total'] or 0
+        
+        # SOHO Revenue for this day
+        soho_revenue = SOHOBill.objects.filter(bill_date=current_date).aggregate(
+            total=Sum('total_bill')
+        )['total'] or 0
+        
+        # Bandwidth/Reseller Revenue for this day
+        bandwidth_revenue = BillRecord.objects.filter(
+            status='Active',
+            billing_date=current_date
+        ).aggregate(total=Sum('total_bill'))['total'] or 0
+        
+        total_revenue = mac_revenue + soho_revenue + bandwidth_revenue
+        
+        daily_data.append({
+            'date': str(current_date),
+            'mac_revenue': float(mac_revenue),
+            'soho_revenue': float(soho_revenue),
+            'bandwidth_reseller_revenue': float(bandwidth_revenue),
+            'total_revenue': float(total_revenue),
+        })
+        
+        current_date += timedelta(days=1)
+    
+    return daily_data
+
+
+def get_weekly_revenue_by_customer_type(start_date, end_date):
+    """
+    Get weekly revenue breakdown by customer type.
+    
+    Args:
+        start_date: Start date
+        end_date: End date
+    
+    Returns:
+        list: Weekly revenue data with breakdown by customer type
+    """
+    from .models import MACBill, SOHOBill, BillRecord
+    from django.db.models import Sum
+    from django.db.models.functions import TruncWeek
+    from datetime import timedelta
+    
+    # MAC Revenue by week
+    mac_weekly = MACBill.objects.filter(
+        bill_date__gte=start_date,
+        bill_date__lte=end_date
+    ).annotate(
+        week=TruncWeek('bill_date')
+    ).values('week').annotate(
+        revenue=Sum('total_revenue')
+    ).order_by('week')
+    
+    # SOHO Revenue by week
+    soho_weekly = SOHOBill.objects.filter(
+        bill_date__gte=start_date,
+        bill_date__lte=end_date
+    ).annotate(
+        week=TruncWeek('bill_date')
+    ).values('week').annotate(
+        revenue=Sum('total_bill')
+    ).order_by('week')
+    
+    # Bandwidth Revenue by week
+    bandwidth_weekly = BillRecord.objects.filter(
+        status='Active',
+        billing_date__gte=start_date,
+        billing_date__lte=end_date
+    ).annotate(
+        week=TruncWeek('billing_date')
+    ).values('week').annotate(
+        revenue=Sum('total_bill')
+    ).order_by('week')
+    
+    # Combine into weekly data
+    weekly_dict = {}
+    
+    for item in mac_weekly:
+        week_str = item['week'].strftime('%Y-%m-%d')
+        if week_str not in weekly_dict:
+            weekly_dict[week_str] = {'mac': 0, 'soho': 0, 'bandwidth': 0}
+        weekly_dict[week_str]['mac'] = float(item['revenue'] or 0)
+    
+    for item in soho_weekly:
+        week_str = item['week'].strftime('%Y-%m-%d')
+        if week_str not in weekly_dict:
+            weekly_dict[week_str] = {'mac': 0, 'soho': 0, 'bandwidth': 0}
+        weekly_dict[week_str]['soho'] = float(item['revenue'] or 0)
+    
+    for item in bandwidth_weekly:
+        week_str = item['week'].strftime('%Y-%m-%d')
+        if week_str not in weekly_dict:
+            weekly_dict[week_str] = {'mac': 0, 'soho': 0, 'bandwidth': 0}
+        weekly_dict[week_str]['bandwidth'] = float(item['revenue'] or 0)
+    
+    weekly_data = []
+    for week, revenues in sorted(weekly_dict.items()):
+        total = revenues['mac'] + revenues['soho'] + revenues['bandwidth']
+        weekly_data.append({
+            'week': week,
+            'mac_revenue': revenues['mac'],
+            'soho_revenue': revenues['soho'],
+            'bandwidth_reseller_revenue': revenues['bandwidth'],
+            'total_revenue': total,
+        })
+    
+    return weekly_data
+
+
+def get_monthly_revenue_by_customer_type(start_date, end_date):
+    """
+    Get monthly revenue breakdown by customer type.
+    
+    Args:
+        start_date: Start date
+        end_date: End date
+    
+    Returns:
+        list: Monthly revenue data with breakdown by customer type
+    """
+    from .models import MACBill, SOHOBill, BillRecord
+    from django.db.models import Sum
+    from django.db.models.functions import TruncMonth
+    
+    # MAC Revenue by month
+    mac_monthly = MACBill.objects.filter(
+        bill_date__gte=start_date,
+        bill_date__lte=end_date
+    ).annotate(
+        month=TruncMonth('bill_date')
+    ).values('month').annotate(
+        revenue=Sum('total_revenue')
+    ).order_by('month')
+    
+    # SOHO Revenue by month
+    soho_monthly = SOHOBill.objects.filter(
+        bill_date__gte=start_date,
+        bill_date__lte=end_date
+    ).annotate(
+        month=TruncMonth('bill_date')
+    ).values('month').annotate(
+        revenue=Sum('total_bill')
+    ).order_by('month')
+    
+    # Bandwidth Revenue by month
+    bandwidth_monthly = BillRecord.objects.filter(
+        status='Active',
+        billing_date__gte=start_date,
+        billing_date__lte=end_date
+    ).annotate(
+        month=TruncMonth('billing_date')
+    ).values('month').annotate(
+        revenue=Sum('total_bill')
+    ).order_by('month')
+    
+    # Combine into monthly data
+    monthly_dict = {}
+    
+    for item in mac_monthly:
+        month_str = item['month'].strftime('%Y-%m')
+        if month_str not in monthly_dict:
+            monthly_dict[month_str] = {'mac': 0, 'soho': 0, 'bandwidth': 0}
+        monthly_dict[month_str]['mac'] = float(item['revenue'] or 0)
+    
+    for item in soho_monthly:
+        month_str = item['month'].strftime('%Y-%m')
+        if month_str not in monthly_dict:
+            monthly_dict[month_str] = {'mac': 0, 'soho': 0, 'bandwidth': 0}
+        monthly_dict[month_str]['soho'] = float(item['revenue'] or 0)
+    
+    for item in bandwidth_monthly:
+        month_str = item['month'].strftime('%Y-%m')
+        if month_str not in monthly_dict:
+            monthly_dict[month_str] = {'mac': 0, 'soho': 0, 'bandwidth': 0}
+        monthly_dict[month_str]['bandwidth'] = float(item['revenue'] or 0)
+    
+    monthly_data = []
+    for month, revenues in sorted(monthly_dict.items()):
+        total = revenues['mac'] + revenues['soho'] + revenues['bandwidth']
+        monthly_data.append({
+            'month': month,
+            'mac_revenue': revenues['mac'],
+            'soho_revenue': revenues['soho'],
+            'bandwidth_reseller_revenue': revenues['bandwidth'],
+            'total_revenue': total,
+        })
+    
+    return monthly_data
+
+
+def get_yearly_revenue_by_customer_type(start_date, end_date):
+    """
+    Get yearly revenue breakdown by customer type.
+    
+    Args:
+        start_date: Start date
+        end_date: End date
+    
+    Returns:
+        list: Yearly revenue data with breakdown by customer type
+    """
+    from .models import MACBill, SOHOBill, BillRecord
+    from django.db.models import Sum
+    from django.db.models.functions import TruncYear
+    
+    # MAC Revenue by year
+    mac_yearly = MACBill.objects.filter(
+        bill_date__gte=start_date,
+        bill_date__lte=end_date
+    ).annotate(
+        year=TruncYear('bill_date')
+    ).values('year').annotate(
+        revenue=Sum('total_revenue')
+    ).order_by('year')
+    
+    # SOHO Revenue by year
+    soho_yearly = SOHOBill.objects.filter(
+        bill_date__gte=start_date,
+        bill_date__lte=end_date
+    ).annotate(
+        year=TruncYear('bill_date')
+    ).values('year').annotate(
+        revenue=Sum('total_bill')
+    ).order_by('year')
+    
+    # Bandwidth Revenue by year
+    bandwidth_yearly = BillRecord.objects.filter(
+        status='Active',
+        billing_date__gte=start_date,
+        billing_date__lte=end_date
+    ).annotate(
+        year=TruncYear('billing_date')
+    ).values('year').annotate(
+        revenue=Sum('total_bill')
+    ).order_by('year')
+    
+    # Combine into yearly data
+    yearly_dict = {}
+    
+    for item in mac_yearly:
+        year = item['year'].year
+        if year not in yearly_dict:
+            yearly_dict[year] = {'mac': 0, 'soho': 0, 'bandwidth': 0}
+        yearly_dict[year]['mac'] = float(item['revenue'] or 0)
+    
+    for item in soho_yearly:
+        year = item['year'].year
+        if year not in yearly_dict:
+            yearly_dict[year] = {'mac': 0, 'soho': 0, 'bandwidth': 0}
+        yearly_dict[year]['soho'] = float(item['revenue'] or 0)
+    
+    for item in bandwidth_yearly:
+        year = item['year'].year
+        if year not in yearly_dict:
+            yearly_dict[year] = {'mac': 0, 'soho': 0, 'bandwidth': 0}
+        yearly_dict[year]['bandwidth'] = float(item['revenue'] or 0)
+    
+    yearly_data = []
+    for year, revenues in sorted(yearly_dict.items()):
+        total = revenues['mac'] + revenues['soho'] + revenues['bandwidth']
+        yearly_data.append({
+            'year': year,
+            'mac_revenue': revenues['mac'],
+            'soho_revenue': revenues['soho'],
+            'bandwidth_reseller_revenue': revenues['bandwidth'],
+            'total_revenue': total,
+        })
+    
+    return yearly_data
 

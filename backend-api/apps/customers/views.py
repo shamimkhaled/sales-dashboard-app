@@ -71,9 +71,9 @@ class CustomerListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated, RequirePermissions]
     required_permissions = ['customers:read']
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['assigned_sales_person']
+    filterset_fields = ['assigned_sales_person', 'status', 'customer_type']
     search_fields = ['name', 'company_name', 'email', 'phone']
-    ordering_fields = ['created_at']
+    ordering_fields = ['created_at', 'name', 'customer_type']
 
     def get_queryset(self):
         qs = Customer.objects.all()

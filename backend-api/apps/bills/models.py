@@ -1,6 +1,8 @@
 from django.db import models
 from django.db.models.signals import post_delete
+from django.db.models import Sum
 from django.dispatch import receiver
+from django.conf import settings
 from apps.customers.models import Customer
 from .utils import generate_bill_number, calculate_bill_record_total_from_periods
 
@@ -10,8 +12,45 @@ class BillRecord(models.Model):
         ('Active', 'Active'),
         ('Inactive', 'Inactive'),
     )
+    
+    CUSTOMER_TYPE_CHOICES = (
+        ('Bandwidth', 'Bandwidth/Reseller Customer'),
+        ('MAC', 'MAC Partner/Channel Partner/Franchise'),
+        ('SOHO', 'SOHO/Home Customer'),
+    )
 
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='bill_records')
+    # Customer type and references (one of these will be set based on customer_type)
+    customer_type = models.CharField(
+        max_length=20,
+        choices=CUSTOMER_TYPE_CHOICES,
+        default='Bandwidth',
+        db_index=True,
+        help_text='Type of customer this bill is for'
+    )
+    customer = models.ForeignKey(
+        Customer,
+        on_delete=models.CASCADE,
+        related_name='bill_records',
+        null=True,
+        blank=True,
+        help_text='Bandwidth/Reseller customer (if customer_type is Bandwidth)'
+    )
+    mac_partner = models.ForeignKey(
+        'MACPartner',
+        on_delete=models.CASCADE,
+        related_name='bill_records',
+        null=True,
+        blank=True,
+        help_text='MAC Partner (if customer_type is MAC)'
+    )
+    soho_customer = models.ForeignKey(
+        'SOHOCustomer',
+        on_delete=models.CASCADE,
+        related_name='bill_records',
+        null=True,
+        blank=True,
+        help_text='SOHO Customer (if customer_type is SOHO)'
+    )
     bill_number = models.CharField(
         max_length=50,
         unique=True,
@@ -43,6 +82,14 @@ class BillRecord(models.Model):
     total_received = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     total_due = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    
+    # Payment tracking fields (for existing BillRecord system)
+    last_payment_date = models.DateField(null=True, blank=True, help_text='Date of last payment received', db_index=True)
+    last_payment_mode = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text='Payment mode of last payment (Cash, Bank Transfer, etc.)'
+    )
 
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='Active', db_index=True)
     remarks = models.TextField(blank=True)
@@ -54,13 +101,26 @@ class BillRecord(models.Model):
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['bill_number']),
+            models.Index(fields=['customer_type', 'status']),
+            models.Index(fields=['customer']),
+            models.Index(fields=['mac_partner']),
+            models.Index(fields=['soho_customer']),
         ]
 
     def save(self, *args, **kwargs):
         """Auto-generate bill_number on creation if not provided"""
-        if not self.bill_number and self.customer:
-            # Use company_name if available, otherwise use name
+        self.clean()
+        
+        # Get customer name based on customer_type
+        customer_name = None
+        if self.customer_type == 'Bandwidth' and self.customer:
             customer_name = self.customer.company_name or self.customer.name
+        elif self.customer_type == 'MAC' and self.mac_partner:
+            customer_name = self.mac_partner.mac_cust_name
+        elif self.customer_type == 'SOHO' and self.soho_customer:
+            customer_name = self.soho_customer.cust_name
+        
+        if not self.bill_number and customer_name:
             # Generate bill number (will use self.id after save, so we'll update it)
             if self.pk is None:
                 # First save to get the ID
@@ -85,7 +145,17 @@ class BillRecord(models.Model):
             super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"BillRecord #{self.id} - {self.bill_number or 'No Number'} - Customer {self.customer_id}"
+        customer_ref = None
+        if self.customer_type == 'Bandwidth' and self.customer:
+            customer_ref = f"Customer {self.customer_id}"
+        elif self.customer_type == 'MAC' and self.mac_partner:
+            customer_ref = f"MAC Partner {self.mac_partner_id}"
+        elif self.customer_type == 'SOHO' and self.soho_customer:
+            customer_ref = f"SOHO Customer {self.soho_customer_id}"
+        return f"BillRecord #{self.id} - {self.bill_number or 'No Number'} - {customer_ref or 'Unknown'}"
+
+
+
 
 
 class PricingPeriod(models.Model):
@@ -418,4 +488,625 @@ def update_bill_record_on_period_delete(sender, instance, **kwargs):
     if instance.bill_record:
         from .utils import calculate_bill_record_total_from_periods
         calculate_bill_record_total_from_periods(instance.bill_record)
+
+
+# ============================================================================
+# MAC / Channel Partner / Franchise & SOHO Billing Models
+# ============================================================================
+
+class Package(models.Model):
+    """
+    Unified package table for both MAC and SOHO packages
+    """
+    PACKAGE_TYPE_CHOICES = (
+        ('MAC', 'MAC Package'),
+        ('SOHO', 'SOHO Package'),
+    )
+    
+    name = models.CharField(max_length=255, help_text='Package name')
+    mbps = models.DecimalField(max_digits=10, decimal_places=2, help_text='Speed in Mbps')
+    rate = models.DecimalField(max_digits=12, decimal_places=2, help_text='Base package price')
+    type = models.CharField(max_length=10, choices=PACKAGE_TYPE_CHOICES, db_index=True, help_text='Package type: MAC or SOHO')
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'packages'
+        ordering = ['type', 'name']
+        indexes = [
+            models.Index(fields=['type', 'is_active']),
+        ]
+    
+    def __str__(self):
+        return f"{self.name} ({self.type}) - {self.mbps} Mbps - {self.rate}"
+
+
+class MACPartner(models.Model):
+    """
+    MAC / Channel Partner / Franchise Partner
+    Stores summary information about the MAC partner
+    """
+    mac_cust_name = models.CharField(max_length=255, help_text='MAC partner name')
+    email = models.EmailField(unique=True, blank=True, null=True)
+    phone = models.CharField(max_length=20, blank=True)
+    address = models.TextField(blank=True)
+    mac_partner_number = models.CharField(
+        max_length=50,
+        unique=True,
+        db_index=True,
+        blank=True,
+        null=True,
+        help_text='Auto-generated MAC partner number: KTL-MAC-{8 chars partner name}-{partner id}'
+    )
+    percentage_share = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0,
+        help_text='Revenue share percentage (e.g., 20.00 for 20%)'
+    )
+    contact_person = models.CharField(max_length=255, blank=True)
+    notes = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'mac_partners'
+        ordering = ['mac_cust_name']
+        indexes = [
+            models.Index(fields=['mac_cust_name']),
+            models.Index(fields=['is_active']),
+            models.Index(fields=['mac_partner_number']),
+        ]
+    
+    def __str__(self):
+        return self.mac_cust_name
+    
+    def save(self, *args, **kwargs):
+        """Auto-generate mac_partner_number on creation if not provided"""
+        if not self.mac_partner_number:
+            from .utils import generate_mac_partner_number
+            # Generate MAC partner number (will use self.id after save, so we'll update it)
+            if self.pk is None:
+                # First save to get the ID
+                super().save(*args, **kwargs)
+                # Now generate with the ID
+                self.mac_partner_number = generate_mac_partner_number(
+                    partner_name=self.mac_cust_name,
+                    partner_id=self.id
+                )
+                # Save again with the mac_partner_number
+                super().save(update_fields=['mac_partner_number'])
+            else:
+                # If updating and mac_partner_number is missing, generate it
+                self.mac_partner_number = generate_mac_partner_number(
+                    partner_name=self.mac_cust_name,
+                    partner_id=self.id
+                )
+                super().save(*args, **kwargs)
+        else:
+            super().save(*args, **kwargs)
+    
+    @property
+    def total_client(self):
+        """Auto-calculate total active clients"""
+        return self.end_customers.filter(status='Active').count()
+
+
+class MACEndCustomer(models.Model):
+    """
+    End-customers under a MAC partner
+    Each MAC partner can have many end-customers with different packages, rates, activation dates, and bill dates
+    """
+    STATUS_CHOICES = (
+        ('Active', 'Active'),
+        ('Inactive', 'Inactive'),
+        ('Suspended', 'Suspended'),
+    )
+    
+    mac_partner = models.ForeignKey(
+        MACPartner,
+        on_delete=models.CASCADE,
+        related_name='end_customers',
+        help_text='MAC partner this customer belongs to'
+    )
+    name = models.CharField(max_length=255, help_text='End customer name')
+    email = models.EmailField(blank=True)
+    phone = models.CharField(max_length=20, blank=True)
+    address = models.TextField(blank=True)
+    mac_end_customer_number = models.CharField(
+        max_length=50,
+        unique=True,
+        db_index=True,
+        blank=True,
+        null=True,
+        help_text='Auto-generated MAC end customer number: KTL-MACEC-{8 chars customer name}-{customer id}'
+    )
+    package = models.ForeignKey(
+        Package,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='mac_end_customers',
+        limit_choices_to={'type': 'MAC'},
+        help_text='Package assigned to this customer'
+    )
+    custom_rate = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='Custom rate for this customer (if different from package rate)'
+    )
+    activation_date = models.DateField(help_text='Date when customer became active', db_index=True)
+    bill_date = models.DateField(
+        null=True,
+        blank=True,
+        help_text='Individual bill date for this customer (if different from MAC partner bill date)',
+        db_index=True
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Active', db_index=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'mac_end_customers'
+        ordering = ['mac_partner', 'name']
+        indexes = [
+            models.Index(fields=['mac_partner', 'status']),
+            models.Index(fields=['activation_date']),
+            models.Index(fields=['status']),
+            models.Index(fields=['mac_end_customer_number']),
+        ]
+    
+    def __str__(self):
+        return f"{self.name} - {self.mac_partner.mac_cust_name}"
+    
+    def save(self, *args, **kwargs):
+        """Auto-generate mac_end_customer_number on creation if not provided"""
+        if not self.mac_end_customer_number:
+            from .utils import generate_mac_end_customer_number
+            # Generate MAC end customer number (will use self.id after save, so we'll update it)
+            if self.pk is None:
+                # First save to get the ID
+                super().save(*args, **kwargs)
+                # Now generate with the ID
+                self.mac_end_customer_number = generate_mac_end_customer_number(
+                    customer_name=self.name,
+                    customer_id=self.id
+                )
+                # Save again with the mac_end_customer_number
+                super().save(update_fields=['mac_end_customer_number'])
+            else:
+                # If updating and mac_end_customer_number is missing, generate it
+                self.mac_end_customer_number = generate_mac_end_customer_number(
+                    customer_name=self.name,
+                    customer_id=self.id
+                )
+                super().save(*args, **kwargs)
+        else:
+            super().save(*args, **kwargs)
+    
+    @property
+    def effective_rate(self):
+        """Get effective rate (custom_rate or package.rate)"""
+        if self.custom_rate:
+            return self.custom_rate
+        return self.package.rate if self.package else 0
+
+
+class SOHOCustomer(models.Model):
+    """
+    SOHO / Home / Own Customers
+    Direct customers with packages
+    """
+    STATUS_CHOICES = (
+        ('Active', 'Active'),
+        ('Inactive', 'Inactive'),
+        ('Suspended', 'Suspended'),
+    )
+    
+    cust_name = models.CharField(max_length=255, help_text='Customer name')
+    email = models.EmailField(unique=True, blank=True, null=True)
+    phone = models.CharField(max_length=20, blank=True)
+    address = models.TextField(blank=True)
+    soho_customer_number = models.CharField(
+        max_length=50,
+        unique=True,
+        db_index=True,
+        blank=True,
+        null=True,
+        help_text='Auto-generated SOHO customer number: KTL-SOHO-{8 chars customer name}-{customer id}'
+    )
+    package = models.ForeignKey(
+        Package,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='soho_customers',
+        limit_choices_to={'type': 'SOHO'},
+        help_text='SOHO package assigned to this customer'
+    )
+    rate = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text='Package rate (can override package default rate)'
+    )
+    activation_date = models.DateField(help_text='Date when customer became active')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Active', db_index=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'soho_customers'
+        ordering = ['cust_name']
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['activation_date']),
+            models.Index(fields=['soho_customer_number']),
+        ]
+    
+    def __str__(self):
+        return self.cust_name
+    
+    def save(self, *args, **kwargs):
+        """Auto-set rate from package if not provided and generate soho_customer_number"""
+        if not self.rate and self.package:
+            self.rate = self.package.rate
+        
+        # Auto-generate soho_customer_number on creation if not provided
+        if not self.soho_customer_number:
+            from .utils import generate_soho_customer_number
+            # Generate SOHO customer number (will use self.id after save, so we'll update it)
+            if self.pk is None:
+                # First save to get the ID
+                super().save(*args, **kwargs)
+                # Now generate with the ID
+                self.soho_customer_number = generate_soho_customer_number(
+                    customer_name=self.cust_name,
+                    customer_id=self.id
+                )
+                # Save again with the soho_customer_number
+                super().save(update_fields=['soho_customer_number'])
+            else:
+                # If updating and soho_customer_number is missing, generate it
+                self.soho_customer_number = generate_soho_customer_number(
+                    customer_name=self.cust_name,
+                    customer_id=self.id
+                )
+                super().save(*args, **kwargs)
+        else:
+            super().save(*args, **kwargs)
+
+
+class MACBill(models.Model):
+    """
+    Billing record for MAC partners
+    Stores summary billing information
+    """
+    STATUS_CHOICES = (
+        ('Pending', 'Pending'),
+        ('Unpaid', 'Unpaid'),
+        ('Paid', 'Paid'),
+        ('Partial', 'Partial'),
+    )
+    
+    mac_partner = models.ForeignKey(
+        MACPartner,
+        on_delete=models.CASCADE,
+        related_name='bills',
+        help_text='MAC partner this bill belongs to'
+    )
+    bill_date = models.DateField(help_text='Billing date')
+    total_client = models.IntegerField(default=0, help_text='Total active clients at billing date (auto-calculated)')
+    total_revenue = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0,
+        help_text='Total revenue from all active end-customers'
+    )
+    percentage_share = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0,
+        help_text='Revenue share percentage applied'
+    )
+    commission = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0,
+        help_text='Commission amount (auto-calculated: total_revenue * percentage_share / 100)'
+    )
+    total_bill = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0,
+        help_text='Total bill after commission (total_revenue - commission)'
+    )
+    total_received = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0,
+        help_text='Total amount received'
+    )
+    total_due = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0,
+        help_text='Total due amount (total_bill - total_received)'
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending', db_index=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'mac_bills'
+        ordering = ['-bill_date', '-created_at']
+        indexes = [
+            models.Index(fields=['mac_partner', 'bill_date']),
+            models.Index(fields=['status']),
+            models.Index(fields=['bill_date']),
+        ]
+    
+    def __str__(self):
+        return f"MAC Bill - {self.mac_partner.mac_cust_name} - {self.bill_date}"
+    
+    def save(self, *args, **kwargs):
+        """Auto-calculate commission and total_bill"""
+        if self.total_revenue > 0 and self.percentage_share > 0:
+            self.commission = (self.total_revenue * self.percentage_share) / 100
+        self.total_bill = self.total_revenue - self.commission
+        self.total_due = self.total_bill - self.total_received
+        
+        # Update status based on payment
+        if self.total_received >= self.total_bill and self.total_bill > 0:
+            self.status = 'Paid'
+        elif self.total_received > 0:
+            self.status = 'Partial'
+        elif self.total_bill > 0:
+            self.status = 'Unpaid'
+        else:
+            self.status = 'Pending'
+        
+        super().save(*args, **kwargs)
+
+
+class SOHOBill(models.Model):
+    """
+    Billing record for SOHO customers
+    """
+    STATUS_CHOICES = (
+        ('Pending', 'Pending'),
+        ('Unpaid', 'Unpaid'),
+        ('Paid', 'Paid'),
+        ('Partial', 'Partial'),
+    )
+    
+    soho_customer = models.ForeignKey(
+        SOHOCustomer,
+        on_delete=models.CASCADE,
+        related_name='bills',
+        help_text='SOHO customer this bill belongs to'
+    )
+    bill_date = models.DateField(help_text='Billing date')
+    package = models.ForeignKey(
+        Package,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='soho_bills',
+        limit_choices_to={'type': 'SOHO'},
+        help_text='Package at time of billing'
+    )
+    rate = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text='Rate charged for this bill'
+    )
+    total_bill = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0,
+        help_text='Total bill amount'
+    )
+    total_received = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0,
+        help_text='Total amount received'
+    )
+    total_due = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=0,
+        help_text='Total due amount (total_bill - total_received)'
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending', db_index=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'soho_bills'
+        ordering = ['-bill_date', '-created_at']
+        indexes = [
+            models.Index(fields=['soho_customer', 'bill_date']),
+            models.Index(fields=['status']),
+            models.Index(fields=['bill_date']),
+        ]
+    
+    def __str__(self):
+        return f"SOHO Bill - {self.soho_customer.cust_name} - {self.bill_date}"
+    
+    def save(self, *args, **kwargs):
+        """Auto-calculate total_bill and total_due"""
+        if not self.total_bill:
+            self.total_bill = self.rate
+        self.total_due = self.total_bill - self.total_received
+        
+        # Update status based on payment
+        if self.total_received >= self.total_bill and self.total_bill > 0:
+            self.status = 'Paid'
+        elif self.total_received > 0:
+            self.status = 'Partial'
+        elif self.total_bill > 0:
+            self.status = 'Unpaid'
+        else:
+            self.status = 'Pending'
+        
+        super().save(*args, **kwargs)
+
+
+class PaymentRecord(models.Model):
+    """
+    Track all payments received with dates
+    Can be linked to MAC bills, SOHO bills, or general payments
+    """
+    PAYMENT_TYPE_CHOICES = (
+        ('MAC', 'MAC Bill Payment'),
+        ('SOHO', 'SOHO Bill Payment'),
+        ('Bandwidth', 'Bandwidth/Reseller Bill Payment'),
+        ('Other', 'Other Payment'),
+    )
+    
+    PAYMENT_METHOD_CHOICES = (
+        ('Cash', 'Cash'),
+        ('Bank Transfer', 'Bank Transfer'),
+        ('Check', 'Check'),
+        ('Mobile Banking', 'Mobile Banking'),
+        ('Other', 'Other'),
+    )
+    
+    payment_date = models.DateField(help_text='Date when payment was received', db_index=True)
+    amount = models.DecimalField(max_digits=15, decimal_places=2, help_text='Payment amount')
+    payment_type = models.CharField(max_length=20, choices=PAYMENT_TYPE_CHOICES, db_index=True)
+    payment_method = models.CharField(max_length=50, choices=PAYMENT_METHOD_CHOICES, default='Bank Transfer')
+    
+    # Link to bills (one of these will be set)
+    mac_bill = models.ForeignKey(
+        MACBill,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='payments',
+        help_text='MAC bill this payment is for'
+    )
+    soho_bill = models.ForeignKey(
+        SOHOBill,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='payments',
+        help_text='SOHO bill this payment is for'
+    )
+    bill_record = models.ForeignKey(
+        BillRecord,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='payments',
+        help_text='Bandwidth/Reseller bill record this payment is for'
+    )
+    
+    reference_number = models.CharField(max_length=100, blank=True, help_text='Payment reference/transaction ID')
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='payment_records'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'payment_records'
+        ordering = ['-payment_date', '-created_at']
+        indexes = [
+            models.Index(fields=['payment_date']),
+            models.Index(fields=['payment_type']),
+            models.Index(fields=['mac_bill']),
+            models.Index(fields=['soho_bill']),
+            models.Index(fields=['bill_record']),
+        ]
+    
+    def __str__(self):
+        if self.mac_bill:
+            bill_ref = f"MAC Bill #{self.mac_bill_id}"
+        elif self.soho_bill:
+            bill_ref = f"SOHO Bill #{self.soho_bill_id}"
+        elif self.bill_record:
+            bill_ref = f"BillRecord #{self.bill_record_id}"
+        else:
+            bill_ref = "Other"
+        return f"Payment - {self.amount} - {bill_ref} - {self.payment_date}"
+    
+    def save(self, *args, **kwargs):
+        """Update bill total_received when payment is saved"""
+        super().save(*args, **kwargs)
+        
+        if self.mac_bill:
+            # Recalculate total_received from all payments
+            self.mac_bill.total_received = self.mac_bill.payments.aggregate(
+                total=Sum('amount')
+            )['total'] or 0
+            self.mac_bill.save(update_fields=['total_received', 'total_due', 'status'])
+        
+        if self.soho_bill:
+            # Recalculate total_received from all payments
+            self.soho_bill.total_received = self.soho_bill.payments.aggregate(
+                total=Sum('amount')
+            )['total'] or 0
+            self.soho_bill.save(update_fields=['total_received', 'total_due', 'status'])
+        
+        if self.bill_record:
+            # Recalculate total_received from all payments and update last payment info
+            self.bill_record.total_received = self.bill_record.payments.aggregate(
+                total=Sum('amount')
+            )['total'] or 0
+            # Get last payment info
+            last_payment = self.bill_record.payments.order_by('-payment_date', '-created_at').first()
+            if last_payment:
+                self.bill_record.last_payment_date = last_payment.payment_date
+                self.bill_record.last_payment_mode = last_payment.payment_method
+            self.bill_record.total_due = self.bill_record.total_bill - self.bill_record.total_received
+            self.bill_record.save(update_fields=['total_received', 'total_due', 'last_payment_date', 'last_payment_mode'])
+    
+    def delete(self, *args, **kwargs):
+        """Update bill total_received when payment is deleted"""
+        mac_bill = self.mac_bill
+        soho_bill = self.soho_bill
+        bill_record = self.bill_record
+        
+        super().delete(*args, **kwargs)
+        
+        if mac_bill:
+            mac_bill.total_received = mac_bill.payments.aggregate(
+                total=Sum('amount')
+            )['total'] or 0
+            mac_bill.save(update_fields=['total_received', 'total_due', 'status'])
+        
+        if soho_bill:
+            soho_bill.total_received = soho_bill.payments.aggregate(
+                total=Sum('amount')
+            )['total'] or 0
+            soho_bill.save(update_fields=['total_received', 'total_due', 'status'])
+        
+        if bill_record:
+            bill_record.total_received = bill_record.payments.aggregate(
+                total=Sum('amount')
+            )['total'] or 0
+            # Get last payment info
+            last_payment = bill_record.payments.order_by('-payment_date', '-created_at').first()
+            if last_payment:
+                bill_record.last_payment_date = last_payment.payment_date
+                bill_record.last_payment_mode = last_payment.payment_method
+            else:
+                bill_record.last_payment_date = None
+                bill_record.last_payment_mode = ''
+            bill_record.total_due = bill_record.total_bill - bill_record.total_received
+            bill_record.save(update_fields=['total_received', 'total_due', 'last_payment_date', 'last_payment_mode'])
 

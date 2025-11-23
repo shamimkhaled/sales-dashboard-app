@@ -81,6 +81,12 @@ class Customer(models.Model):
         ('Inactive', 'Inactive'),
         ('Lost', 'Lost'),
     )
+    
+    CUSTOMER_TYPE_CHOICES = (
+        ('Bandwidth', 'Bandwidth/Reseller Customer'),
+        ('MAC', 'MAC Partner/Channel Partner/Franchise'),
+        ('SOHO', 'SOHO/Home Customer'),
+    )
 
     name = models.CharField(max_length=255)
     company_name = models.CharField(max_length=255, blank=True)
@@ -90,6 +96,13 @@ class Customer(models.Model):
         validators=[RegexValidator(r'^\+?[0-9\-\s]{7,20}$', 'Invalid phone number')]
     )
     address = models.TextField(blank=True)
+    customer_type = models.CharField(
+        max_length=20,
+        choices=CUSTOMER_TYPE_CHOICES,
+        default='Bandwidth',
+        db_index=True,
+        help_text='Type of customer: Bandwidth/Reseller, MAC Partner, or SOHO'
+    )
     assigned_sales_person = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='customers')
     link_id = models.CharField(max_length=100, unique=True, null=True, blank=True, default=None)
     customer_number = models.CharField(
@@ -115,6 +128,7 @@ class Customer(models.Model):
         indexes = [
             models.Index(fields=['email']),
             models.Index(fields=['customer_number']),
+            models.Index(fields=['customer_type', 'status']),
         ]
 
     def save(self, *args, **kwargs):

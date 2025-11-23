@@ -51,6 +51,13 @@ class CustomerSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ['created_at', 'updated_at', 'customer_number']
     
+    def validate_customer_type(self, value):
+        """Validate customer_type"""
+        valid_types = ['Bandwidth', 'MAC', 'SOHO']
+        if value not in valid_types:
+            raise serializers.ValidationError(f'customer_type must be one of: {", ".join(valid_types)}')
+        return value
+    
     def get_assigned_sales_person_details(self, obj):
         if obj.assigned_sales_person:
             return {

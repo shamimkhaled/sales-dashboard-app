@@ -4,17 +4,67 @@ from django.urls import path, include
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from rest_framework import permissions
+from django.urls import re_path
 
 # Customize admin site
 admin.site.site_header = "Sales Dashboard Administration"
 admin.site.site_title = "Sales Dashboard Admin"
 admin.site.index_title = "Welcome to Sales Dashboard Administration"
 
+from apps.bills.swagger_tags import SWAGGER_TAGS
+
 schema_view = get_schema_view(
     openapi.Info(
         title="Sales Dashboard API",
         default_version='v1',
-        description="API documentation with JWT Bearer token authentication. Use the 'Authorize' button to add your Bearer token.",
+        description="""
+        # Sales Dashboard API Documentation
+        
+        ## Overview
+        Comprehensive billing and customer management system supporting multiple customer types:
+        - **Bandwidth/Reseller Customers** - Traditional customers with usage-based billing
+        - **MAC Partners** - Channel partners/franchises with commission-based billing  
+        - **SOHO Customers** - Home customers with package-based billing
+        
+        ## Authentication
+        Use JWT Bearer token authentication. Click the 'Authorize' button to add your Bearer token.
+        
+        ## API Organization
+        APIs are organized into logical groups (tags) for easy navigation:
+        
+        ### 1. Bill Records (Bandwidth/Reseller)
+        Unified billing system for all customer types (Bandwidth, MAC, SOHO)
+        
+        ### 2. Pricing Periods
+        Manage variable pricing periods within billing cycles
+        
+        ### 3. Daily Bill Amounts
+        Track and calculate daily bill amounts for accurate revenue reporting
+        
+        ### 4. Packages
+        Manage MAC and SOHO packages (speed, rate, type)
+        
+        ### 5. MAC Partners
+        Manage MAC/Channel Partner/Franchise partners
+        
+        ### 6. MAC End Customers
+        Manage end-customers under MAC partners (200+ customers with different packages/rates)
+        
+        ### 7. MAC Bills
+        Generate and manage bills for MAC partners with commission calculation
+        
+        ### 8. SOHO Customers
+        Manage SOHO/Home customers with packages
+        
+        ### 9. SOHO Bills
+        Generate and manage bills for SOHO customers
+        
+        ### 10. Payments
+        Track all payments received with dates and payment methods
+        
+        ### 11. Revenue Analytics
+        Get revenue breakdowns by customer type (Daily, Weekly, Monthly, Yearly)
+        """,
         terms_of_service="https://www.google.com/policies/terms/",
         contact=openapi.Contact(email="contact@example.com"),
         license=openapi.License(name="BSD License"),
