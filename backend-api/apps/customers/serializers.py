@@ -9,6 +9,8 @@ from .models import (
 
 
 class ProspectSerializer(serializers.ModelSerializer):
+    sales_person_details = serializers.SerializerMethodField()
+
     class Meta:
         model = Prospect
         fields = '__all__'

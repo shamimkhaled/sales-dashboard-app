@@ -70,7 +70,11 @@ export default function Customers() {
   const getUserName = (userId) => {
     if (!userId) return "-";
     const user = salesUsers.find((u) => u.id === parseInt(userId));
-    return user ? user.username || user.email || userId : userId;
+    if (!user) return userId;
+    
+    // Return full name if available, otherwise fallback to username or email
+    const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
+    return fullName || user.username || user.email || userId;
   };
 
   useEffect(() => {
@@ -761,11 +765,15 @@ export default function Customers() {
                     } focus:outline-none`}
                   >
                     <option value="">Select a KAM</option>
-                    {salesUsers.map((user) => (
-                      <option key={user.id} value={user.id}>
-                        {user.username || user.email}
-                      </option>
-                    ))}
+                    {salesUsers.map((user) => {
+                      const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
+                      const displayName = fullName || user.username || user.email;
+                      return (
+                        <option key={user.id} value={user.id}>
+                          {displayName}
+                        </option>
+                      );
+                    })}
                   </select>
                   <p
                     className={`text-xs mt-1 ${
