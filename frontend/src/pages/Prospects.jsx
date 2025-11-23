@@ -685,10 +685,12 @@ export default function Prospects() {
                     onChange={handleInputChange}
                     className="w-full px-4 py-2 rounded-lg border focus:outline-none"
                   >
-                    <option value="">Select Sales </option>
+                    <option value="">Select KAM </option>
                     {salesPersons.map((user) => (
                       <option key={user.id} value={user.id}>
-                        {user.username}
+                        {user.first_name && user.last_name 
+                          ? `${user.first_name} ${user.last_name}` 
+                          : user.username}
                       </option>
                     ))}
                   </select>
@@ -934,7 +936,7 @@ export default function Prospects() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Sales
+                    KAM
                   </label>
                   <select
                     name="sales_person"
@@ -945,7 +947,9 @@ export default function Prospects() {
                     <option value="">Select Sales </option>
                     {salesPersons.map((user) => (
                       <option key={user.id} value={user.id}>
-                        {user.username} ({user.email})
+                        {user.first_name && user.last_name 
+                          ? `${user.first_name} ${user.last_name}` 
+                          : user.username}
                       </option>
                     ))}
                   </select>
@@ -1501,21 +1505,26 @@ export default function Prospects() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1">
-                        Sales Person
+                        KAM
                       </label>
                       <p
                         className={`text-sm ${
                           isDark ? "text-silver-400" : "text-gray-600"
                         }`}
                       >
-                        {viewingProspect.sales_person
+                        {viewingProspect.sales_person_details
+                          ? (viewingProspect.sales_person_details.first_name && viewingProspect.sales_person_details.last_name 
+                              ? `${viewingProspect.sales_person_details.first_name} ${viewingProspect.sales_person_details.last_name}` 
+                              : viewingProspect.sales_person_details.username)
+                          : viewingProspect.sales_person
                           ? (() => {
                               const salesPerson = allUsers.find(
-                                (user) =>
-                                  user.id === viewingProspect.sales_person
+                                (user) => user.id === viewingProspect.sales_person
                               );
                               return salesPerson
-                                ? salesPerson.username
+                                ? (salesPerson.first_name && salesPerson.last_name 
+                                    ? `${salesPerson.first_name} ${salesPerson.last_name}` 
+                                    : salesPerson.username)
                                 : viewingProspect.sales_person;
                             })()
                           : "N/A"}
