@@ -1,9 +1,11 @@
-from rest_framework import generics, permissions, filters
+from rest_framework import generics, permissions, filters, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.auth import get_user_model
-from .serializers import UserSerializer, UserCreateSerializer
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+from .serializers import UserSerializer, UserCreateSerializer, ChangePasswordSerializer
 from apps.authentication.permissions import IsAdminOrSuperAdmin
 
 User = get_user_model()
@@ -73,3 +75,41 @@ class SalesUsersView(APIView):
         } for user in sales_users]
         
         return Response(users_data)
+
+
+class ChangePasswordView(APIView):
+    """Change password for authenticated user"""
+    permission_classes = [permissions.IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_summary='Change password',
+        operation_description='Change the password for the currently authenticated user. Requires old password and new password confirmation.',
+        request_body=ChangePasswordSerializer,
+        responses={
+            200: openapi.Response(
+                description='Password changed successfully',
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'message': openapi.Schema(type=openapi.TYPE_STRING, description='Success message'),
+                    }
+                )
+            ),
+            400: 'Bad request - validation errors',
+        },
+        tags=['Users']
+    )
+    def post(self, request):
+        serializer = ChangePasswordSerializer(data=request.data, context={'request': request})
+        
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {'message': 'Password changed successfully.'},
+                status=status.HTTP_200_OK
+            )
+        
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
