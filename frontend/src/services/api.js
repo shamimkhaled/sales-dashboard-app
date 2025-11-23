@@ -53,7 +53,7 @@ api.interceptors.response.use(
       } else if (data?.detail) {
         message = data.detail;
       } else if (data?.errors) {
-        // Handle validation errors
+        // Handle validation errors under "errors" key
         if (Array.isArray(data.errors)) {
           message = data.errors.map((e) => e.message || e).join(", ");
         } else if (typeof data.errors === "object") {
@@ -68,6 +68,23 @@ api.interceptors.response.use(
             validationErrors[key] = Array.isArray(data.errors[key])
               ? data.errors[key][0]
               : data.errors[key];
+          });
+        }
+      } else if (typeof data === "object" && !Array.isArray(data)) {
+        // Handle direct field errors (e.g., {"status": ["message"]})
+        const fieldErrors = Object.entries(data)
+          .map(
+            ([key, value]) =>
+              `${key}: ${Array.isArray(value) ? value.join(", ") : value}`
+          )
+          .join("; ");
+        if (fieldErrors) {
+          message = fieldErrors;
+          // Store field-specific errors
+          Object.keys(data).forEach((key) => {
+            validationErrors[key] = Array.isArray(data[key])
+              ? data[key][0]
+              : data[key];
           });
         }
       }
