@@ -947,7 +947,7 @@ export default function DataEntry() {
                       >
                         <option value="">Select Type</option>
                         <option value="Channel Partner">Channel Partner</option>
-                        <option value="Reseller Customer">Reseller Customer</option>
+                        <option value="Bandwidth Customer">Bandwidth Customer</option>
                         <option value="SOHO Customer">SOHO Customer</option>
                       </select>
                     </div>
@@ -1058,7 +1058,7 @@ export default function DataEntry() {
 
                      {/* Pricing Groups: metric + price on same row */}
                     {/* IIG-QT + Price */}
-                    {formData.type === "Reseller Customer" && (
+                    {formData.type === "Bandwidth Customer" && (
                       <>
 
                         <div className="lg:col-span-1">
