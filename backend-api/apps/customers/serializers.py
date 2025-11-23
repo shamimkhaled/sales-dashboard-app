@@ -9,12 +9,23 @@ from .models import (
 
 
 class ProspectSerializer(serializers.ModelSerializer):
-    sales_person_details = serializers.SerializerMethodField()
+    kam_details = serializers.SerializerMethodField()
 
     class Meta:
         model = Prospect
         fields = '__all__'
         read_only_fields = ['created_at', 'updated_at', 'kam']
+
+    def get_kam_details(self, obj):
+        if obj.kam:
+            return {
+                'id': obj.kam.id,
+                'username': getattr(obj.kam, 'username', ''),
+                'email': obj.kam.email,
+                'first_name': getattr(obj.kam, 'first_name', ''),
+                'last_name': getattr(obj.kam, 'last_name', ''),
+            }
+        return None
 
     def validate_follow_up_date(self, value):
         from datetime import date
