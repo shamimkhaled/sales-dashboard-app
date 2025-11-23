@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Plus, Search, Trash2, X, Edit2, Eye } from "lucide-react";
+import { Users, Plus, Search, Trash2, X, Edit2, Eye, Download, Upload } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import { useNotification } from "../context/NotificationContext";
 import { useAuth } from "../context/AuthContext";
@@ -53,6 +53,7 @@ export default function Prospects() {
   const [allUsers, setAllUsers] = useState([]);
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewingProspect, setViewingProspect] = useState(null);
+  const fileInputRef = useRef(null);
 
   // Get today's date in YYYY-MM-DD format
   const getTodayDate = () => {
@@ -98,8 +99,150 @@ export default function Prospects() {
 
     return errors;
   };
+  
+    // Export prospects to CSV
+    const exportToCSV = () => {
+      const headers = [
+        'id',
+        'name',
+        'company_name',
+        'email',
+        'phone',
+        'address',
+        'potential_revenue',
+        'contact_person',
+        'source',
+        'follow_up_date',
+        'notes',
+        'status',
+        'created_at',
+        'updated_at',
+        'sales_person'
+      ];
+  
+      const csvContent = [
+        headers.join(','),
+        ...prospects.map((p) => [
+          p.id || '',
+          p.name || '',
+          p.company_name || '',
+          p.email || '',
+          p.phone || '',
+          p.address || '',
+          p.potential_revenue || '',
+          p.contact_person || '',
+          p.source || '',
+          p.follow_up_date || '',
+          p.notes || '',
+          p.status || '',
+          p.created_at || '',
+          p.updated_at || '',
+          p.sales_person || ''
+        ].map((field) => `"${field}"`).join(','))
+      ].join('\n');
+  
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'prospects.csv';
+      link.click();
+    };
+  
+    // Import prospects from CSV
+    const handleImportCSV = async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+  
+      try {
+        const text = await file.text();
+        const lines = text.split('\n').filter(line => line.trim());
+        if (lines.length < 2) {
+          showError('CSV file must have at least a header and one data row');
+          return;
+        }
+  
+        const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+        const expectedHeaders = ['id', 'name', 'company_name', 'email', 'phone', 'address', 'potential_revenue', 'contact_person', 'source', 'follow_up_date', 'notes', 'status', 'created_at', 'updated_at', 'sales_person'];
+  
+        // Check if headers match (optional, but good)
+        const data = lines.slice(1).map(line => {
+          const values = line.split(',').map(v => v.replace(/"/g, '').trim());
+          const obj = {};
+          headers.forEach((h, i) => obj[h] = values[i] || '');
+          return obj;
+        });
+  
+        let successCount = 0;
+        let errorCount = 0;
+  
+        const importErrors = [];
 
-  useEffect(() => {
+        for (const item of data) {
+          if (item.name) {
+            try {
+              await prospectService.createProspect({
+                name: item.name,
+                company_name: item.company_name || '',
+                email: item.email || '',
+                phone: item.phone || '',
+                address: item.address || '',
+                potential_revenue: item.potential_revenue ? Number(item.potential_revenue) : '',
+                contact_person: item.contact_person || '',
+                source: item.source || '',
+                follow_up_date: item.follow_up_date || '',
+                notes: item.notes || '',
+                status: item.status || 'new',
+                sales_person: item.sales_person ? Number(item.sales_person) : '',
+              });
+              successCount++;
+            } catch (err) {
+              console.error('Error importing prospect:', err);
+              errorCount++;
+
+              // Try to parse field-specific errors
+              let errorMessage = err.message || 'Unknown error';
+              try {
+                const errorData = JSON.parse(errorMessage);
+                const fieldErrors = [];
+                for (const [field, messages] of Object.entries(errorData)) {
+                  if (Array.isArray(messages)) {
+                    fieldErrors.push(`${field}: ${messages.join(', ')}`);
+                  } else {
+                    fieldErrors.push(`${field}: ${messages}`);
+                  }
+                }
+                errorMessage = fieldErrors.join('; ');
+              } catch (parseErr) {
+                // If not JSON, use as is
+              }
+
+              importErrors.push(`Row for "${item.name}": ${errorMessage}`);
+            }
+          }
+        }
+  
+        if (successCount > 0) {
+          showSuccess(`Imported ${successCount} prospects successfully${errorCount > 0 ? `, ${errorCount} failed` : ''}`);
+          fetchProspects();
+        } else {
+          showError('No prospects were imported');
+        }
+
+        // Show detailed errors if any
+        if (importErrors.length > 0) {
+          const errorSummary = importErrors.slice(0, 5).join('\n'); // Show first 5 errors
+          const moreErrors = importErrors.length > 5 ? `\n... and ${importErrors.length - 5} more errors` : '';
+          showError(`Import errors:\n${errorSummary}${moreErrors}`);
+        }
+      } catch (err) {
+        showError('Error reading CSV file: ' + err.message);
+      } finally {
+        // Reset file input
+        event.target.value = '';
+      }
+    };
+  
+    useEffect(() => {
     fetchProspects();
     // eslint-disable-next-line
   }, [
@@ -448,17 +591,48 @@ export default function Prospects() {
                 Manage sales prospects and leads
               </p>
             </div>
-            {hasPermission("prospects:update") && (
+            <div className="flex gap-3">
+              {hasPermission("prospects:export") && (
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setShowForm(!showForm)}
+                onClick={exportToCSV}
                 className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl"
               >
-                <Plus size={20} />
-                <span>New Prospect</span>
+                <Download size={20} />
+                <span>Export CSV</span>
               </motion.button>
-            )}
+              )}
+              {hasPermission("prospects:update") && (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => fileInputRef.current.click()}
+                  className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl"
+                >
+                  <Upload size={20} />
+                  <span>Import CSV</span>
+                </motion.button>
+              )}
+              {hasPermission("prospects:update") && (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowForm(!showForm)}
+                  className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl"
+                >
+                  <Plus size={20} />
+                  <span>New Prospect</span>
+                </motion.button>
+              )}
+            </div>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleImportCSV}
+              accept=".csv"
+              style={{ display: 'none' }}
+            />
           </div>
         </div>
       </div>
@@ -667,7 +841,7 @@ export default function Prospects() {
                     className="w-full px-4 py-2 rounded-lg border focus:outline-none"
                   >
                     <option value="suspect">Suspect</option>
-                    <option value="prospects">Prospects</option>
+                    <option value="prospect">Prospect</option>
                     <option value="approach">Approach</option>
                     <option value="negotiate">Negotiate</option>
                     <option value="order">Order</option>
@@ -926,7 +1100,7 @@ export default function Prospects() {
                     className="w-full px-4 py-2 rounded-lg border focus:outline-none"
                   >
                     <option value="suspect">Suspect</option>
-                    <option value="prospects">Prospects</option>
+                    <option value="prospect">Prospect</option>
                     <option value="approach">Approach</option>
                     <option value="negotiate">Negotiate</option>
                     <option value="order">Order</option>
