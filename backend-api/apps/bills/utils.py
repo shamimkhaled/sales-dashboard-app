@@ -124,16 +124,16 @@ def update_bill_record_from_period(bill_record, pricing_period):
     from .models import PricingPeriod
     
     # Update BillRecord with individual field values from this pricing period
-    bill_record.iig_qt = pricing_period.iig_qt
-    bill_record.iig_qt_price = pricing_period.iig_qt_price
+    bill_record.ipt = pricing_period.ipt
+    bill_record.ipt_price = pricing_period.ipt_price
     bill_record.fna = pricing_period.fna
     bill_record.fna_price = pricing_period.fna_price
     bill_record.ggc = pricing_period.ggc
     bill_record.ggc_price = pricing_period.ggc_price
     bill_record.cdn = pricing_period.cdn
     bill_record.cdn_price = pricing_period.cdn_price
-    bill_record.bdix = pricing_period.bdix
-    bill_record.bdix_price = pricing_period.bdix_price
+    bill_record.nix = pricing_period.nix
+    bill_record.nix_price = pricing_period.nix_price
     bill_record.baishan = pricing_period.baishan
     bill_record.baishan_price = pricing_period.baishan_price
     bill_record.discount = pricing_period.discount
@@ -148,11 +148,11 @@ def update_bill_record_from_period(bill_record, pricing_period):
     
     # Save all updated fields
     bill_record.save(update_fields=[
-        'iig_qt', 'iig_qt_price',
+        'ipt', 'ipt_price',
         'fna', 'fna_price',
         'ggc', 'ggc_price',
         'cdn', 'cdn_price',
-        'bdix', 'bdix_price',
+        'nix', 'nix_price',
         'baishan', 'baishan_price',
         'discount',
         'total_bill', 'total_due'
@@ -187,16 +187,16 @@ def calculate_bill_record_total_from_periods(bill_record):
         
         # Update BillRecord with individual field values from the latest pricing period
         # Each field is updated individually, not aggregated
-        bill_record.iig_qt = latest_period.iig_qt
-        bill_record.iig_qt_price = latest_period.iig_qt_price
+        bill_record.ipt = latest_period.ipt
+        bill_record.ipt_price = latest_period.ipt_price
         bill_record.fna = latest_period.fna
         bill_record.fna_price = latest_period.fna_price
         bill_record.ggc = latest_period.ggc
         bill_record.ggc_price = latest_period.ggc_price
         bill_record.cdn = latest_period.cdn
         bill_record.cdn_price = latest_period.cdn_price
-        bill_record.bdix = latest_period.bdix
-        bill_record.bdix_price = latest_period.bdix_price
+        bill_record.nix = latest_period.nix
+        bill_record.nix_price = latest_period.nix_price
         bill_record.baishan = latest_period.baishan
         bill_record.baishan_price = latest_period.baishan_price
         bill_record.discount = latest_period.discount
@@ -207,11 +207,11 @@ def calculate_bill_record_total_from_periods(bill_record):
         
         # Save all updated fields
         bill_record.save(update_fields=[
-            'iig_qt', 'iig_qt_price',
+            'ipt', 'ipt_price',
             'fna', 'fna_price',
             'ggc', 'ggc_price',
             'cdn', 'cdn_price',
-            'bdix', 'bdix_price',
+            'nix', 'nix_price',
             'baishan', 'baishan_price',
             'discount',
             'total_bill', 'total_due'
@@ -219,11 +219,11 @@ def calculate_bill_record_total_from_periods(bill_record):
     else:
         # No pricing periods, use BillRecord's own calculation
         component_total = (
-            (bill_record.iig_qt or 0) * (bill_record.iig_qt_price or 0) +
+            (bill_record.ipt or 0) * (bill_record.ipt_price or 0) +
             (bill_record.fna or 0) * (bill_record.fna_price or 0) +
             (bill_record.ggc or 0) * (bill_record.ggc_price or 0) +
             (bill_record.cdn or 0) * (bill_record.cdn_price or 0) +
-            (bill_record.bdix or 0) * (bill_record.bdix_price or 0) +
+            (bill_record.nix or 0) * (bill_record.nix_price or 0) +
             (bill_record.baishan or 0) * (bill_record.baishan_price or 0)
         )
         total = component_total - (bill_record.discount or 0)
@@ -271,19 +271,19 @@ def finalize_bill_record_from_periods(bill_record):
         'total_bill': float(total),
         'total_due': float(bill_record.total_due),
         'usage': {
-            'iig_qt': float(bill_record.iig_qt),
+            'ipt': float(bill_record.ipt),
             'fna': float(bill_record.fna),
             'ggc': float(bill_record.ggc),
             'cdn': float(bill_record.cdn),
-            'bdix': float(bill_record.bdix),
+            'nix': float(bill_record.nix),
             'baishan': float(bill_record.baishan),
         },
         'effective_prices': {
-            'iig_qt_price': float(bill_record.iig_qt_price),
+            'ipt_price': float(bill_record.ipt_price),
             'fna_price': float(bill_record.fna_price),
             'ggc_price': float(bill_record.ggc_price),
             'cdn_price': float(bill_record.cdn_price),
-            'bdix_price': float(bill_record.bdix_price),
+            'nix_price': float(bill_record.nix_price),
             'baishan_price': float(bill_record.baishan_price),
         },
         'total_discount': float(bill_record.discount),
@@ -372,21 +372,21 @@ def calculate_daily_amounts_for_bill(bill_record, recalculate=False):
                     # Use pricing period usage (will be distributed per day in DailyBillAmount._calculate_daily_amount)
                     # For now, set to 0 - the DailyBillAmount will calculate based on period usage / days
                     usage = {
-                        'iig_qt': 0,  # Will be calculated from period.iig_qt / days_in_period
+                        'ipt': 0,  # Will be calculated from period.ipt / days_in_period
                         'fna': 0,
                         'ggc': 0,
                         'cdn': 0,
-                        'bdix': 0,
+                        'nix': 0,
                         'baishan': 0,
                     }
                 else:
                     # Use bill record usage amounts
                     usage = {
-                        'iig_qt': bill_record.iig_qt or 0,
+                        'ipt': bill_record.ipt or 0,
                         'fna': bill_record.fna or 0,
                         'ggc': bill_record.ggc or 0,
                         'cdn': bill_record.cdn or 0,
-                        'bdix': bill_record.bdix or 0,
+                        'nix': bill_record.nix or 0,
                         'baishan': bill_record.baishan or 0,
                     }
                 
@@ -397,11 +397,11 @@ def calculate_daily_amounts_for_bill(bill_record, recalculate=False):
                     defaults={
                         'pricing_period': pricing_period,
                         'day_number': day_number,
-                        'iig_qt': usage['iig_qt'],
+                        'ipt': usage['ipt'],
                         'fna': usage['fna'],
                         'ggc': usage['ggc'],
                         'cdn': usage['cdn'],
-                        'bdix': usage['bdix'],
+                        'nix': usage['nix'],
                         'baishan': usage['baishan'],
                         'is_calculated': True,
                     }
@@ -413,11 +413,11 @@ def calculate_daily_amounts_for_bill(bill_record, recalculate=False):
                     # Update existing record
                     daily_amount.pricing_period = pricing_period
                     daily_amount.day_number = day_number
-                    daily_amount.iig_qt = usage['iig_qt']
+                    daily_amount.ipt = usage['ipt']
                     daily_amount.fna = usage['fna']
                     daily_amount.ggc = usage['ggc']
                     daily_amount.cdn = usage['cdn']
-                    daily_amount.bdix = usage['bdix']
+                    daily_amount.nix = usage['nix']
                     daily_amount.baishan = usage['baishan']
                     daily_amount.is_calculated = True
                     daily_amount.save()  # This will trigger _calculate_daily_amount()
@@ -649,8 +649,11 @@ def get_revenue_by_customer_type(start_date=None, end_date=None):
         soho_query = soho_query.filter(bill_date__lte=end_date)
     soho_revenue = soho_query.aggregate(total=Sum('total_bill'))['total'] or 0
     
-    # Bandwidth/Reseller Revenue (from BillRecord - existing system)
-    bandwidth_query = BillRecord.objects.filter(status='Active')
+    # Bandwidth/Reseller Revenue (from BillRecord - filter by customer type)
+    bandwidth_query = BillRecord.objects.filter(
+        status='Active',
+        customer__customer_type='Bandwidth'
+    )
     if start_date:
         bandwidth_query = bandwidth_query.filter(billing_date__gte=start_date)
     if end_date:
@@ -702,7 +705,8 @@ def get_daily_revenue_by_customer_type(start_date, end_date):
         # Bandwidth/Reseller Revenue for this day
         bandwidth_revenue = BillRecord.objects.filter(
             status='Active',
-            billing_date=current_date
+            billing_date=current_date,
+            customer__customer_type='Bandwidth'
         ).aggregate(total=Sum('total_bill'))['total'] or 0
         
         total_revenue = mac_revenue + soho_revenue + bandwidth_revenue
@@ -760,7 +764,8 @@ def get_weekly_revenue_by_customer_type(start_date, end_date):
     bandwidth_weekly = BillRecord.objects.filter(
         status='Active',
         billing_date__gte=start_date,
-        billing_date__lte=end_date
+        billing_date__lte=end_date,
+        customer__customer_type='Bandwidth'
     ).annotate(
         week=TruncWeek('billing_date')
     ).values('week').annotate(
@@ -841,7 +846,8 @@ def get_monthly_revenue_by_customer_type(start_date, end_date):
     bandwidth_monthly = BillRecord.objects.filter(
         status='Active',
         billing_date__gte=start_date,
-        billing_date__lte=end_date
+        billing_date__lte=end_date,
+        customer__customer_type='Bandwidth'
     ).annotate(
         month=TruncMonth('billing_date')
     ).values('month').annotate(
@@ -922,7 +928,8 @@ def get_yearly_revenue_by_customer_type(start_date, end_date):
     bandwidth_yearly = BillRecord.objects.filter(
         status='Active',
         billing_date__gte=start_date,
-        billing_date__lte=end_date
+        billing_date__lte=end_date,
+        customer__customer_type='Bandwidth'
     ).annotate(
         year=TruncYear('billing_date')
     ).values('year').annotate(

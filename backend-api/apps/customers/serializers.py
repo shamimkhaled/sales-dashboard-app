@@ -12,7 +12,7 @@ class ProspectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Prospect
         fields = '__all__'
-        read_only_fields = ['created_at', 'updated_at', 'sales_person']
+        read_only_fields = ['created_at', 'updated_at', 'kam']
 
     def validate_follow_up_date(self, value):
         from datetime import date
@@ -43,7 +43,7 @@ class ProspectAttachmentSerializer(serializers.ModelSerializer):
 
 
 class CustomerSerializer(serializers.ModelSerializer):
-    assigned_sales_person_details = serializers.SerializerMethodField()
+    kam_details = serializers.SerializerMethodField()
     calculated_monthly_revenue = serializers.SerializerMethodField()
 
     class Meta:
@@ -51,21 +51,14 @@ class CustomerSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ['created_at', 'updated_at', 'customer_number']
     
-    def validate_customer_type(self, value):
-        """Validate customer_type"""
-        valid_types = ['Bandwidth', 'MAC', 'SOHO']
-        if value not in valid_types:
-            raise serializers.ValidationError(f'customer_type must be one of: {", ".join(valid_types)}')
-        return value
-    
-    def get_assigned_sales_person_details(self, obj):
-        if obj.assigned_sales_person:
+    def get_kam_details(self, obj):
+        if obj.kam:
             return {
-                'id': obj.assigned_sales_person.id,
-                'username': getattr(obj.assigned_sales_person, 'username', ''),
-                'email': obj.assigned_sales_person.email,
-                'first_name': getattr(obj.assigned_sales_person, 'first_name', ''),
-                'last_name': getattr(obj.assigned_sales_person, 'last_name', ''),
+                'id': obj.kam.id,
+                'username': getattr(obj.kam, 'username', ''),
+                'email': obj.kam.email,
+                'first_name': getattr(obj.kam, 'first_name', ''),
+                'last_name': getattr(obj.kam, 'last_name', ''),
             }
         return None
 

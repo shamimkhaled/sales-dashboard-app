@@ -54,7 +54,7 @@ def convert_prospect_to_customer(prospect, link_id=None):
             existing_customer.company_name = prospect.company_name or existing_customer.company_name
             existing_customer.phone = prospect.phone or existing_customer.phone
             existing_customer.address = prospect.address or existing_customer.address
-            existing_customer.assigned_sales_person = prospect.sales_person or existing_customer.assigned_sales_person
+            existing_customer.kam = prospect.kam or existing_customer.kam
             if link_id:
                 existing_customer.link_id = link_id
             existing_customer.status = 'Active'
@@ -68,7 +68,7 @@ def convert_prospect_to_customer(prospect, link_id=None):
             'email': prospect_email,
             'phone': prospect.phone or '',
             'address': prospect.address or '',
-            'assigned_sales_person': prospect.sales_person,
+            'kam': prospect.kam,
             'status': 'Active',
         }
         

@@ -35,7 +35,7 @@ class InvoiceListCreateView(generics.ListCreateAPIView):
         user = self.request.user
         # Sales person restriction via assigned customers
         if user.role and user.role.name == 'sales_person':
-            qs = qs.filter(bill_record__customer__assigned_sales_person=user)
+            qs = qs.filter(bill_record__customer__kam=user)
         
         return qs
     

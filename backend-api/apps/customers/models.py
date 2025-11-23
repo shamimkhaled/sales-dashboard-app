@@ -5,13 +5,6 @@ from django.conf import settings
 
 
 class Prospect(models.Model):
-    STATUS_CHOICES = (
-        ('new', 'New'),
-        ('contacted', 'Contacted'),
-        ('qualified', 'Qualified'),
-        ('lost', 'Lost'),
-    )
-
     name = models.CharField(max_length=255)
     company_name = models.CharField(max_length=255, blank=True)
     email = models.EmailField(blank=True)
@@ -26,8 +19,8 @@ class Prospect(models.Model):
     source = models.CharField(max_length=50, blank=True)
     follow_up_date = models.DateField(null=True, blank=True)
     notes = models.TextField(blank=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='new', db_index=True)
-    sales_person = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='prospects')
+    status = models.CharField(max_length=50, default='', db_index=True, blank=True, help_text='Status managed by frontend (e.g., new, contacted, qualified, lost)')
+    kam = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='prospects', help_text='Key Account Manager (KAM) assigned to this prospect')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -81,12 +74,6 @@ class Customer(models.Model):
         ('Inactive', 'Inactive'),
         ('Lost', 'Lost'),
     )
-    
-    CUSTOMER_TYPE_CHOICES = (
-        ('Bandwidth', 'Bandwidth/Reseller Customer'),
-        ('MAC', 'MAC Partner/Channel Partner/Franchise'),
-        ('SOHO', 'SOHO/Home Customer'),
-    )
 
     name = models.CharField(max_length=255)
     company_name = models.CharField(max_length=255, blank=True)
@@ -97,13 +84,13 @@ class Customer(models.Model):
     )
     address = models.TextField(blank=True)
     customer_type = models.CharField(
-        max_length=20,
-        choices=CUSTOMER_TYPE_CHOICES,
-        default='Bandwidth',
+        max_length=50,
+        default='',
         db_index=True,
-        help_text='Type of customer: Bandwidth/Reseller, MAC Partner, or SOHO'
+        blank=True,
+        help_text='Customer type managed by frontend (e.g., Bandwidth, MAC, SOHO)'
     )
-    assigned_sales_person = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='customers')
+    kam = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='customers', help_text='Key Account Manager (KAM) assigned to this customer')
     link_id = models.CharField(max_length=100, unique=True, null=True, blank=True, default=None)
     customer_number = models.CharField(
         max_length=50,

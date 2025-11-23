@@ -179,7 +179,7 @@ class CustomerWiseRevenueView(APIView):
             total_received=Sum('bill_records__total_received'),
             total_due=Sum('bill_records__total_due'),
             total_billed=Sum('bill_records__total_bill'),
-            kam_name=F('assigned_sales_person__username')
+            kam_name=F('kam__username')
         ).values(
             'id', 'name', 'email', 'status', 'created_at', 'kam_name',
             'total_revenue', 'total_received', 'total_due', 'total_billed'
@@ -213,8 +213,8 @@ class KAMPerformanceView(APIView):
 
     def get(self, request):
         kam_data = Customer.objects.values(
-            kam_name=F('assigned_sales_person__username'),
-            kam_id=F('assigned_sales_person__id')
+            kam_name=F('kam__username'),
+            kam_id=F('kam__id')
         ).annotate(
             total_customers=Count('id'),
             active_customers=Count(Case(When(status='Active', then=1))),

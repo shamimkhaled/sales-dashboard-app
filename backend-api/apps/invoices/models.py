@@ -264,7 +264,7 @@ class InvoiceItem(models.Model):
     service_type = models.CharField(
         max_length=50,
         blank=True,
-        help_text="Service type: iig_qt, fna, ggc, cdn, bdix, baishan"
+        help_text="Service type: ipt, fna, ggc, cdn, nix, baishan"
     )
     
     # Date range for description

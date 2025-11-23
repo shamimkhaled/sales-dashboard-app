@@ -12,44 +12,13 @@ class BillRecord(models.Model):
         ('Active', 'Active'),
         ('Inactive', 'Inactive'),
     )
-    
-    CUSTOMER_TYPE_CHOICES = (
-        ('Bandwidth', 'Bandwidth/Reseller Customer'),
-        ('MAC', 'MAC Partner/Channel Partner/Franchise'),
-        ('SOHO', 'SOHO/Home Customer'),
-    )
 
-    # Customer type and references (one of these will be set based on customer_type)
-    customer_type = models.CharField(
-        max_length=20,
-        choices=CUSTOMER_TYPE_CHOICES,
-        default='Bandwidth',
-        db_index=True,
-        help_text='Type of customer this bill is for'
-    )
+    # Customer reference - customer_type comes from customer.customer_type
     customer = models.ForeignKey(
         Customer,
         on_delete=models.CASCADE,
         related_name='bill_records',
-        null=True,
-        blank=True,
-        help_text='Bandwidth/Reseller customer (if customer_type is Bandwidth)'
-    )
-    mac_partner = models.ForeignKey(
-        'MACPartner',
-        on_delete=models.CASCADE,
-        related_name='bill_records',
-        null=True,
-        blank=True,
-        help_text='MAC Partner (if customer_type is MAC)'
-    )
-    soho_customer = models.ForeignKey(
-        'SOHOCustomer',
-        on_delete=models.CASCADE,
-        related_name='bill_records',
-        null=True,
-        blank=True,
-        help_text='SOHO Customer (if customer_type is SOHO)'
+        help_text='Customer for this bill record'
     )
     bill_number = models.CharField(
         max_length=50,
@@ -65,16 +34,16 @@ class BillRecord(models.Model):
     billing_date = models.DateField(null=True, blank=True)
     termination_date = models.DateField(null=True, blank=True)
 
-    iig_qt = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    iig_qt_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    ipt = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    ipt_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     fna = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     fna_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     ggc = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     ggc_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     cdn = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     cdn_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    bdix = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    bdix_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    nix = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    nix_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     baishan = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     baishan_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
@@ -101,24 +70,18 @@ class BillRecord(models.Model):
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['bill_number']),
-            models.Index(fields=['customer_type', 'status']),
+            models.Index(fields=['customer', 'status']),
             models.Index(fields=['customer']),
-            models.Index(fields=['mac_partner']),
-            models.Index(fields=['soho_customer']),
         ]
 
     def save(self, *args, **kwargs):
         """Auto-generate bill_number on creation if not provided"""
         self.clean()
         
-        # Get customer name based on customer_type
+        # Get customer name from customer
         customer_name = None
-        if self.customer_type == 'Bandwidth' and self.customer:
+        if self.customer:
             customer_name = self.customer.company_name or self.customer.name
-        elif self.customer_type == 'MAC' and self.mac_partner:
-            customer_name = self.mac_partner.mac_cust_name
-        elif self.customer_type == 'SOHO' and self.soho_customer:
-            customer_name = self.soho_customer.cust_name
         
         if not self.bill_number and customer_name:
             # Generate bill number (will use self.id after save, so we'll update it)
@@ -145,14 +108,8 @@ class BillRecord(models.Model):
             super().save(*args, **kwargs)
 
     def __str__(self):
-        customer_ref = None
-        if self.customer_type == 'Bandwidth' and self.customer:
-            customer_ref = f"Customer {self.customer_id}"
-        elif self.customer_type == 'MAC' and self.mac_partner:
-            customer_ref = f"MAC Partner {self.mac_partner_id}"
-        elif self.customer_type == 'SOHO' and self.soho_customer:
-            customer_ref = f"SOHO Customer {self.soho_customer_id}"
-        return f"BillRecord #{self.id} - {self.bill_number or 'No Number'} - {customer_ref or 'Unknown'}"
+        customer_ref = f"Customer {self.customer_id}" if self.customer else 'Unknown'
+        return f"BillRecord #{self.id} - {self.bill_number or 'No Number'} - {customer_ref}"
 
 
 
@@ -179,19 +136,19 @@ class PricingPeriod(models.Model):
     )
     
     # Usage/Quantity amounts for each service component in this period
-    iig_qt = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text='IIG QT usage/quantity for this period')
+    ipt = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text='IPT usage/quantity for this period')
     fna = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text='FNA usage/quantity for this period')
     ggc = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text='GGC usage/quantity for this period')
     cdn = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text='CDN usage/quantity for this period')
-    bdix = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text='BDIX usage/quantity for this period')
+    nix = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text='NIX usage/quantity for this period')
     baishan = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text='Baishan usage/quantity for this period')
     
     # Pricing for each service component (can be different from BillRecord prices)
-    iig_qt_price = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text='IIG QT price per unit for this period')
+    ipt_price = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text='IPT price per unit for this period')
     fna_price = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text='FNA price per unit for this period')
     ggc_price = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text='GGC price per unit for this period')
     cdn_price = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text='CDN price per unit for this period')
-    bdix_price = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text='BDIX price per unit for this period')
+    nix_price = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text='NIX price per unit for this period')
     baishan_price = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text='Baishan price per unit for this period')
     
     # Optional: Period-specific discount
@@ -242,11 +199,11 @@ class PricingPeriod(models.Model):
     def get_period_total(self):
         """Calculate total amount for this pricing period"""
         total = (
-            self.iig_qt * self.iig_qt_price +
+            self.ipt * self.ipt_price +
             self.fna * self.fna_price +
             self.ggc * self.ggc_price +
             self.cdn * self.cdn_price +
-            self.bdix * self.bdix_price +
+            self.nix * self.nix_price +
             self.baishan * self.baishan_price
         ) - self.discount
         return total
@@ -287,11 +244,11 @@ class DailyBillAmount(models.Model):
     )
     
     # Usage amounts (from BillRecord, but can be overridden per day if needed)
-    iig_qt = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    ipt = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     fna = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     ggc = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     cdn = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    bdix = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    nix = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     baishan = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     
     # Calculated daily amount
@@ -343,28 +300,28 @@ class DailyBillAmount(models.Model):
             # If no pricing period, use BillRecord usage and prices
             bill = self.bill_record
             # Use daily amount's usage if set, otherwise use bill's usage
-            iig_qt = self.iig_qt if self.iig_qt > 0 else bill.iig_qt or 0
+            ipt = self.ipt if self.ipt > 0 else bill.ipt or 0
             fna = self.fna if self.fna > 0 else bill.fna or 0
             ggc = self.ggc if self.ggc > 0 else bill.ggc or 0
             cdn = self.cdn if self.cdn > 0 else bill.cdn or 0
-            bdix = self.bdix if self.bdix > 0 else bill.bdix or 0
+            nix = self.nix if self.nix > 0 else bill.nix or 0
             baishan = self.baishan if self.baishan > 0 else bill.baishan or 0
             
             daily_amount = (
-                iig_qt * bill.iig_qt_price +
+                ipt * bill.ipt_price +
                 fna * bill.fna_price +
                 ggc * bill.ggc_price +
                 cdn * bill.cdn_price +
-                bdix * bill.bdix_price +
+                nix * bill.nix_price +
                 baishan * bill.baishan_price
             )
             
             # Store breakdown
             self.service_breakdown = {
-                'iig_qt': {
-                    'usage': float(iig_qt),
-                    'price': float(bill.iig_qt_price),
-                    'amount': float(iig_qt * bill.iig_qt_price)
+                'ipt': {
+                    'usage': float(ipt),
+                    'price': float(bill.ipt_price),
+                    'amount': float(ipt * bill.ipt_price)
                 },
                 'fna': {
                     'usage': float(fna),
@@ -381,10 +338,10 @@ class DailyBillAmount(models.Model):
                     'price': float(bill.cdn_price),
                     'amount': float(cdn * bill.cdn_price)
                 },
-                'bdix': {
-                    'usage': float(bdix),
-                    'price': float(bill.bdix_price),
-                    'amount': float(bdix * bill.bdix_price)
+                'nix': {
+                    'usage': float(nix),
+                    'price': float(bill.nix_price),
+                    'amount': float(nix * bill.nix_price)
                 },
                 'baishan': {
                     'usage': float(baishan),
@@ -399,10 +356,10 @@ class DailyBillAmount(models.Model):
             
             # Calculate daily usage (distribute period usage across days)
             # If daily amount has specific usage, use it; otherwise distribute period usage
-            if self.iig_qt > 0:
-                iig_qt = self.iig_qt
+            if self.ipt > 0:
+                ipt = self.ipt
             else:
-                iig_qt = period.iig_qt / days_in_period if days_in_period > 0 else 0
+                ipt = period.ipt / days_in_period if days_in_period > 0 else 0
             
             if self.fna > 0:
                 fna = self.fna
@@ -419,10 +376,10 @@ class DailyBillAmount(models.Model):
             else:
                 cdn = period.cdn / days_in_period if days_in_period > 0 else 0
             
-            if self.bdix > 0:
-                bdix = self.bdix
+            if self.nix > 0:
+                nix = self.nix
             else:
-                bdix = period.bdix / days_in_period if days_in_period > 0 else 0
+                nix = period.nix / days_in_period if days_in_period > 0 else 0
             
             if self.baishan > 0:
                 baishan = self.baishan
@@ -431,11 +388,11 @@ class DailyBillAmount(models.Model):
             
             # Calculate daily amount using period prices
             daily_amount = (
-                iig_qt * period.iig_qt_price +
+                ipt * period.ipt_price +
                 fna * period.fna_price +
                 ggc * period.ggc_price +
                 cdn * period.cdn_price +
-                bdix * period.bdix_price +
+                nix * period.nix_price +
                 baishan * period.baishan_price
             )
             
@@ -446,10 +403,10 @@ class DailyBillAmount(models.Model):
             
             # Store breakdown
             self.service_breakdown = {
-                'iig_qt': {
-                    'usage': float(iig_qt),
-                    'price': float(period.iig_qt_price),
-                    'amount': float(iig_qt * period.iig_qt_price)
+                'ipt': {
+                    'usage': float(ipt),
+                    'price': float(period.ipt_price),
+                    'amount': float(ipt * period.ipt_price)
                 },
                 'fna': {
                     'usage': float(fna),
@@ -466,10 +423,10 @@ class DailyBillAmount(models.Model):
                     'price': float(period.cdn_price),
                     'amount': float(cdn * period.cdn_price)
                 },
-                'bdix': {
-                    'usage': float(bdix),
-                    'price': float(period.bdix_price),
-                    'amount': float(bdix * period.bdix_price)
+                'nix': {
+                    'usage': float(nix),
+                    'price': float(period.nix_price),
+                    'amount': float(nix * period.nix_price)
                 },
                 'baishan': {
                     'usage': float(baishan),
@@ -498,15 +455,15 @@ class Package(models.Model):
     """
     Unified package table for both MAC and SOHO packages
     """
-    PACKAGE_TYPE_CHOICES = (
-        ('MAC', 'MAC Package'),
-        ('SOHO', 'SOHO Package'),
-    )
+    # PACKAGE_TYPE_CHOICES = (
+    #     ('MAC', 'MAC Package'),
+    #     ('SOHO', 'SOHO Package'),
+    # )
     
     name = models.CharField(max_length=255, help_text='Package name')
     mbps = models.DecimalField(max_digits=10, decimal_places=2, help_text='Speed in Mbps')
     rate = models.DecimalField(max_digits=12, decimal_places=2, help_text='Base package price')
-    type = models.CharField(max_length=10, choices=PACKAGE_TYPE_CHOICES, db_index=True, help_text='Package type: MAC or SOHO')
+    type = models.CharField(max_length=50, db_index=True, help_text='Package type (e.g., MAC, SOHO, or any custom type)')
     description = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)

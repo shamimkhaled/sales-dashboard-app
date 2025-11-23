@@ -37,44 +37,41 @@ from django.db import transaction, models
 
 @method_decorator(name='get', decorator=swagger_auto_schema(
     operation_summary='List all bill records',
-    operation_description='Get a list of all bill records. Supports filtering by customer_type (Bandwidth/MAC/SOHO), status, customer, and billing_date.',
-    tags=['1. Bill Records (Bandwidth/Reseller)'],
+    operation_description='Get a list of all bill records. Supports filtering by customer_type (from customer model), status, customer, and billing_date.',
+    tags=['1. Bill Records'],
     manual_parameters=[
-        openapi.Parameter('customer_type', openapi.IN_QUERY, description='Filter by customer type: Bandwidth, MAC, or SOHO', type=openapi.TYPE_STRING, enum=['Bandwidth', 'MAC', 'SOHO']),
+        openapi.Parameter('customer_type', openapi.IN_QUERY, description='Filter by customer type (from customer.customer_type): Bandwidth, MAC, or SOHO', type=openapi.TYPE_STRING),
         openapi.Parameter('status', openapi.IN_QUERY, description='Filter by status', type=openapi.TYPE_STRING),
-        openapi.Parameter('customer', openapi.IN_QUERY, description='Filter by customer ID (for Bandwidth type)', type=openapi.TYPE_INTEGER),
+        openapi.Parameter('customer', openapi.IN_QUERY, description='Filter by customer ID', type=openapi.TYPE_INTEGER),
         openapi.Parameter('billing_date', openapi.IN_QUERY, description='Filter by billing date (YYYY-MM-DD)', type=openapi.TYPE_STRING),
     ]
 ))
 @method_decorator(name='post', decorator=swagger_auto_schema(
     operation_summary='Create a new bill record',
-    operation_description='Create a new bill record for Bandwidth/Reseller, MAC Partner, or SOHO customer. Specify customer_type and corresponding customer reference.',
-    tags=['1. Bill Records (Bandwidth/Reseller)']
+    operation_description='Create a new bill record. Customer is required.',
+    tags=['1. Bill Records']
 ))
 class BillListCreateView(generics.ListCreateAPIView):
     serializer_class = BillRecordSerializer
     permission_classes = [permissions.IsAuthenticated, RequirePermissions]
     required_permissions = ['bills:read']
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['status', 'customer', 'billing_date', 'customer_type']
-    search_fields = ['remarks', 'nttn_cap', 'nttn_com', 'bill_number']
-    ordering_fields = ['billing_date', 'total_bill', 'total_due', 'customer_type']
+    filterset_fields = ['status', 'customer', 'billing_date']
+    search_fields = ['remarks', 'nttn_cap', 'nttn_com', 'bill_number', 'customer__name', 'customer__company_name']
+    ordering_fields = ['billing_date', 'total_bill', 'total_due']
 
     def get_queryset(self):
-        qs = BillRecord.objects.select_related('customer', 'mac_partner', 'soho_customer').all()
+        qs = BillRecord.objects.select_related('customer').all()
         user = self.request.user
         
-        # Filter by customer_type if provided
+        # Filter by customer_type if provided (from customer.customer_type)
         customer_type = self.request.query_params.get('customer_type')
         if customer_type:
-            qs = qs.filter(customer_type=customer_type)
+            qs = qs.filter(customer__customer_type=customer_type)
         
-        # Sales person restriction via assigned customers (only for Bandwidth type)
+        # Sales person restriction via assigned customers
         if user.role and user.role.name == 'sales_person':
-            qs = qs.filter(
-                models.Q(customer_type='Bandwidth', customer__assigned_sales_person=user) |
-                models.Q(customer_type__in=['MAC', 'SOHO'])
-            )
+            qs = qs.filter(customer__kam=user)
         return qs
 
     def perform_create(self, serializer):
@@ -99,7 +96,7 @@ class BillListCreateView(generics.ListCreateAPIView):
     tags=['1. Bill Records (Bandwidth/Reseller)']
 ))
 class BillDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = BillRecord.objects.select_related('customer', 'mac_partner', 'soho_customer').all()
+    queryset = BillRecord.objects.select_related('customer').all()
     serializer_class = BillRecordSerializer
     permission_classes = [permissions.IsAuthenticated, RequirePermissions]
     required_permissions = ['bills:update']
@@ -220,16 +217,16 @@ class BillImportView(APIView):
                         'status': str(row.get('status', 'Active')).strip(),
                         'nttn_cap': str(row.get('nttn_cap', '')).strip() or None,
                         'nttn_com': str(row.get('nttn_com', '')).strip() or None,
-                        'iig_qt': float(row.get('iig_qt', 0) or 0),
-                        'iig_qt_price': float(row.get('iig_qt_price', 0) or 0),
+                        'ipt': float(row.get('ipt', 0) or 0),
+                        'ipt_price': float(row.get('ipt_price', 0) or 0),
                         'fna': float(row.get('fna', 0) or 0),
                         'fna_price': float(row.get('fna_price', 0) or 0),
                         'ggc': float(row.get('ggc', 0) or 0),
                         'ggc_price': float(row.get('ggc_price', 0) or 0),
                         'cdn': float(row.get('cdn', 0) or 0),
                         'cdn_price': float(row.get('cdn_price', 0) or 0),
-                        'bdix': float(row.get('bdix', 0) or 0),
-                        'bdix_price': float(row.get('bdix_price', 0) or 0),
+                        'nix': float(row.get('nix', 0) or 0),
+                        'nix_price': float(row.get('nix_price', 0) or 0),
                         'baishan': float(row.get('baishan', 0) or 0),
                         'baishan_price': float(row.get('baishan_price', 0) or 0),
                         'discount': float(row.get('discount', 0) or 0),
@@ -239,11 +236,11 @@ class BillImportView(APIView):
 
                     # Calculate totals using the serializer validation logic
                     component_total = (
-                        bill_data['iig_qt'] * bill_data['iig_qt_price'] +
+                        bill_data['ipt'] * bill_data['ipt_price'] +
                         bill_data['fna'] * bill_data['fna_price'] +
                         bill_data['ggc'] * bill_data['ggc_price'] +
                         bill_data['cdn'] * bill_data['cdn_price'] +
-                        bill_data['bdix'] * bill_data['bdix_price'] +
+                        bill_data['nix'] * bill_data['nix_price'] +
                         bill_data['baishan'] * bill_data['baishan_price']
                     )
                     bill_data['total_bill'] = component_total - bill_data['discount']
@@ -297,16 +294,16 @@ class BillExportView(APIView):
                     'status': r.status,
                     'nttn_cap': r.nttn_cap or '',
                     'nttn_com': r.nttn_com or '',
-                    'iig_qt': float(r.iig_qt),
-                    'iig_qt_price': float(r.iig_qt_price),
+                    'ipt': float(r.ipt),
+                    'ipt_price': float(r.ipt_price),
                     'fna': float(r.fna),
                     'fna_price': float(r.fna_price),
                     'ggc': float(r.ggc),
                     'ggc_price': float(r.ggc_price),
                     'cdn': float(r.cdn),
                     'cdn_price': float(r.cdn_price),
-                    'bdix': float(r.bdix),
-                    'bdix_price': float(r.bdix_price),
+                    'nix': float(r.nix),
+                    'nix_price': float(r.nix_price),
                     'baishan': float(r.baishan),
                     'baishan_price': float(r.baishan_price),
                     'discount': float(r.discount),
@@ -334,8 +331,8 @@ class BillExportView(APIView):
             def row_iter():
                 header = [
                     'id','customer_id','customer_name','customer_email','billing_date','active_date','termination_date','status',
-                    'nttn_cap','nttn_com','iig_qt','iig_qt_price','fna','fna_price','ggc','ggc_price',
-                    'cdn','cdn_price','bdix','bdix_price','baishan','baishan_price',
+                    'nttn_cap','nttn_com','ipt','ipt_price','fna','fna_price','ggc','ggc_price',
+                    'cdn','cdn_price','nix','nix_price','baishan','baishan_price',
                     'discount','total_bill','total_received','total_due','remarks'
                 ]
                 yield ','.join(header) + '\n'
@@ -344,9 +341,9 @@ class BillExportView(APIView):
                         str(r.id), str(r.customer_id), r.customer.name, r.customer.email,
                         str(r.billing_date or ''), str(r.active_date or ''), str(r.termination_date or ''),
                         r.status, r.nttn_cap or '', r.nttn_com or '',
-                        str(r.iig_qt), str(r.iig_qt_price), str(r.fna), str(r.fna_price),
+                        str(r.ipt), str(r.ipt_price), str(r.fna), str(r.fna_price),
                         str(r.ggc), str(r.ggc_price), str(r.cdn), str(r.cdn_price),
-                        str(r.bdix), str(r.bdix_price), str(r.baishan), str(r.baishan_price),
+                        str(r.nix), str(r.nix_price), str(r.baishan), str(r.baishan_price),
                         str(r.discount), str(r.total_bill), str(r.total_received), str(r.total_due),
                         (r.remarks or '').replace('\n',' ').replace(',',' ')
                     ]
@@ -381,7 +378,7 @@ class PricingPeriodListCreateView(generics.ListCreateAPIView):
         
         # Sales person restriction via assigned customers
         if user.role and user.role.name == 'sales_person':
-            qs = qs.filter(bill_record__customer__assigned_sales_person=user)
+            qs = qs.filter(bill_record__customer__kam=user)
         
         # Filter by bill_record if provided
         bill_record_id = self.request.query_params.get('bill_record')
@@ -433,7 +430,7 @@ class PricingPeriodsByBillView(generics.ListAPIView):
         
         user = self.request.user
         if user.role and user.role.name == 'sales_person':
-            qs = qs.filter(bill_record__customer__assigned_sales_person=user)
+            qs = qs.filter(bill_record__customer__kam=user)
         
         return qs
 
@@ -465,7 +462,7 @@ class DailyBillAmountListCreateView(generics.ListCreateAPIView):
         
         # Sales person restriction via assigned customers
         if user.role and user.role.name == 'sales_person':
-            qs = qs.filter(bill_record__customer__assigned_sales_person=user)
+            qs = qs.filter(bill_record__customer__kam=user)
         
         # Filter by bill_record if provided
         bill_record_id = self.request.query_params.get('bill_record')
@@ -532,7 +529,7 @@ class DailyBillAmountsByBillView(generics.ListAPIView):
         
         user = self.request.user
         if user.role and user.role.name == 'sales_person':
-            qs = qs.filter(bill_record__customer__assigned_sales_person=user)
+            qs = qs.filter(bill_record__customer__kam=user)
         
         return qs
 

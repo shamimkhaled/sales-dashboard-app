@@ -64,7 +64,7 @@ Prospect Details:
 - Phone: {prospect.phone or 'N/A'}
 - Address: {prospect.address or 'N/A'}
 - Potential Revenue: ${prospect.potential_revenue}
-- Sales Person: {prospect.sales_person.get_full_name() if prospect.sales_person else 'N/A'}
+- KAM (Key Account Manager): {prospect.kam.get_full_name() if prospect.kam else 'N/A'}
 
 Confirmation Status: {confirmation_status}
 
@@ -124,7 +124,7 @@ Customer Details:
 - Phone: {customer.phone}
 - Address: {customer.address or 'N/A'}
 - Status: {customer.status}
-- Assigned Sales Person: {customer.assigned_sales_person.get_full_name() if customer.assigned_sales_person else 'N/A'}
+- KAM (Key Account Manager): {customer.kam.get_full_name() if customer.kam else 'N/A'}
 - Monthly Revenue: ${customer.calculated_monthly_revenue}
 - Link ID: {customer.link_id or 'N/A'}
 

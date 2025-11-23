@@ -85,11 +85,11 @@ def populate_invoice_items_from_bill(invoice: Invoice, bill_record: BillRecord):
     
     # Service mapping
     services = [
-        ('iig_qt', 'iig_qt_price', 'IIG/QT'),
+        ('ipt', 'ipt_price', 'IPT'),
         ('fna', 'fna_price', 'FNA'),
         ('ggc', 'ggc_price', 'GGC'),
         ('cdn', 'cdn_price', 'CDN'),
-        ('bdix', 'bdix_price', 'BDIX'),
+        ('nix', 'nix_price', 'NIX'),
         ('baishan', 'baishan_price', 'Baishan'),
     ]
     

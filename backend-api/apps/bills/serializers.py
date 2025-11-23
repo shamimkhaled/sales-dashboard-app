@@ -7,10 +7,8 @@ from .models import (
 
 
 class BillRecordSerializer(serializers.ModelSerializer):
-    # Include customer details in the response based on customer_type
+    # Include customer details in the response
     customer_details = serializers.SerializerMethodField()
-    mac_partner_details = serializers.SerializerMethodField()
-    soho_customer_details = serializers.SerializerMethodField()
     customer_name = serializers.ReadOnlyField()
 
     class Meta:
@@ -19,8 +17,8 @@ class BillRecordSerializer(serializers.ModelSerializer):
         read_only_fields = ['created_at', 'updated_at', 'bill_number', 'customer_name']
 
     def get_customer_details(self, obj):
-        """Return customer details for Bandwidth/Reseller customers"""
-        if obj.customer_type == 'Bandwidth' and obj.customer:
+        """Return customer details"""
+        if obj.customer:
             return {
                 'id': obj.customer.id,
                 'name': obj.customer.name,
@@ -32,53 +30,11 @@ class BillRecordSerializer(serializers.ModelSerializer):
             }
         return None
 
-    def get_mac_partner_details(self, obj):
-        """Return MAC partner details"""
-        if obj.customer_type == 'MAC' and obj.mac_partner:
-            return {
-                'id': obj.mac_partner.id,
-                'mac_cust_name': obj.mac_partner.mac_cust_name,
-                'email': obj.mac_partner.email,
-                'phone': obj.mac_partner.phone,
-                'percentage_share': float(obj.mac_partner.percentage_share),
-            }
-        return None
-
-    def get_soho_customer_details(self, obj):
-        """Return SOHO customer details"""
-        if obj.customer_type == 'SOHO' and obj.soho_customer:
-            return {
-                'id': obj.soho_customer.id,
-                'cust_name': obj.soho_customer.cust_name,
-                'email': obj.soho_customer.email,
-                'phone': obj.soho_customer.phone,
-                'package': obj.soho_customer.package.name if obj.soho_customer.package else None,
-                'rate': float(obj.soho_customer.rate),
-            }
-        return None
-
     def validate(self, attrs):
-        """Validate customer_type and corresponding customer reference"""
-        customer_type = attrs.get('customer_type', self.instance.customer_type if self.instance else 'Bandwidth')
-        
-        if customer_type == 'Bandwidth':
-            if not attrs.get('customer') and not (self.instance and self.instance.customer):
-                raise serializers.ValidationError({'customer': 'Customer is required when customer_type is Bandwidth'})
-            # Clear other customer references
-            attrs['mac_partner'] = None
-            attrs['soho_customer'] = None
-        elif customer_type == 'MAC':
-            if not attrs.get('mac_partner') and not (self.instance and self.instance.mac_partner):
-                raise serializers.ValidationError({'mac_partner': 'MAC Partner is required when customer_type is MAC'})
-            # Clear other customer references
-            attrs['customer'] = None
-            attrs['soho_customer'] = None
-        elif customer_type == 'SOHO':
-            if not attrs.get('soho_customer') and not (self.instance and self.instance.soho_customer):
-                raise serializers.ValidationError({'soho_customer': 'SOHO Customer is required when customer_type is SOHO'})
-            # Clear other customer references
-            attrs['customer'] = None
-            attrs['mac_partner'] = None
+        """Validate customer is required and compute totals"""
+        # Customer is required
+        if not attrs.get('customer') and not (self.instance and self.instance.customer):
+            raise serializers.ValidationError({'customer': 'Customer is required'})
         
         # Compute totals from components if not explicitly provided
         def d(name):
@@ -86,34 +42,11 @@ class BillRecordSerializer(serializers.ModelSerializer):
             return val or 0
 
         component_total = (
-            d('iig_qt') * d('iig_qt_price') +
+            d('ipt') * d('ipt_price') +
             d('fna') * d('fna_price') +
             d('ggc') * d('ggc_price') +
             d('cdn') * d('cdn_price') +
-            d('bdix') * d('bdix_price') +
-            d('baishan') * d('baishan_price')
-        )
-        discount = d('discount')
-        total_bill = component_total - discount
-        total_received = d('total_received')
-        total_due = total_bill - total_received
-
-        attrs['total_bill'] = total_bill
-        attrs['total_due'] = total_due
-        return attrs
-
-    def validate(self, attrs):
-        # Compute totals from components if not explicitly provided
-        def d(name):
-            val = attrs.get(name, getattr(self.instance, name, 0) if self.instance else 0)
-            return val or 0
-
-        component_total = (
-            d('iig_qt') * d('iig_qt_price') +
-            d('fna') * d('fna_price') +
-            d('ggc') * d('ggc_price') +
-            d('cdn') * d('cdn_price') +
-            d('bdix') * d('bdix_price') +
+            d('nix') * d('nix_price') +
             d('baishan') * d('baishan_price')
         )
         discount = d('discount')
@@ -209,7 +142,7 @@ class DailyBillAmountListSerializer(serializers.ModelSerializer):
         model = DailyBillAmount
         fields = [
             'id', 'date', 'day_number', 'daily_amount',
-            'iig_qt', 'fna', 'ggc', 'cdn', 'bdix', 'baishan',
+            'ipt', 'fna', 'ggc', 'cdn', 'nix', 'baishan',
             'pricing_period_info', 'service_breakdown',
             'is_calculated', 'notes', 'created_at'
         ]

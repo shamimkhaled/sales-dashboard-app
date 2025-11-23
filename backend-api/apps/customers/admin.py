@@ -28,8 +28,8 @@ class ProspectAttachmentInline(admin.TabularInline):
 @admin.register(Prospect)
 class ProspectAdmin(admin.ModelAdmin):
     list_display = ['name', 'company_name', 'email', 'phone', 'status', 'potential_revenue', 
-                   'sales_person', 'follow_up_date', 'created_at']
-    list_filter = ['status', 'source', 'sales_person', 'created_at']
+                   'kam', 'follow_up_date', 'created_at']
+    list_filter = ['status', 'source', 'kam', 'created_at']
     search_fields = ['name', 'company_name', 'email', 'phone', 'contact_person']
     ordering = ['-created_at']
     readonly_fields = ['created_at', 'updated_at']
@@ -44,7 +44,7 @@ class ProspectAdmin(admin.ModelAdmin):
             'fields': ('email', 'phone', 'address')
         }),
         ('Sales Information', {
-            'fields': ('sales_person', 'source', 'potential_revenue', 'status')
+            'fields': ('kam', 'source', 'potential_revenue', 'status')
         }),
         ('Follow-up', {
             'fields': ('follow_up_date', 'notes')
@@ -57,7 +57,7 @@ class ProspectAdmin(admin.ModelAdmin):
     
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        return qs.select_related('sales_person')
+        return qs.select_related('kam')
 
 
 @admin.register(ProspectStatusHistory)
@@ -133,9 +133,9 @@ class ProspectAttachmentAdmin(admin.ModelAdmin):
 
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):
-    list_display = ['name', 'company_name', 'email', 'phone', 'assigned_sales_person',
+    list_display = ['name', 'company_name', 'email', 'phone', 'kam',
                    'calculated_monthly_revenue', 'link_id', 'created_at']
-    list_filter = ['assigned_sales_person', 'created_at']
+    list_filter = ['kam', 'created_at']
     search_fields = ['name', 'company_name', 'email', 'phone']
     ordering = ['-created_at']
     readonly_fields = ['created_at', 'updated_at', 'calculated_monthly_revenue']
@@ -149,7 +149,7 @@ class CustomerAdmin(admin.ModelAdmin):
             'fields': ('email', 'phone', 'address')
         }),
         ('Sales Information', {
-            'fields': ('assigned_sales_person', 'calculated_monthly_revenue')
+            'fields': ('kam', 'customer_type', 'calculated_monthly_revenue')
         }),
         ('Metadata', {
             'fields': ('created_at', 'updated_at'),
@@ -159,4 +159,4 @@ class CustomerAdmin(admin.ModelAdmin):
     
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        return qs.select_related('assigned_sales_person')
+        return qs.select_related('kam')
