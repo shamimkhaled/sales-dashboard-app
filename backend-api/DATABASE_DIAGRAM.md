@@ -56,24 +56,24 @@
 │     MenuItem         │
 │──────────────────────│
 │ PK: id               │
-│     slug            │
-│     title           │
-│     path            │
-│     icon            │
-│     parent (FK)     │
-│     order           │
+│     slug             │
+│     title            │
+│     path             │
+│     icon             │
+│     parent (FK)      │
+│     order            │
 └──────────────────────┘
 
 ┌──────────────────────┐
 │    AuditLog          │
 │──────────────────────│
 │ PK: id               │
-│     user (FK)       │
-│     operation       │
-│     table_name      │
-│     record_id       │
-│     old_values      │
-│     new_values      │
+│     user (FK)        │
+│     operation        │
+│     table_name       │
+│     record_id        │
+│     old_values       │
+│     new_values       │
 └──────────────────────┘
 
 
@@ -163,7 +163,7 @@
 │    BillRecord        │       │
 │──────────────────────│       │
 │ PK: id               │       │
-│     customer (FK)   │───────┘ (required, non-nullable)
+│     customer (FK)    │───────┘ (required, non-nullable)
 │     bill_number      │
 │     nttn_cap         │
 │     nttn_com         │
@@ -175,7 +175,7 @@
 │     ggc, ggc_price   │
 │     cdn, cdn_price   │
 │     nix, nix_price   │ (renamed from bdix)
-│     baishan, baishan_price│
+│baishan, baishan_price│
 │     total_bill       │
 │     total_received   │
 │     total_due        │
@@ -197,7 +197,7 @@
 │──────────────────│  │──────────────────│
 │ PK: id           │  │ PK: id           │
 │     bill_record  │  │     bill_record  │
-│     start_day    │  │     pricing_period│
+│     start_day    │  │    pricing_period│
 │     end_day      │  │     date         │
 │     ipt, fna, etc│  │     day_number   │
 │     ipt_price, etc│ │     ipt, fna, etc│
@@ -206,7 +206,7 @@
 
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                         MAC & SOHO BILLING                                 │
+│                         MAC & SOHO BILLING                                  │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────────┐
@@ -229,7 +229,7 @@
          ▼                 ▼              ▼
 ┌──────────────────┐  ┌──────────────┐  ┌──────────────┐
 │ MACEndCustomer   │  │ SOHOCustomer │  │  SOHOBill    │
-│ (package FK)     │  │ (package FK)  │  │ (package FK) │
+│ (package FK)     │  │ (package FK)  │ │ (package FK) │
 └──────────────────┘  └──────────────┘  └──────────────┘
 
 ┌──────────────────────┐

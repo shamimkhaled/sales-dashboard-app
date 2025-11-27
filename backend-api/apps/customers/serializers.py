@@ -4,7 +4,6 @@ from .models import (
     ProspectStatusHistory,
     ProspectFollowUp,
     ProspectAttachment,
-    Customer,
 )
 
 
@@ -55,28 +54,28 @@ class ProspectAttachmentSerializer(serializers.ModelSerializer):
         read_only_fields = ['uploaded_at', 'uploaded_by']
 
 
-class CustomerSerializer(serializers.ModelSerializer):
-    kam_details = serializers.SerializerMethodField()
-    calculated_monthly_revenue = serializers.SerializerMethodField()
+# class CustomerSerializer(serializers.ModelSerializer):
+#     kam_details = serializers.SerializerMethodField()
+#     calculated_monthly_revenue = serializers.SerializerMethodField()
 
-    class Meta:
-        model = Customer
-        fields = '__all__'
-        read_only_fields = ['created_at', 'updated_at', 'customer_number']
+#     class Meta:
+#         model = Customer
+#         fields = '__all__'
+#         read_only_fields = ['created_at', 'updated_at', 'customer_number']
     
-    def get_kam_details(self, obj):
-        if obj.kam:
-            return {
-                'id': obj.kam.id,
-                'username': getattr(obj.kam, 'username', ''),
-                'email': obj.kam.email,
-                'first_name': getattr(obj.kam, 'first_name', ''),
-                'last_name': getattr(obj.kam, 'last_name', ''),
-            }
-        return None
+#     def get_kam_details(self, obj):
+#         if obj.kam:
+#             return {
+#                 'id': obj.kam.id,
+#                 'username': getattr(obj.kam, 'username', ''),
+#                 'email': obj.kam.email,
+#                 'first_name': getattr(obj.kam, 'first_name', ''),
+#                 'last_name': getattr(obj.kam, 'last_name', ''),
+#             }
+#         return None
 
-    def get_calculated_monthly_revenue(self, obj):
-        return obj.calculated_monthly_revenue
+#     def get_calculated_monthly_revenue(self, obj):
+#         return obj.calculated_monthly_revenue
 
 
 

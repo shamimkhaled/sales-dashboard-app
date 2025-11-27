@@ -1,6 +1,27 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Prospect, ProspectStatusHistory, ProspectFollowUp, ProspectAttachment, Customer
+from .models import Prospect, ProspectStatusHistory, ProspectFollowUp, ProspectAttachment, CustomerMaster, KAMMaster
+
+
+
+@admin.register(KAMMaster)
+class KAMMasterAdmin(admin.ModelAdmin):
+    list_display = ['kam_name', 'email', 'phone', 'is_active']
+    list_filter = ['is_active']
+    search_fields = ['kam_name', 'email', 'phone']
+    ordering = ['kam_name']
+
+
+@admin.register(CustomerMaster)
+class CustomerMasterAdmin(admin.ModelAdmin):
+    list_display = ['customer_name', 'company_name', 'email', 'phone', 'status', 'created_at']
+    list_filter = ['status', 'created_at']
+    search_fields = ['customer_name', 'company_name', 'email', 'phone']
+    ordering = ['-created_at']
+    readonly_fields = ['created_at', 'updated_at']
+    date_hierarchy = 'created_at'
+
+
 
 
 class ProspectStatusHistoryInline(admin.TabularInline):
@@ -131,32 +152,32 @@ class ProspectAttachmentAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
 
 
-@admin.register(Customer)
-class CustomerAdmin(admin.ModelAdmin):
-    list_display = ['name', 'company_name', 'email', 'phone', 'kam',
-                   'calculated_monthly_revenue', 'link_id', 'created_at']
-    list_filter = ['kam', 'created_at']
-    search_fields = ['name', 'company_name', 'email', 'phone']
-    ordering = ['-created_at']
-    readonly_fields = ['created_at', 'updated_at', 'calculated_monthly_revenue']
-    date_hierarchy = 'created_at'
+# @admin.register(Customer)
+# class CustomerAdmin(admin.ModelAdmin):
+#     list_display = ['name', 'company_name', 'email', 'phone', 'kam',
+#                    'calculated_monthly_revenue', 'link_id', 'created_at']
+#     list_filter = ['kam', 'created_at']
+#     search_fields = ['name', 'company_name', 'email', 'phone']
+#     ordering = ['-created_at']
+#     readonly_fields = ['created_at', 'updated_at', 'calculated_monthly_revenue']
+#     date_hierarchy = 'created_at'
 
-    fieldsets = (
-        ('Basic Information', {
-            'fields': ('name', 'company_name')
-        }),
-        ('Contact Details', {
-            'fields': ('email', 'phone', 'address')
-        }),
-        ('Sales Information', {
-            'fields': ('kam', 'customer_type', 'calculated_monthly_revenue')
-        }),
-        ('Metadata', {
-            'fields': ('created_at', 'updated_at'),
-            'classes': ('collapse',)
-        }),
-    )
+#     fieldsets = (
+#         ('Basic Information', {
+#             'fields': ('name', 'company_name')
+#         }),
+#         ('Contact Details', {
+#             'fields': ('email', 'phone', 'address')
+#         }),
+#         ('Sales Information', {
+#             'fields': ('kam', 'customer_type', 'calculated_monthly_revenue')
+#         }),
+#         ('Metadata', {
+#             'fields': ('created_at', 'updated_at'),
+#             'classes': ('collapse',)
+#         }),
+#     )
     
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        return qs.select_related('kam')
+#     def get_queryset(self, request):
+#         qs = super().get_queryset(request)
+#         return qs.select_related('kam')

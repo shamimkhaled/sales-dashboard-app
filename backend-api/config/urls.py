@@ -11,7 +11,6 @@ admin.site.site_header = "Sales Dashboard Administration"
 admin.site.site_title = "Sales Dashboard Admin"
 admin.site.index_title = "Welcome to Sales Dashboard Administration"
 
-from apps.bills.swagger_tags import SWAGGER_TAGS
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -84,8 +83,8 @@ urlpatterns = [
     path('api/auth/', include('apps.authentication.urls')),
     path('api/users/', include('apps.users.urls')),
     path('api/customers/', include('apps.customers.urls')),
-    path('api/bills/', include('apps.bills.urls')),
-    path('api/invoices/', include('apps.invoices.urls')),
-    path('api/dashboard/', include('apps.dashboard.urls')),
-    path('api/feedback/', include('apps.feedback.urls')),
+    # path('api/bills/', include('apps.bills.urls')),
+    # path('api/invoices/', include('apps.invoices.urls')),
+    # path('api/dashboard/', include('apps.dashboard.urls')),
+    # path('api/feedback/', include('apps.feedback.urls')),
 ]
