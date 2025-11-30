@@ -28,41 +28,6 @@ schema_view = get_schema_view(
         ## Authentication
         Use JWT Bearer token authentication. Click the 'Authorize' button to add your Bearer token.
         
-        ## API Organization
-        APIs are organized into logical groups (tags) for easy navigation:
-        
-        ### 1. Bill Records (Bandwidth/Reseller)
-        Unified billing system for all customer types (Bandwidth, MAC, SOHO)
-        
-        ### 2. Pricing Periods
-        Manage variable pricing periods within billing cycles
-        
-        ### 3. Daily Bill Amounts
-        Track and calculate daily bill amounts for accurate revenue reporting
-        
-        ### 4. Packages
-        Manage MAC and SOHO packages (speed, rate, type)
-        
-        ### 5. MAC Partners
-        Manage MAC/Channel Partner/Franchise partners
-        
-        ### 6. MAC End Customers
-        Manage end-customers under MAC partners (200+ customers with different packages/rates)
-        
-        ### 7. MAC Bills
-        Generate and manage bills for MAC partners with commission calculation
-        
-        ### 8. SOHO Customers
-        Manage SOHO/Home customers with packages
-        
-        ### 9. SOHO Bills
-        Generate and manage bills for SOHO customers
-        
-        ### 10. Payments
-        Track all payments received with dates and payment methods
-        
-        ### 11. Revenue Analytics
-        Get revenue breakdowns by customer type (Daily, Weekly, Monthly, Yearly)
         """,
         terms_of_service="https://www.google.com/policies/terms/",
         contact=openapi.Contact(email="contact@example.com"),
@@ -83,8 +48,9 @@ urlpatterns = [
     path('api/auth/', include('apps.authentication.urls')),
     path('api/users/', include('apps.users.urls')),
     path('api/customers/', include('apps.customers.urls')),
-    # path('api/bills/', include('apps.bills.urls')),
-    # path('api/invoices/', include('apps.invoices.urls')),
-    # path('api/dashboard/', include('apps.dashboard.urls')),
-    # path('api/feedback/', include('apps.feedback.urls')),
+    path('api/bills/', include('apps.bills.urls')),
+    path('api/payments/', include('apps.payment.urls')),
+    path('api/packages/', include('apps.package.urls')),
+    path('api/utility/', include('apps.utility.urls')),
+    path('api/feedback/', include('apps.feedback.urls')),
 ]

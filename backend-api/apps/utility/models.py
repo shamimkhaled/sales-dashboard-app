@@ -47,5 +47,5 @@ class UtilityDetails(models.Model):
         ordering = ['type', 'name']
 
     def __str__(self):
-        return f"{self.get_type_display()} - {self.name} ({self.number})"
+        return f"{self.type} - {self.name} ({self.number})"
 

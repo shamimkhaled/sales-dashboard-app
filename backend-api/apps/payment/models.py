@@ -47,7 +47,7 @@ class PaymentMaster(models.Model):
         ordering = ['-payment_date']
 
     def __str__(self):
-        return f"Payment #{self.id} - {self.payment_date} - {self.get_payment_method_display()}"
+        return f"Payment #{self.id} - {self.payment_date} - {self.payment_method}"
 
 
 class PaymentDetails(models.Model):
