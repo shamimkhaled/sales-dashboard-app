@@ -15,6 +15,8 @@ PERMISSIONS = [
     # Prospects
     ('prospects:read', 'prospects', 'read', 'Read prospects'),
     ('prospects:update', 'prospects', 'update', 'Modify prospects'),
+    ('prospects:import', 'prospects', 'import', 'Import prospects'),
+    ('prospects:export', 'prospects', 'export', 'Export prospects'),
     # Bills
     ('bills:read', 'bills', 'read', 'Read bills'),
     ('bills:create', 'bills', 'create', 'Create bills'),
@@ -52,7 +54,7 @@ ROLES = {
         'permissions': [
             'users:read','users:write',
             'customers:read','customers:update','customers:import','customers:export',
-            'prospects:read','prospects:update',
+            'prospects:read','prospects:update','prospects:import','prospects:export',
             'bills:read','bills:create','bills:update','bills:import','bills:export',
             'invoices:read','invoices:create','invoices:update','invoices:delete',
             'feedback:read','feedback:create','feedback:update','feedback:delete',
@@ -63,7 +65,7 @@ ROLES = {
         'description': 'Sales Manager with customer/prospect oversight',
         'permissions': [
             'customers:read','customers:update','customers:export',
-            'prospects:read','prospects:update',
+            'prospects:read','prospects:update','prospects:export',
             'bills:read','bills:create','bills:update',
             'invoices:read','invoices:create','invoices:update',
             'feedback:read','feedback:create','feedback:update',

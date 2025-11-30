@@ -4,14 +4,77 @@ from django.utils import timezone
 from django.conf import settings
 
 
-class Prospect(models.Model):
-    STATUS_CHOICES = (
-        ('new', 'New'),
-        ('contacted', 'Contacted'),
-        ('qualified', 'Qualified'),
-        ('lost', 'Lost'),
-    )
 
+
+class KAMMaster(models.Model):
+    id = models.AutoField(primary_key=True)
+    kam_name = models.CharField(max_length=200)
+    phone = models.CharField(max_length=20, blank=True)
+    email = models.EmailField(blank=True)
+    address = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'kam_master'
+
+    def __str__(self):
+        return self.kam_name
+
+
+class CustomerMaster(models.Model):
+    CUSTOMER_TYPE_CHOICES = [
+        ('bw', 'Bandwidth'),
+        ('channel_partner', 'Channel Partner'),
+        ('soho', 'SOHO/Home'),
+    ]
+    STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('inactive', 'Inactive'),
+        ('suspended', 'Suspended'),
+    ]
+
+    id = models.AutoField(primary_key=True)
+    customer_name = models.CharField(max_length=200)
+    company_name = models.CharField(max_length=200, blank=True, null=True, help_text="Company reference ")
+    email = models.EmailField(unique=True)
+    phone = models.CharField(
+            max_length=20,
+            blank=True,
+            validators=[RegexValidator(r'^\+?[0-9\-\s]{7,20}$', 'Invalid phone number')]
+        )
+    address = models.TextField()
+    customer_type = models.CharField(max_length=20, choices=CUSTOMER_TYPE_CHOICES)
+    kam_id = models.ForeignKey(KAMMaster, on_delete=models.SET_NULL, null=True, blank=True, related_name='customers')
+    customer_number = models.CharField(max_length=50, unique=True)
+    total_client = models.IntegerField(default=0, help_text="MAC only")
+    total_active_client = models.IntegerField(default=0, help_text="MAC only")
+    previous_total_client = models.IntegerField(default=0, help_text="MAC only")
+    free_giveaway_client = models.IntegerField(default=0, help_text="MAC only")
+    default_percentage_share = models.DecimalField(max_digits=5, decimal_places=2, default=0, help_text="MAC only")
+    contact_person = models.CharField(max_length=200, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
+    last_bill_invoice_date = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='created_customers')
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='updated_customers')
+
+    class Meta:
+        db_table = 'customer_master'
+
+    def __str__(self):
+        return self.customer_name
+
+
+
+
+
+
+
+class Prospect(models.Model):
     name = models.CharField(max_length=255)
     company_name = models.CharField(max_length=255, blank=True)
     email = models.EmailField(blank=True)
@@ -26,8 +89,8 @@ class Prospect(models.Model):
     source = models.CharField(max_length=50, blank=True)
     follow_up_date = models.DateField(null=True, blank=True)
     notes = models.TextField(blank=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='new', db_index=True)
-    sales_person = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='prospects')
+    status = models.CharField(max_length=50, default='', db_index=True, blank=True, help_text='Status managed by frontend (e.g., new, contacted, qualified, lost)')
+    kam = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='prospects', help_text='Key Account Manager (KAM) assigned to this prospect')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -75,76 +138,7 @@ class ProspectAttachment(models.Model):
         db_table = 'sales_prospect_attachments'
 
 
-class Customer(models.Model):
-    STATUS_CHOICES = (
-        ('Active', 'Active'),
-        ('Inactive', 'Inactive'),
-        ('Lost', 'Lost'),
-    )
 
-    name = models.CharField(max_length=255)
-    company_name = models.CharField(max_length=255, blank=True)
-    email = models.EmailField(unique=True)
-    phone = models.CharField(
-        max_length=20,
-        validators=[RegexValidator(r'^\+?[0-9\-\s]{7,20}$', 'Invalid phone number')]
-    )
-    address = models.TextField(blank=True)
-    assigned_sales_person = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='customers')
-    link_id = models.CharField(max_length=100, unique=True, null=True, blank=True, default=None)
-    customer_number = models.CharField(
-        max_length=50,
-        unique=True,
-        db_index=True,
-        blank=True,
-        null=True,
-        help_text='Auto-generated customer number: KTL-{8 chars customer name}-{customer id}'
-    )
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='Active', db_index=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
-    @property
-    def calculated_monthly_revenue(self):
-        from apps.bills.models import BillRecord
-        return BillRecord.objects.filter(customer=self).aggregate(total=models.Sum('total_bill'))['total'] or 0
-
-    class Meta:
-        db_table = 'sales_customers'
-        ordering = ['-created_at']
-        indexes = [
-            models.Index(fields=['email']),
-            models.Index(fields=['customer_number']),
-        ]
-
-    def save(self, *args, **kwargs):
-        """Auto-generate customer_number on creation if not provided"""
-        if not self.customer_number:
-            from .utils import generate_customer_number
-            # Use company_name if available, otherwise use name
-            customer_name = self.company_name or self.name
-            # Generate customer number (will use self.id after save, so we'll update it)
-            if self.pk is None:
-                # First save to get the ID
-                super().save(*args, **kwargs)
-                # Now generate with the ID
-                self.customer_number = generate_customer_number(
-                    customer_name=customer_name,
-                    customer_id=self.id
-                )
-                # Save again with the customer_number
-                super().save(update_fields=['customer_number'])
-            else:
-                # If updating and customer_number is missing, generate it
-                self.customer_number = generate_customer_number(
-                    customer_name=customer_name,
-                    customer_id=self.id
-                )
-                super().save(*args, **kwargs)
-        else:
-            super().save(*args, **kwargs)
-
-    def __str__(self):
-        return self.name
 
 

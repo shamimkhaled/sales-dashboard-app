@@ -47,6 +47,8 @@ venv/
 ENV/
 env/
 
+docs/
+
 # VSCode / IDE
 .vscode/
 .idea/

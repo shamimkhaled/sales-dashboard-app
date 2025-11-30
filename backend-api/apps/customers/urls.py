@@ -1,24 +1,30 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from .views import (
+    KAMMasterListView,
+    KAMMasterDetailView,
+    CustomerMasterViewSet,
     ProspectListCreateView,
     ProspectDetailView,
-    CustomerListCreateView,
-    CustomerDetailView,
-    CustomerImportView,
-    CustomerExportView,
-    RevenueCalculationView,
-    ProspectConvertToCustomerView,
+    ProspectImportView,
+    ProspectExportView,
 )
 
+
+router = DefaultRouter()
+router.register(r'', CustomerMasterViewSet, basename='customer')
+
 urlpatterns = [
+    # Prospects endpoints
     path('prospects/', ProspectListCreateView.as_view(), name='prospects-list-create'),
     path('prospects/<int:pk>/', ProspectDetailView.as_view(), name='prospects-detail'),
-    path('prospects/<int:prospect_id>/convert/', ProspectConvertToCustomerView.as_view(), name='prospects-convert'),
-    path('', CustomerListCreateView.as_view(), name='customers-list-create'),
-    path('<int:pk>/', CustomerDetailView.as_view(), name='customers-detail'),
-    path('import/', CustomerImportView.as_view(), name='customers-import'),
-    path('export/', CustomerExportView.as_view(), name='customers-export'),
-    path('revenue/', RevenueCalculationView.as_view(), name='customers-revenue'),
+    path('prospects/import/', ProspectImportView.as_view(), name='prospects-import'),
+    path('prospects/export/', ProspectExportView.as_view(), name='prospects-export'),
+    
+    # KAM Master endpoints (GET only)
+    path('kam/', KAMMasterListView.as_view(), name='kam-list'),
+    path('kam/<int:pk>/', KAMMasterDetailView.as_view(), name='kam-detail'),
+    
+    # Customer endpoints (via router)
+    path('', include(router.urls)),
 ]
-
-

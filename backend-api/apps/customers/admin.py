@@ -1,6 +1,82 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Prospect, ProspectStatusHistory, ProspectFollowUp, ProspectAttachment, Customer
+from django.db.models import Sum, Count
+from .models import Prospect, ProspectStatusHistory, ProspectFollowUp, ProspectAttachment, CustomerMaster, KAMMaster
+
+
+@admin.register(KAMMaster)
+class KAMMasterAdmin(admin.ModelAdmin):
+    list_display = ['id', 'kam_name', 'email', 'phone', 'address', 'is_active', 'customers_count', 'created_at']
+    list_filter = ['is_active', 'created_at']
+    search_fields = ['kam_name', 'email', 'phone', 'address']
+    ordering = ['kam_name']
+    readonly_fields = ['created_at', 'updated_at']
+    list_per_page = 25
+    
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('kam_name', 'email', 'phone', 'address')
+        }),
+        ('Status', {
+            'fields': ('is_active',)
+        }),
+        ('Metadata', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def customers_count(self, obj):
+        """Display count of assigned customers"""
+        count = obj.customers.count()
+        return format_html('<span style="color: green; font-weight: bold;">{}</span>', count)
+    customers_count.short_description = 'Assigned Customers'
+
+
+@admin.register(CustomerMaster)
+class CustomerMasterAdmin(admin.ModelAdmin):
+    list_display = [
+        'id', 'customer_number', 'customer_name', 'company_name', 'customer_type', 
+        'email', 'phone', 'kam_id', 'status', 'is_active', 'last_bill_invoice_date', 
+        'created_at'
+    ]
+    list_filter = ['customer_type', 'status', 'is_active', 'kam_id', 'created_at']
+    search_fields = [
+        'customer_name', 'company_name', 'email', 'phone', 
+        'customer_number', 'contact_person'
+    ]
+    ordering = ['-created_at']
+    readonly_fields = ['created_at', 'updated_at', 'customer_number']
+    date_hierarchy = 'created_at'
+    list_per_page = 25
+    list_select_related = ['kam_id', 'created_by']
+    
+    fieldsets = (
+        ('Customer Information', {
+            'fields': ('customer_number', 'customer_name', 'company_name', 'customer_type', 'contact_person')
+        }),
+        ('Contact Details', {
+            'fields': ('email', 'phone', 'address')
+        }),
+        ('Sales Information', {
+            'fields': ('kam_id', 'status', 'is_active', 'last_bill_invoice_date')
+        }),
+        ('Channel Partner Specific', {
+            'fields': (
+                'total_client', 'total_active_client', 'previous_total_client', 
+                'free_giveaway_client', 'default_percentage_share'
+            ),
+            'classes': ('collapse',)
+        }),
+        ('Metadata', {
+            'fields': ('created_by', 'updated_by', 'created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related('kam_id', 'created_by', 'updated_by').prefetch_related('entitlements')
 
 
 class ProspectStatusHistoryInline(admin.TabularInline):
@@ -27,9 +103,11 @@ class ProspectAttachmentInline(admin.TabularInline):
 
 @admin.register(Prospect)
 class ProspectAdmin(admin.ModelAdmin):
-    list_display = ['name', 'company_name', 'email', 'phone', 'status', 'potential_revenue', 
-                   'sales_person', 'follow_up_date', 'created_at']
-    list_filter = ['status', 'source', 'sales_person', 'created_at']
+    list_display = [
+        'name', 'company_name', 'email', 'phone', 'status', 'potential_revenue', 
+        'kam', 'follow_up_date', 'created_at'
+    ]
+    list_filter = ['status', 'source', 'kam', 'created_at']
     search_fields = ['name', 'company_name', 'email', 'phone', 'contact_person']
     ordering = ['-created_at']
     readonly_fields = ['created_at', 'updated_at']
@@ -44,7 +122,7 @@ class ProspectAdmin(admin.ModelAdmin):
             'fields': ('email', 'phone', 'address')
         }),
         ('Sales Information', {
-            'fields': ('sales_person', 'source', 'potential_revenue', 'status')
+            'fields': ('kam', 'source', 'potential_revenue', 'status')
         }),
         ('Follow-up', {
             'fields': ('follow_up_date', 'notes')
@@ -57,7 +135,7 @@ class ProspectAdmin(admin.ModelAdmin):
     
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        return qs.select_related('sales_person')
+        return qs.select_related('kam')
 
 
 @admin.register(ProspectStatusHistory)
@@ -129,34 +207,3 @@ class ProspectAttachmentAdmin(admin.ModelAdmin):
         if not change:
             obj.uploaded_by = request.user
         super().save_model(request, obj, form, change)
-
-
-@admin.register(Customer)
-class CustomerAdmin(admin.ModelAdmin):
-    list_display = ['name', 'company_name', 'email', 'phone', 'assigned_sales_person',
-                   'calculated_monthly_revenue', 'link_id', 'created_at']
-    list_filter = ['assigned_sales_person', 'created_at']
-    search_fields = ['name', 'company_name', 'email', 'phone']
-    ordering = ['-created_at']
-    readonly_fields = ['created_at', 'updated_at', 'calculated_monthly_revenue']
-    date_hierarchy = 'created_at'
-
-    fieldsets = (
-        ('Basic Information', {
-            'fields': ('name', 'company_name')
-        }),
-        ('Contact Details', {
-            'fields': ('email', 'phone', 'address')
-        }),
-        ('Sales Information', {
-            'fields': ('assigned_sales_person', 'calculated_monthly_revenue')
-        }),
-        ('Metadata', {
-            'fields': ('created_at', 'updated_at'),
-            'classes': ('collapse',)
-        }),
-    )
-    
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        return qs.select_related('assigned_sales_person')

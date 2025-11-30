@@ -5,7 +5,7 @@ from .models import Permission, Role, MenuItem, UserActivityLog, AuditLog
 
 @admin.register(Permission)
 class PermissionAdmin(admin.ModelAdmin):
-    list_display = ['codename', 'name', 'resource', 'action', 'description', 'created_at']
+    list_display = ['id', 'codename', 'name', 'resource', 'action', 'description', 'created_at']
     list_filter = ['resource', 'action', 'created_at']
     search_fields = ['codename', 'name', 'description']
     ordering = ['resource', 'action']
@@ -34,7 +34,7 @@ class PermissionInline(admin.TabularInline):
 
 @admin.register(Role)
 class RoleAdmin(admin.ModelAdmin):
-    list_display = ['name', 'get_name_display', 'is_active', 'permissions_count', 'users_count', 'created_at']
+    list_display = ['id', 'name', 'get_name_display', 'is_active', 'permissions_count', 'users_count', 'created_at']
     list_filter = ['is_active', 'name', 'created_at']
     search_fields = ['name', 'description']
     ordering = ['name']

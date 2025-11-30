@@ -1,29 +1,32 @@
 from rest_framework import serializers
+from django.db import models
+from decimal import Decimal
 from .models import (
     Prospect,
     ProspectStatusHistory,
     ProspectFollowUp,
     ProspectAttachment,
-    Customer,
+    KAMMaster,
+    CustomerMaster,
 )
 
 
 class ProspectSerializer(serializers.ModelSerializer):
-    sales_person_details = serializers.SerializerMethodField()
+    kam_details = serializers.SerializerMethodField()
 
     class Meta:
         model = Prospect
         fields = '__all__'
-        read_only_fields = ['created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at', 'kam']
 
-    def get_sales_person_details(self, obj):
-        if obj.sales_person:
+    def get_kam_details(self, obj):
+        if obj.kam:
             return {
-                'id': obj.sales_person.id,
-                'username': getattr(obj.sales_person, 'username', ''),
-                'email': obj.sales_person.email,
-                'first_name': getattr(obj.sales_person, 'first_name', ''),
-                'last_name': getattr(obj.sales_person, 'last_name', ''),
+                'id': obj.kam.id,
+                'username': getattr(obj.kam, 'username', ''),
+                'email': obj.kam.email,
+                'first_name': getattr(obj.kam, 'first_name', ''),
+                'last_name': getattr(obj.kam, 'last_name', ''),
             }
         return None
 
@@ -55,28 +58,69 @@ class ProspectAttachmentSerializer(serializers.ModelSerializer):
         read_only_fields = ['uploaded_at', 'uploaded_by']
 
 
-class CustomerSerializer(serializers.ModelSerializer):
-    assigned_sales_person_details = serializers.SerializerMethodField()
-    calculated_monthly_revenue = serializers.SerializerMethodField()
+# ==================== KAM Master Serializers ====================
 
-    class Meta:
-        model = Customer
-        fields = '__all__'
-        read_only_fields = ['created_at', 'updated_at', 'customer_number']
+class KAMMasterSerializer(serializers.ModelSerializer):
+    assigned_customers_count = serializers.SerializerMethodField()
     
-    def get_assigned_sales_person_details(self, obj):
-        if obj.assigned_sales_person:
+    class Meta:
+        model = KAMMaster
+        fields = '__all__'
+        read_only_fields = ['created_at', 'updated_at']
+    
+    def get_assigned_customers_count(self, obj):
+        return obj.customers.count()
+
+
+# ==================== Customer Master Serializers ====================
+
+class CustomerMasterSerializer(serializers.ModelSerializer):
+    kam_details = serializers.SerializerMethodField()
+    total_billed = serializers.SerializerMethodField()
+    total_paid = serializers.SerializerMethodField()
+    total_due = serializers.SerializerMethodField()
+    active_entitlements_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = CustomerMaster
+        fields = '__all__'
+        read_only_fields = ['created_at', 'updated_at', 'customer_number', 'last_bill_invoice_date']
+    
+    def get_kam_details(self, obj):
+        if obj.kam_id:
             return {
-                'id': obj.assigned_sales_person.id,
-                'username': getattr(obj.assigned_sales_person, 'username', ''),
-                'email': obj.assigned_sales_person.email,
-                'first_name': getattr(obj.assigned_sales_person, 'first_name', ''),
-                'last_name': getattr(obj.assigned_sales_person, 'last_name', ''),
+                'id': obj.kam_id.id,
+                'name': obj.kam_id.kam_name,
+                'email': obj.kam_id.email,
+                'phone': obj.kam_id.phone,
             }
         return None
-
-    def get_calculated_monthly_revenue(self, obj):
-        return obj.calculated_monthly_revenue
-
+    
+    def get_total_billed(self, obj):
+        """Calculate total billed amount from all invoices"""
+        from apps.bills.models import InvoiceMaster
+        total = InvoiceMaster.objects.filter(
+            customer_entitlement_master_id__customer_master_id=obj
+        ).aggregate(total=models.Sum('total_bill_amount'))['total']
+        return float(total) if total else 0.0
+    
+    def get_total_paid(self, obj):
+        """Calculate total paid amount from all payments"""
+        from apps.payment.models import PaymentMaster
+        total = PaymentMaster.objects.filter(
+            customer_entitlement_master_id__customer_master_id=obj
+        ).aggregate(total=models.Sum('details__pay_amount'))['total']
+        return float(total) if total else 0.0
+    
+    def get_total_due(self, obj):
+        """Calculate total due amount"""
+        return self.get_total_billed(obj) - self.get_total_paid(obj)
+    
+    def get_active_entitlements_count(self, obj):
+        """Count active entitlements"""
+        return obj.entitlements.filter(
+            details__is_active=True,
+            details__status='active'
+        ).distinct().count()
 
 

@@ -86,6 +86,10 @@ class FeedbackDetailView(generics.RetrieveUpdateDestroyAPIView):
     required_permissions = ['feedback:read']
 
     def get_serializer_class(self):
+        # Short-circuit for schema generation (drf-yasg)
+        if getattr(self, 'swagger_fake_view', False):
+            return FeedbackSerializer
+            
         if self.request.method in ['PUT', 'PATCH']:
             # Check if user can manage (admin) or just edit (owner)
             obj = self.get_object()
