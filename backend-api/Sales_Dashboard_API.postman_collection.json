@@ -1,0 +1,1227 @@
+{
+	"info": {
+		"_postman_id": "sales-dashboard-api-collection",
+		"name": "Sales Dashboard API",
+		"description": "Complete API collection for Sales Dashboard - ISP Billing System",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "sales-dashboard"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"access_token\", jsonData.access);",
+									"    pm.environment.set(\"refresh_token\", jsonData.refresh);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"admin\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "auth", "login", ""]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Customers",
+			"item": [
+				{
+					"name": "List Customers",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/customers/?customer_type=bw&status=active&search=&ordering=-created_at",
+							"host": ["{{base_url}}"],
+							"path": ["api", "customers", ""],
+							"query": [
+								{"key": "customer_type", "value": "bw", "disabled": true},
+								{"key": "status", "value": "active", "disabled": true},
+								{"key": "search", "value": "", "disabled": true},
+								{"key": "ordering", "value": "-created_at", "disabled": true}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Customer",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/customers/1/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "customers", "1", ""]
+						}
+					}
+				},
+				{
+					"name": "Create Customer",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"customer_name\": \"New Customer Inc\",\n  \"company_name\": \"New Customer\",\n  \"email\": \"newcustomer@example.com\",\n  \"phone\": \"+8801712345678\",\n  \"address\": \"456 Business Ave, Dhaka\",\n  \"customer_type\": \"bw\",\n  \"kam_id\": 1,\n  \"total_client\": 0,\n  \"total_active_client\": 0,\n  \"previous_total_client\": 0,\n  \"free_giveaway_client\": 0,\n  \"default_percentage_share\": \"0.00\",\n  \"contact_person\": \"Jane Doe\",\n  \"status\": \"active\",\n  \"is_active\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/customers/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "customers", ""]
+						}
+					}
+				},
+				{
+					"name": "Update Customer (PATCH)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phone\": \"+8801799999999\",\n  \"status\": \"inactive\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/customers/1/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "customers", "1", ""]
+						}
+					}
+				},
+				{
+					"name": "Update Customer (PUT)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"customer_name\": \"Updated Customer Inc\",\n  \"company_name\": \"Updated Customer\",\n  \"email\": \"updated@example.com\",\n  \"phone\": \"+8801799999999\",\n  \"address\": \"789 Updated St, Dhaka\",\n  \"customer_type\": \"bw\",\n  \"kam_id\": 1,\n  \"total_client\": 0,\n  \"total_active_client\": 0,\n  \"previous_total_client\": 0,\n  \"free_giveaway_client\": 0,\n  \"default_percentage_share\": \"0.00\",\n  \"contact_person\": \"Jane Doe\",\n  \"status\": \"active\",\n  \"is_active\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/customers/1/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "customers", "1", ""]
+						}
+					}
+				},
+				{
+					"name": "Delete Customer",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/customers/1/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "customers", "1", ""]
+						}
+					}
+				},
+				{
+					"name": "Get Customer Entitlements",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/customers/1/entitlements/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "customers", "1", "entitlements", ""]
+						}
+					}
+				},
+				{
+					"name": "Get Customer Invoices",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/customers/1/invoices/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "customers", "1", "invoices", ""]
+						}
+					}
+				},
+				{
+					"name": "Get Customer Payments",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/customers/1/payments/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "customers", "1", "payments", ""]
+						}
+					}
+				},
+				{
+					"name": "Get Customer Payment History",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/customers/1/payment_history/?start_date=2025-11-01&end_date=2025-11-30",
+							"host": ["{{base_url}}"],
+							"path": ["api", "customers", "1", "payment_history", ""],
+							"query": [
+								{"key": "start_date", "value": "2025-11-01"},
+								{"key": "end_date", "value": "2025-11-30"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Customer Bill History",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/customers/1/bill_history/?start_date=2025-11-01&end_date=2025-11-30&period=monthly",
+							"host": ["{{base_url}}"],
+							"path": ["api", "customers", "1", "bill_history", ""],
+							"query": [
+								{"key": "start_date", "value": "2025-11-01"},
+								{"key": "end_date", "value": "2025-11-30"},
+								{"key": "period", "value": "monthly"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Last Bill",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/customers/1/last_bill/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "customers", "1", "last_bill", ""]
+						}
+					}
+				},
+				{
+					"name": "Get Previous Bill",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/customers/1/previous_bill/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "customers", "1", "previous_bill", ""]
+						}
+					}
+				},
+				{
+					"name": "List KAM Masters",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/customers/kam/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "customers", "kam", ""]
+						}
+					}
+				},
+				{
+					"name": "Get KAM Master",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/customers/kam/1/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "customers", "kam", "1", ""]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Bills - Entitlements",
+			"item": [
+				{
+					"name": "List Entitlements",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/bills/entitlements/?customer_master_id=1&ordering=-created_at",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bills", "entitlements", ""],
+							"query": [
+								{"key": "customer_master_id", "value": "1"},
+								{"key": "ordering", "value": "-created_at"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Entitlement",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/bills/entitlements/1/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bills", "entitlements", "1", ""]
+						}
+					}
+				},
+				{
+					"name": "Create Entitlement",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"customer_master_id\": 1,\n  \"bill_number\": \"BILL-00002\",\n  \"activation_date\": \"2025-12-01\",\n  \"nttn_company\": \"NTTN Corp\",\n  \"nttn_capacity\": \"200 Mbps\",\n  \"total_bill\": \"10000.00\",\n  \"remarks\": \"New entitlement\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/bills/entitlements/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bills", "entitlements", ""]
+						}
+					}
+				},
+				{
+					"name": "Update Entitlement (PATCH)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"total_bill\": \"12000.00\",\n  \"remarks\": \"Updated entitlement\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/bills/entitlements/1/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bills", "entitlements", "1", ""]
+						}
+					}
+				},
+				{
+					"name": "Delete Entitlement",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/bills/entitlements/1/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bills", "entitlements", "1", ""]
+						}
+					}
+				},
+				{
+					"name": "Get Entitlement Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/bills/entitlements/1/details/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bills", "entitlements", "1", "details", ""]
+						}
+					}
+				},
+				{
+					"name": "Bulk Create Entitlement Details (Bandwidth)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"entitlement_master_id\": 1,\n  \"bandwidth_details\": [\n    {\n      \"bandwidth_type\": \"ipt\",\n      \"mbps\": \"50.00\",\n      \"unit_price\": \"30.00\",\n      \"start_date\": \"2025-12-01\",\n      \"end_date\": \"2025-12-31\",\n      \"is_active\": true,\n      \"status\": \"active\",\n      \"remarks\": \"IPT bandwidth\"\n    },\n    {\n      \"bandwidth_type\": \"gcc\",\n      \"mbps\": \"30.00\",\n      \"unit_price\": \"25.00\",\n      \"start_date\": \"2025-12-01\",\n      \"end_date\": \"2025-12-31\",\n      \"is_active\": true,\n      \"status\": \"active\",\n      \"remarks\": \"GCC bandwidth\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/bills/entitlements/1/details/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bills", "entitlements", "1", "details", ""]
+						}
+					}
+				},
+				{
+					"name": "Bulk Create Entitlement Details (Channel Partner)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"entitlement_master_id\": 2,\n  \"channel_partner_details\": [\n    {\n      \"mbps\": \"100.00\",\n      \"unit_price\": \"40.00\",\n      \"custom_mac_percentage_share\": \"45.00\",\n      \"start_date\": \"2025-12-01\",\n      \"end_date\": \"2025-12-31\",\n      \"is_active\": true,\n      \"status\": \"active\",\n      \"remarks\": \"Channel partner entitlement\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/bills/entitlements/2/details/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bills", "entitlements", "2", "details", ""]
+						}
+					}
+				},
+				{
+					"name": "List Entitlement Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/bills/entitlement-details/?cust_entitlement_id=1&type=bw&status=active",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bills", "entitlement-details", ""],
+							"query": [
+								{"key": "cust_entitlement_id", "value": "1"},
+								{"key": "type", "value": "bw"},
+								{"key": "status", "value": "active"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Entitlement Detail",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"cust_entitlement_id\": 1,\n  \"start_date\": \"2025-12-01\",\n  \"end_date\": \"2025-12-31\",\n  \"type\": \"bw\",\n  \"mbps\": \"100.00\",\n  \"unit_price\": \"50.00\",\n  \"is_active\": true,\n  \"status\": \"active\",\n  \"remarks\": \"IPT - Monthly bandwidth\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/bills/entitlement-details/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bills", "entitlement-details", ""]
+						}
+					}
+				},
+				{
+					"name": "Get Bandwidth Types",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/bills/entitlement-details/bandwidth_types/?customer_id=1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bills", "entitlement-details", "bandwidth_types", ""],
+							"query": [
+								{"key": "customer_id", "value": "1"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Entitlement History",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/bills/entitlement-details/history/?customer_id=1&start_date=2025-11-01&end_date=2025-11-30",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bills", "entitlement-details", "history", ""],
+							"query": [
+								{"key": "customer_id", "value": "1"},
+								{"key": "start_date", "value": "2025-11-01"},
+								{"key": "end_date", "value": "2025-11-30"}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Bills - Invoices",
+			"item": [
+				{
+					"name": "List Invoices",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/bills/invoices/?customer_id=1&status=paid&ordering=-issue_date",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bills", "invoices", ""],
+							"query": [
+								{"key": "customer_id", "value": "1"},
+								{"key": "status", "value": "paid"},
+								{"key": "ordering", "value": "-issue_date"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Invoice",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/bills/invoices/1/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bills", "invoices", "1", ""]
+						}
+					}
+				},
+				{
+					"name": "Create Invoice",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"customer_entitlement_master_id\": 1,\n  \"issue_date\": \"2025-12-01\",\n  \"due_date\": \"2025-12-15\",\n  \"status\": \"draft\",\n  \"information_master_id\": 1,\n  \"auto_calculate\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/bills/invoices/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bills", "invoices", ""]
+						}
+					}
+				},
+				{
+					"name": "Auto-Generate Invoice",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"entitlement_id\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/bills/invoices/auto_generate/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bills", "invoices", "auto_generate", ""]
+						}
+					}
+				},
+				{
+					"name": "Get Invoice History",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/bills/invoices/history/?customer_id=1&start_date=2025-11-01&end_date=2025-11-30&period=monthly",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bills", "invoices", "history", ""],
+							"query": [
+								{"key": "customer_id", "value": "1"},
+								{"key": "start_date", "value": "2025-11-01"},
+								{"key": "end_date", "value": "2025-11-30"},
+								{"key": "period", "value": "monthly"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Update Invoice (PATCH)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"paid\",\n  \"total_paid_amount\": \"5750.00\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/bills/invoices/1/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bills", "invoices", "1", ""]
+						}
+					}
+				},
+				{
+					"name": "Delete Invoice",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/bills/invoices/1/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bills", "invoices", "1", ""]
+						}
+					}
+				},
+				{
+					"name": "List Invoice Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/bills/invoice-details/?invoice_master_id=1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bills", "invoice-details", ""],
+							"query": [
+								{"key": "invoice_master_id", "value": "1"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Invoice Detail",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"invoice_master_id\": 1,\n  \"entitlement_details_id\": 1,\n  \"sub_total\": \"5000.00\",\n  \"vat_rate\": \"15.00\",\n  \"sub_discount_rate\": \"0.00\",\n  \"remarks\": \"Invoice line item\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/bills/invoice-details/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bills", "invoice-details", ""]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Payments",
+			"item": [
+				{
+					"name": "List Payments",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/payments/?customer_entitlement_master_id=1&payment_method=Bank Transfer",
+							"host": ["{{base_url}}"],
+							"path": ["api", "payments", ""],
+							"query": [
+								{"key": "customer_entitlement_master_id", "value": "1"},
+								{"key": "payment_method", "value": "Bank Transfer"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Payment",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/payments/1/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "payments", "1", ""]
+						}
+					}
+				},
+				{
+					"name": "Create Payment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"payment_date\": \"2025-12-15\",\n  \"payment_method\": \"Bank Transfer\",\n  \"customer_entitlement_master_id\": 1,\n  \"invoice_master_id\": 1,\n  \"remarks\": \"Payment for invoice\",\n  \"status\": \"completed\",\n  \"received_by\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/payments/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "payments", ""]
+						}
+					}
+				},
+				{
+					"name": "Update Payment (PATCH)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"completed\",\n  \"remarks\": \"Payment received\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/payments/1/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "payments", "1", ""]
+						}
+					}
+				},
+				{
+					"name": "Delete Payment",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/payments/1/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "payments", "1", ""]
+						}
+					}
+				},
+				{
+					"name": "List Payment Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/payments/payment-details/?payment_master_id=1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "payments", "payment-details", ""],
+							"query": [
+								{"key": "payment_master_id", "value": "1"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Payment Detail",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"payment_master_id\": 1,\n  \"pay_amount\": \"5750.00\",\n  \"transaction_id\": \"TXN-12345\",\n  \"payment_date\": \"2025-12-15\",\n  \"remarks\": \"Full payment\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/payments/payment-details/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "payments", "payment-details", ""]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Packages",
+			"item": [
+				{
+					"name": "List Packages",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/packages/?package_type=soho&is_active=true",
+							"host": ["{{base_url}}"],
+							"path": ["api", "packages", ""],
+							"query": [
+								{"key": "package_type", "value": "soho"},
+								{"key": "is_active", "value": "true"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Package",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/packages/1/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "packages", "1", ""]
+						}
+					}
+				},
+				{
+					"name": "Create Package",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"package_name\": \"Home Premium 50 Mbps\",\n  \"package_type\": \"soho\",\n  \"is_active\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/packages/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "packages", ""]
+						}
+					}
+				},
+				{
+					"name": "Update Package (PATCH)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"is_active\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/packages/1/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "packages", "1", ""]
+						}
+					}
+				},
+				{
+					"name": "Delete Package",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/packages/1/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "packages", "1", ""]
+						}
+					}
+				},
+				{
+					"name": "List Package Pricings",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/packages/package-pricings/?package_master_id=1&is_active=true",
+							"host": ["{{base_url}}"],
+							"path": ["api", "packages", "package-pricings", ""],
+							"query": [
+								{"key": "package_master_id", "value": "1"},
+								{"key": "is_active", "value": "true"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Package Pricing",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"package_master_id\": 1,\n  \"rate\": \"2000.00\",\n  \"description\": \"Monthly subscription rate\",\n  \"is_active\": true,\n  \"val_start_at\": \"2025-12-01\",\n  \"val_end_at\": \"2025-12-31\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/packages/package-pricings/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "packages", "package-pricings", ""]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Utility",
+			"item": [
+				{
+					"name": "List Utility Information",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/utility/utility-info/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "utility", "utility-info", ""]
+						}
+					}
+				},
+				{
+					"name": "Get Utility Information",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/utility/utility-info/1/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "utility", "utility-info", "1", ""]
+						}
+					}
+				},
+				{
+					"name": "List Utility Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/utility/utility-details/?utility_master_id=1&type=bank",
+							"host": ["{{base_url}}"],
+							"path": ["api", "utility", "utility-details", ""],
+							"query": [
+								{"key": "utility_master_id", "value": "1"},
+								{"key": "type", "value": "bank"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Utility Detail",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/utility/utility-details/1/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "utility", "utility-details", "1", ""]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refresh_token",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
+
