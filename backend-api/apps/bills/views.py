@@ -1,6 +1,4 @@
-"""
-REST API Views for Bills App - Invoices and Entitlements
-"""
+
 from rest_framework import viewsets, generics, permissions, filters, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -10,12 +8,22 @@ from django.utils import timezone
 from datetime import datetime, date, timedelta
 from decimal import Decimal
 
-from .models import InvoiceMaster, InvoiceDetails
+from .models import (
+    InvoiceMaster,
+    InvoiceDetails,
+    CustomerEntitlementMaster,
+    CustomerEntitlementDetails,
+)
 from apps.customers.models import CustomerMaster
 from .serializers import (
     InvoiceMasterSerializer,
     InvoiceMasterCreateSerializer,
     InvoiceDetailsSerializer,
+    CustomerEntitlementMasterSerializer,
+    CustomerEntitlementDetailsSerializer,
+    BulkEntitlementDetailsCreateSerializer,
+    BandwidthEntitlementDetailSerializer,
+    ChannelPartnerEntitlementDetailSerializer,
 )
 from apps.authentication.permissions import RequirePermissions
 
@@ -249,4 +257,195 @@ class InvoiceDetailsViewSet(viewsets.ModelViewSet):
         invoice.save(update_fields=[
             'total_bill_amount', 'total_vat_amount', 'total_discount_amount', 'total_balance_due'
         ])
+
+
+# ==================== Customer Entitlement Master Views ====================
+
+class CustomerEntitlementMasterViewSet(viewsets.ModelViewSet):
+    """Full CRUD for Customer Entitlement Master"""
+    queryset = CustomerEntitlementMaster.objects.select_related(
+        'customer_master_id', 'created_by'
+    ).prefetch_related('details')
+    serializer_class = CustomerEntitlementMasterSerializer
+    permission_classes = [permissions.IsAuthenticated, RequirePermissions]
+    required_permissions = ['bills:read']
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['customer_master_id', 'activation_date']
+    search_fields = ['bill_number', 'customer_master_id__customer_name']
+    ordering_fields = ['created_at', 'activation_date', 'bill_number']
+    
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            self.required_permissions = ['bills:create']
+        elif self.action == 'destroy':
+            self.required_permissions = ['bills:update']
+        return CustomerEntitlementMasterSerializer
+    
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+    
+    def perform_update(self, serializer):
+        serializer.save(updated_by=self.request.user)
+        # Update customer's last_bill_invoice_date
+        entitlement = serializer.instance
+        customer = entitlement.customer_master_id
+        customer.last_bill_invoice_date = timezone.now()
+        customer.save(update_fields=['last_bill_invoice_date'])
+    
+    @action(detail=True, methods=['get', 'post'])
+    def details(self, request, pk=None):
+        """Get or create entitlement details"""
+        entitlement = self.get_object()
+        
+        if request.method == 'GET':
+            details = entitlement.details.all()
+            serializer = CustomerEntitlementDetailsSerializer(details, many=True)
+            return Response(serializer.data)
+        
+        elif request.method == 'POST':
+            # Handle bulk creation of details
+            serializer = BulkEntitlementDetailsCreateSerializer(data=request.data)
+            if serializer.is_valid():
+                entitlement_id = serializer.validated_data['entitlement_master_id']
+                entitlement = CustomerEntitlementMaster.objects.get(id=entitlement_id)
+                customer = entitlement.customer_master_id
+                created_details = []
+                
+                # Create bandwidth details
+                if 'bandwidth_details' in serializer.validated_data:
+                    for detail_data in serializer.validated_data['bandwidth_details']:
+                        bandwidth_type = detail_data.get('bandwidth_type', 'ipt')
+                        remarks = f"{bandwidth_type.upper()} - {detail_data.get('remarks', '')}".strip()
+                        
+                        detail = CustomerEntitlementDetails.objects.create(
+                            cust_entitlement_id=entitlement,
+                            type='bw',  # Customer type is 'bw' for bandwidth
+                            mbps=detail_data['mbps'],
+                            unit_price=detail_data['unit_price'],
+                            start_date=detail_data['start_date'],
+                            end_date=detail_data['end_date'],
+                            package_pricing_id_id=detail_data.get('package_pricing_id'),
+                            is_active=detail_data.get('is_active', True),
+                            status=detail_data.get('status', 'active'),
+                            remarks=remarks,  # Store bandwidth type (ipt, gcc, etc.) in remarks
+                            created_by=request.user
+                        )
+                        created_details.append(detail)
+                
+                # Create channel partner details
+                if 'channel_partner_details' in serializer.validated_data:
+                    for detail_data in serializer.validated_data['channel_partner_details']:
+                        detail = CustomerEntitlementDetails.objects.create(
+                            cust_entitlement_id=entitlement,
+                            type='channel_partner',
+                            mbps=detail_data['mbps'],
+                            unit_price=detail_data['unit_price'],
+                            custom_mac_percentage_share=detail_data['custom_mac_percentage_share'],
+                            start_date=detail_data['start_date'],
+                            end_date=detail_data['end_date'],
+                            package_pricing_id_id=detail_data.get('package_pricing_id'),
+                            is_active=detail_data.get('is_active', True),
+                            status=detail_data.get('status', 'active'),
+                            created_by=request.user
+                        )
+                        created_details.append(detail)
+                
+                result_serializer = CustomerEntitlementDetailsSerializer(created_details, many=True)
+                return Response(result_serializer.data, status=status.HTTP_201_CREATED)
+            
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# ==================== Customer Entitlement Details Views ====================
+
+class CustomerEntitlementDetailsViewSet(viewsets.ModelViewSet):
+    """Full CRUD for Customer Entitlement Details"""
+    queryset = CustomerEntitlementDetails.objects.select_related(
+        'cust_entitlement_id', 'package_pricing_id', 'created_by'
+    )
+    serializer_class = CustomerEntitlementDetailsSerializer
+    permission_classes = [permissions.IsAuthenticated, RequirePermissions]
+    required_permissions = ['bills:read']
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['cust_entitlement_id', 'type', 'status', 'is_active']
+    search_fields = ['cust_entitlement_id__bill_number']
+    ordering_fields = ['created_at', 'start_date', 'end_date']
+    
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            self.required_permissions = ['bills:create']
+        elif self.action == 'destroy':
+            self.required_permissions = ['bills:update']
+        return CustomerEntitlementDetailsSerializer
+    
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+        # Update last_changes_updated_date
+        detail = serializer.instance
+        detail.last_changes_updated_date = date.today()
+        detail.save(update_fields=['last_changes_updated_date'])
+    
+    def perform_update(self, serializer):
+        serializer.save(updated_by=self.request.user)
+        # Update last_changes_updated_date
+        detail = serializer.instance
+        detail.last_changes_updated_date = date.today()
+        detail.save(update_fields=['last_changes_updated_date'])
+    
+    @action(detail=False, methods=['get'])
+    def bandwidth_types(self, request):
+        """Get all bandwidth entitlement details grouped by bandwidth type (ipt, gcc, cdn, nix, baishan)"""
+        customer_id = request.query_params.get('customer_id')
+        queryset = self.get_queryset().filter(
+            type='bw',
+            is_active=True
+        )
+        
+        if customer_id:
+            queryset = queryset.filter(
+                cust_entitlement_id__customer_master_id_id=customer_id
+            )
+        
+        # Group by bandwidth type extracted from remarks
+        result = {
+            'ipt': [],
+            'gcc': [],
+            'cdn': [],
+            'nix': [],
+            'baishan': [],
+            'other': []
+        }
+        
+        for detail in queryset:
+            serializer = CustomerEntitlementDetailsSerializer(detail)
+            data = serializer.data
+            bw_type = data.get('bandwidth_type', 'other')
+            if bw_type in result:
+                result[bw_type].append(data)
+            else:
+                result['other'].append(data)
+        
+        return Response(result)
+    
+    @action(detail=False, methods=['get'])
+    def history(self, request):
+        """Get entitlement details history with date range"""
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        customer_id = request.query_params.get('customer_id')
+        
+        queryset = self.get_queryset()
+        
+        if customer_id:
+            queryset = queryset.filter(
+                cust_entitlement_id__customer_master_id_id=customer_id
+            )
+        
+        if start_date:
+            queryset = queryset.filter(start_date__gte=start_date)
+        if end_date:
+            queryset = queryset.filter(end_date__lte=end_date)
+        
+        serializer = self.get_serializer(queryset.order_by('-created_at'), many=True)
+        return Response(serializer.data)
 

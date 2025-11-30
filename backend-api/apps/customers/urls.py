@@ -1,23 +1,18 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
+    KAMMasterListView,
+    KAMMasterDetailView,
+    CustomerMasterViewSet,
     ProspectListCreateView,
     ProspectDetailView,
     ProspectImportView,
     ProspectExportView,
 )
-from .views_customer_api import (
-    KAMMasterListView,
-    KAMMasterDetailView,
-    CustomerMasterViewSet,
-    CustomerEntitlementMasterViewSet,
-    CustomerEntitlementDetailsViewSet,
-)
+
 
 router = DefaultRouter()
-router.register(r'customers', CustomerMasterViewSet, basename='customer')
-router.register(r'entitlements', CustomerEntitlementMasterViewSet, basename='entitlement')
-router.register(r'entitlement-details', CustomerEntitlementDetailsViewSet, basename='entitlement-detail')
+router.register(r'', CustomerMasterViewSet, basename='customer')
 
 urlpatterns = [
     # Prospects endpoints
@@ -30,6 +25,6 @@ urlpatterns = [
     path('kam/', KAMMasterListView.as_view(), name='kam-list'),
     path('kam/<int:pk>/', KAMMasterDetailView.as_view(), name='kam-detail'),
     
-    # Customer, Entitlement endpoints (via router)
+    # Customer endpoints (via router)
     path('', include(router.urls)),
 ]

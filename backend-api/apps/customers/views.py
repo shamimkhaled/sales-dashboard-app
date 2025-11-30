@@ -1,20 +1,206 @@
-from rest_framework import generics, permissions, filters, status
+from rest_framework import generics, permissions, filters, status, viewsets
 from rest_framework.response import Response
+from rest_framework.decorators import action
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.http import StreamingHttpResponse, HttpResponse
 from django.db import models
 import csv
+from django.db.models import Q, Sum, Count
 import pandas as pd
 from io import BytesIO
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Prospect, CustomerMaster, ProspectStatusHistory
+from .models import Prospect, CustomerMaster, ProspectStatusHistory, KAMMaster
+from apps.bills.models import CustomerEntitlementMaster, CustomerEntitlementDetails
 from .serializers import (
     ProspectSerializer,
+    CustomerMasterSerializer,
+    KAMMasterSerializer,
+    
 )
 from .utils import convert_prospect_to_customer
 from .email_service import send_prospect_confirmation_email, send_customer_lost_email
 from apps.authentication.permissions import RequirePermissions
+
+
+
+class KAMMasterListView(generics.ListAPIView):
+    """GET only - List all KAM Masters"""
+    queryset = KAMMaster.objects.filter(is_active=True)
+    serializer_class = KAMMasterSerializer
+    permission_classes = [permissions.IsAuthenticated, RequirePermissions]
+    required_permissions = ['customers:read']
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['kam_name', 'email', 'phone']
+    ordering_fields = ['kam_name', 'created_at']
+
+
+class KAMMasterDetailView(generics.RetrieveAPIView):
+    """GET only - Retrieve single KAM Master"""
+    queryset = KAMMaster.objects.all()
+    serializer_class = KAMMasterSerializer
+    permission_classes = [permissions.IsAuthenticated, RequirePermissions]
+    required_permissions = ['customers:read']
+
+
+# ==================== Customer Master Views ====================
+
+class CustomerMasterViewSet(viewsets.ModelViewSet):
+    """Full CRUD for Customer Master"""
+    queryset = CustomerMaster.objects.all()
+    serializer_class = CustomerMasterSerializer
+    permission_classes = [permissions.IsAuthenticated, RequirePermissions]
+    required_permissions = ['customers:read']
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['customer_type', 'status', 'is_active', 'kam_id']
+    search_fields = ['customer_name', 'email', 'phone', 'customer_number', 'company_name']
+    ordering_fields = ['customer_name', 'created_at', 'last_bill_invoice_date']
+    
+    def get_queryset(self):
+        qs = CustomerMaster.objects.select_related('kam_id', 'created_by').prefetch_related('entitlements')
+        user = self.request.user
+        
+        # Filter by KAM if user is sales_person
+        if user.role and user.role.name == 'sales_person':
+            qs = qs.filter(kam_id__kam_name=user.username)
+        
+        return qs
+    
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            self.required_permissions = ['customers:update']
+        elif self.action == 'destroy':
+            self.required_permissions = ['customers:update']
+        return CustomerMasterSerializer
+    
+    @action(detail=True, methods=['get'])
+    def entitlements(self, request, pk=None):
+        """Get all entitlements for a customer"""
+        from apps.bills.serializers import CustomerEntitlementMasterSerializer
+        customer = self.get_object()
+        entitlements = CustomerEntitlementMaster.objects.filter(
+            customer_master_id=customer
+        ).prefetch_related('details')
+        serializer = CustomerEntitlementMasterSerializer(entitlements, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['get'])
+    def invoices(self, request, pk=None):
+        """Get all invoices for a customer"""
+        from apps.bills.models import InvoiceMaster
+        customer = self.get_object()
+        invoices = InvoiceMaster.objects.filter(
+            customer_entitlement_master_id__customer_master_id=customer
+        )
+        from apps.bills.serializers import InvoiceMasterSerializer
+        serializer = InvoiceMasterSerializer(invoices, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['get'])
+    def payments(self, request, pk=None):
+        """Get all payments for a customer"""
+        from apps.payment.models import PaymentMaster
+        customer = self.get_object()
+        payments = PaymentMaster.objects.filter(
+            customer_entitlement_master_id__customer_master_id=customer
+        )
+        from apps.payment.serializers import PaymentMasterSerializer
+        serializer = PaymentMasterSerializer(payments, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['get'])
+    def payment_history(self, request, pk=None):
+        """Get payment history with date range filter"""
+        from apps.payment.models import PaymentMaster
+        customer = self.get_object()
+        
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        
+        payments = PaymentMaster.objects.filter(
+            customer_entitlement_master_id__customer_master_id=customer
+        )
+        
+        if start_date:
+            payments = payments.filter(payment_date__gte=start_date)
+        if end_date:
+            payments = payments.filter(payment_date__lte=end_date)
+        
+        from apps.payment.serializers import PaymentMasterSerializer
+        serializer = PaymentMasterSerializer(payments.order_by('-payment_date'), many=True)
+        
+        # Calculate totals
+        total_received = payments.aggregate(
+            total=Sum('details__pay_amount')
+        )['total'] or Decimal('0')
+        
+        return Response({
+            'payments': serializer.data,
+            'total_received': float(total_received),
+            'count': payments.count()
+        })
+    
+    @action(detail=True, methods=['get'])
+    def bill_history(self, request, pk=None):
+        """Get bill/invoice history with date range filter"""
+        from apps.bills.models import InvoiceMaster
+        customer = self.get_object()
+        
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        period = request.query_params.get('period')  # 'monthly', 'weekly', etc.
+        
+        invoices = InvoiceMaster.objects.filter(
+            customer_entitlement_master_id__customer_master_id=customer
+        )
+        
+        if start_date:
+            invoices = invoices.filter(issue_date__gte=start_date)
+        if end_date:
+            invoices = invoices.filter(issue_date__lte=end_date)
+        
+        from apps.bills.serializers import InvoiceMasterSerializer
+        serializer = InvoiceMasterSerializer(invoices.order_by('-issue_date'), many=True)
+        
+        return Response({
+            'invoices': serializer.data,
+            'count': invoices.count(),
+            'total_billed': float(invoices.aggregate(total=Sum('total_bill_amount'))['total'] or Decimal('0'))
+        })
+    
+    @action(detail=True, methods=['get'])
+    def last_bill(self, request, pk=None):
+        """Get last bill/invoice for customer"""
+        from apps.bills.models import InvoiceMaster
+        customer = self.get_object()
+        last_invoice = InvoiceMaster.objects.filter(
+            customer_entitlement_master_id__customer_master_id=customer
+        ).order_by('-issue_date').first()
+        
+        if last_invoice:
+            from apps.bills.serializers import InvoiceMasterSerializer
+            serializer = InvoiceMasterSerializer(last_invoice)
+            return Response(serializer.data)
+        return Response({'detail': 'No bills found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    @action(detail=True, methods=['get'])
+    def previous_bill(self, request, pk=None):
+        """Get previous bill (second to last)"""
+        from apps.bills.models import InvoiceMaster
+        customer = self.get_object()
+        invoices = InvoiceMaster.objects.filter(
+            customer_entitlement_master_id__customer_master_id=customer
+        ).order_by('-issue_date')[:2]
+        
+        if len(invoices) > 1:
+            from apps.bills.serializers import InvoiceMasterSerializer
+            serializer = InvoiceMasterSerializer(invoices[1])
+            return Response(serializer.data)
+        return Response({'detail': 'No previous bill found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+
+
 
 
 class ProspectListCreateView(generics.ListCreateAPIView):
@@ -62,244 +248,6 @@ class ProspectDetailView(generics.RetrieveUpdateDestroyAPIView):
             )
         
         return response
-
-
-# class CustomerListCreateView(generics.ListCreateAPIView):
-#     serializer_class = CustomerSerializer
-#     permission_classes = [permissions.IsAuthenticated, RequirePermissions]
-#     required_permissions = ['customers:read']
-#     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-#     filterset_fields = ['kam', 'status', 'customer_type']
-#     search_fields = ['name', 'company_name', 'email', 'phone']
-#     ordering_fields = ['created_at', 'name', 'customer_type']
-
-#     def get_queryset(self):
-#         qs = Customer.objects.all()
-#         user = self.request.user
-#         if user.role and user.role.name == 'sales_person':
-#             qs = qs.filter(kam=user)
-#         return qs
-
-#     def perform_create(self, serializer):
-#         serializer.save()
-
-
-# class CustomerDetailView(generics.RetrieveUpdateDestroyAPIView):
-#     queryset = Customer.objects.all()
-#     serializer_class = CustomerSerializer
-#     permission_classes = [permissions.IsAuthenticated, RequirePermissions]
-#     required_permissions = ['customers:update']
-    
-#     def update(self, request, *args, **kwargs):
-#         instance = self.get_object()
-#         old_status = instance.status
-        
-#         # Call parent update
-#         response = super().update(request, *args, **kwargs)
-        
-#         # Check if status changed to 'Lost' and send email
-#         instance.refresh_from_db()
-#         if old_status != instance.status and instance.status == 'Lost':
-#             send_customer_lost_email(instance)
-        
-#         return response
-
-
-# class CustomerImportView(APIView):
-#     permission_classes = [permissions.IsAuthenticated, RequirePermissions]
-#     required_permissions = ['customers:import']
-#     parser_classes = [MultiPartParser, FormParser]
-
-#     def post(self, request):
-#         file = request.data.get('file')
-#         if not file:
-#             return Response({'detail': 'File is required'}, status=400)
-
-#         file_name = file.name.lower()
-#         if file_name.endswith('.xlsx') or file_name.endswith('.xls'):
-#             return self._import_excel(file)
-#         elif file_name.endswith('.csv'):
-#             return self._import_csv(file)
-#         else:
-#             return Response({'detail': 'Unsupported file format. Please upload Excel (.xlsx, .xls) or CSV files.'}, status=400)
-
-#     def _import_excel(self, file):
-#         try:
-#             df = pd.read_excel(file)
-#             return self._process_dataframe(df)
-#         except Exception as e:
-#             return Response({'detail': f'Error reading Excel file: {str(e)}'}, status=400)
-
-#     def _import_csv(self, file):
-#         try:
-#             df = pd.read_csv(file)
-#             return self._process_dataframe(df)
-#         except Exception as e:
-#             return Response({'detail': f'Error reading CSV file: {str(e)}'}, status=400)
-
-#     def _process_dataframe(self, df):
-#         required_columns = ['name', 'email', 'phone']
-#         missing_columns = [col for col in required_columns if col not in df.columns]
-#         if missing_columns:
-#             return Response({
-#                 'detail': f'Missing required columns: {", ".join(missing_columns)}'
-#             }, status=400)
-
-#         processed = 0
-#         errors = []
-#         created = 0
-#         updated = 0
-
-#         for index, row in df.iterrows():
-#             try:
-#                 # Clean and validate data
-#                 customer_data = {
-#                     'name': str(row.get('name', '')).strip(),
-#                     'company_name': str(row.get('company_name', '')).strip() or None,
-#                     'email': str(row.get('email', '')).strip().lower(),
-#                     'phone': str(row.get('phone', '')).strip(),
-#                     'address': str(row.get('address', '')).strip() or None,
-#                     'link_id': str(row.get('link_id', '')).strip() or None,
-#                 }
-
-#                 # Validate required fields
-#                 if not customer_data['name']:
-#                     errors.append(f'Row {index + 2}: Name is required')
-#                     continue
-#                 if not customer_data['email']:
-#                     errors.append(f'Row {index + 2}: Email is required')
-#                     continue
-#                 if not customer_data['phone']:
-#                     errors.append(f'Row {index + 2}: Phone is required')
-#                     continue
-
-#                 # Handle kam by ID
-#                 kam = None
-#                 if row.get('kam'):
-#                     try:
-#                         from django.contrib.auth import get_user_model
-#                         User = get_user_model()
-#                         kam_id = int(row.get('kam'))
-#                         kam = User.objects.filter(id=kam_id).first()
-#                         if not kam:
-#                             errors.append(f'Row {index + 2}: KAM with ID {kam_id} not found')
-#                             continue
-#                     except (ValueError, TypeError):
-#                         errors.append(f'Row {index + 2}: Invalid kam ID')
-#                         continue
-
-#                 # Handle status if provided
-#                 if row.get('status'):
-#                     status_value = str(row.get('status', '')).strip()
-#                     valid_statuses = ['Active', 'Inactive', 'Lost']
-#                     if status_value in valid_statuses:
-#                         customer_data['status'] = status_value
-
-#                 # Handle customer_type if provided
-#                 if row.get('customer_type'):
-#                     customer_data['customer_type'] = str(row.get('customer_type', '')).strip()
-
-#                 # Check if customer exists
-#                 customer, created_flag = Customer.objects.get_or_create(
-#                     email=customer_data['email'],
-#                     defaults=customer_data
-#                 )
-
-#                 if created_flag:
-#                     # Set kam for new customer
-#                     if kam:
-#                         customer.kam = kam
-#                         customer.save()
-#                     created += 1
-#                 else:
-#                     # Update existing customer
-#                     for key, value in customer_data.items():
-#                         setattr(customer, key, value)
-#                     # Update kam if provided
-#                     if kam:
-#                         customer.kam = kam
-#                     customer.save()
-#                     updated += 1
-
-#                 processed += 1
-
-#             except Exception as e:
-#                 errors.append(f'Row {index + 2}: {str(e)}')
-
-#         return Response({
-#             'success': len(errors) == 0,
-#             'processed': processed,
-#             'created': created,
-#             'updated': updated,
-#             'errors': errors
-#         })
-
-
-# class CustomerExportView(APIView):
-#     permission_classes = [permissions.IsAuthenticated, RequirePermissions]
-#     required_permissions = ['customers:export']
-
-#     def get(self, request):
-#         queryset = Customer.objects.select_related('kam').all()
-#         export_format = request.query_params.get('format', 'csv').lower()
-
-#         if export_format == 'excel':
-#             # Export as Excel
-#             data = []
-#             for c in queryset:
-#                 kam_id = c.kam.id if c.kam else ''
-#                 data.append({
-#                     'id': c.id,
-#                     'name': c.name,
-#                     'company_name': c.company_name or '',
-#                     'email': c.email,
-#                     'phone': c.phone,
-#                     'address': c.address or '',
-#                     'customer_type': c.customer_type or '',
-#                     'kam': kam_id,
-#                     'status': c.status,
-#                     'link_id': c.link_id or '',
-#                     'created_at': c.created_at.strftime('%Y-%m-%d %H:%M:%S') if c.created_at else '',
-#                 })
-
-#             df = pd.DataFrame(data)
-#             buffer = BytesIO()
-#             with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-#                 df.to_excel(writer, sheet_name='Customers', index=False)
-#             buffer.seek(0)
-
-#             response = HttpResponse(
-#                 buffer.getvalue(),
-#                 content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-#             )
-#             response['Content-Disposition'] = 'attachment; filename="customers.xlsx"'
-#             return response
-
-#         else:
-#             # Export as CSV (default)
-#             def row_iter():
-#                 header = ['id', 'name', 'company_name', 'email', 'phone', 'address', 'customer_type', 'kam', 'status', 'link_id', 'created_at']
-#                 yield ','.join(header) + '\n'
-#                 for c in queryset.iterator():
-#                     kam_id = str(c.kam.id) if c.kam else ''
-#                     row = [
-#                         str(c.id), 
-#                         c.name, 
-#                         c.company_name or '', 
-#                         c.email, 
-#                         c.phone,
-#                         c.address or '',
-#                         c.customer_type or '',
-#                         kam_id,
-#                         c.status, 
-#                         c.link_id or '',
-#                         c.created_at.strftime('%Y-%m-%d %H:%M:%S') if c.created_at else ''
-#                     ]
-#                     yield ','.join(row) + '\n'
-
-#             response = StreamingHttpResponse(row_iter(), content_type='text/csv')
-#             response['Content-Disposition'] = 'attachment; filename="customers.csv"'
-#             return response
 
 
 class ProspectExportView(APIView):
