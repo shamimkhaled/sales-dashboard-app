@@ -553,7 +553,7 @@ export default function Customers() {
                   className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl"
                 >
                   <Plus size={20} />
-                  <span>New Customer</span>
+                  <span>New Customer 1</span>
                 </motion.button>
               )}
             </div>
