@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users,
@@ -29,6 +30,7 @@ export default function Customers() {
   const { isDark } = useTheme();
   const { showSuccess, showError } = useNotification();
   const { user, hasPermission } = useAuth();
+  const { id } = useParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -49,14 +51,21 @@ export default function Customers() {
   const [totalPages, setTotalPages] = useState(0);
 
   const [formData, setFormData] = useState({
-    name: "",
-    company_name: "",
+    customer_name: "",
     email: "",
-    phone: "",
     address: "",
-    assigned_sales_person: user?.id || "",
-    status: "Active",
-    link_id: "",
+    customer_type: "",
+    company_name: "",
+    phone: "",
+    total_client: "",
+    total_active_client: "",
+    previous_total_client: "",
+    free_giveaway_client: "",
+    default_percentage_share: "",
+    contact_person: "",
+    status: "active",
+    is_active: true,
+    kam_id: "",
   });
 
   const [stats, setStats] = useState({
@@ -71,16 +80,27 @@ export default function Customers() {
     if (!userId) return "-";
     const user = salesUsers.find((u) => u.id === parseInt(userId));
     if (!user) return userId;
-    
-    // Return full name if available, otherwise fallback to username or email
-    const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
-    return fullName || user.username || user.email || userId;
+
+    return user.kam_name || userId;
+  };
+
+  const getCustomerTypeDisplay = (customerType) => {
+    const choices = {
+      'bw': 'Bandwidth',
+      'channel_partner': 'Channel Partner',
+      'soho': 'SOHO/Home'
+    };
+    return choices[customerType] || customerType || "-";
   };
 
   useEffect(() => {
     // Fetch sales users on mount. Customers are fetched by the pagination/search effects below.
     fetchSalesUsers();
-  }, []);
+    // Set kam_id from URL params if present
+    if (id) {
+      setFormData((prev) => ({ ...prev, kam_id: id }));
+    }
+  }, [id]);
 
   // Reset to page 1 when search term or filter changes. If already on page 1, fetch immediately.
   useEffect(() => {
@@ -130,7 +150,7 @@ export default function Customers() {
         });
       } else {
         // Fallback: Calculate stats from current page data
-        const active = customerData.filter((c) => c.status === "Active").length;
+        const active = customerData.filter((c) => c.status === "active").length;
         const inactive = customerData.length - active;
         setStats({
           totalCustomers: response.count || customerData.length,
@@ -147,32 +167,74 @@ export default function Customers() {
 
   const fetchSalesUsers = async () => {
     try {
-      // Use the new sales-users endpoint that's available to all authenticated users
-      const response = await userService.getSalesUsers();
-      // Handle different response formats
-      let users = [];
-      if (Array.isArray(response)) {
-        users = response;
-      } else if (response?.data && Array.isArray(response.data)) {
-        users = response.data;
-      } else if (response?.results && Array.isArray(response.results)) {
-        users = response.results;
+      // Use the /customers/kam/ endpoint to get all KAM list
+      const API_URL = import.meta.env.VITE_API_URL || "/api";
+      const response = await fetch(`${API_URL}/customers/kam/`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch KAM list");
       }
 
-      // The endpoint already filters for sales_manager and sales_person
+      const data = await response.json();
+      // Handle different response formats
+      let users = [];
+      if (Array.isArray(data)) {
+        users = data;
+      } else if (data?.data && Array.isArray(data.data)) {
+        users = data.data;
+      } else if (data?.results && Array.isArray(data.results)) {
+        users = data.results;
+      }
+
       setSalesUsers(users);
     } catch (err) {
-      console.error("Error fetching sales users:", err);
+      console.error("Error fetching KAM list:", err);
       setSalesUsers([]);
     }
   };
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    const { name, value, type, checked } = e.target;
+    const newValue = type === 'checkbox' ? checked : value;
+
+    setFormData((prev) => {
+      const updated = {
+        ...prev,
+        [name]: newValue,
+      };
+
+      // Handle customer_type changes
+      if (name === 'customer_type') {
+        if (newValue === 'bw' || newValue === 'soho') {
+          // Set fields to 0 for bw and soho
+          updated.total_client = '0';
+          updated.total_active_client = '0';
+          updated.previous_total_client = '0';
+          updated.free_giveaway_client = '0';
+          updated.default_percentage_share = '0';
+        } else if (newValue === 'channel_partner') {
+          // Clear fields for channel_partner (allow user input)
+          updated.total_client = '';
+          updated.total_active_client = '';
+          updated.previous_total_client = '';
+          updated.free_giveaway_client = '';
+          updated.default_percentage_share = '';
+        } else {
+          // Clear fields for other types
+          updated.total_client = '';
+          updated.total_active_client = '';
+          updated.previous_total_client = '';
+          updated.free_giveaway_client = '';
+          updated.default_percentage_share = '';
+        }
+      }
+
+      return updated;
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -185,15 +247,21 @@ export default function Customers() {
       if (editingId) {
         // Update existing customer
         const customerData = {
-          name: formData.name,
-          company_name: formData.company_name,
+          customer_name: formData.customer_name,
           email: formData.email || "",
-          phone: formData.phone || "",
           address: formData.address || "",
-          assigned_sales_person:
-            parseInt(formData.assigned_sales_person) || null,
-          status: formData.status || "Active",
-          link_id: formData.link_id || null,
+          customer_type: formData.customer_type,
+          company_name: formData.company_name,
+          phone: formData.phone || "",
+          total_client: formData.total_client ? parseInt(formData.total_client) : null,
+          total_active_client: formData.total_active_client ? parseInt(formData.total_active_client) : null,
+          previous_total_client: formData.previous_total_client ? parseInt(formData.previous_total_client) : null,
+          free_giveaway_client: formData.free_giveaway_client ? parseInt(formData.free_giveaway_client) : null,
+          default_percentage_share: formData.default_percentage_share ? parseFloat(formData.default_percentage_share) : null,
+          contact_person: formData.contact_person || "",
+          status: formData.status,
+          is_active: formData.is_active,
+          kam_id: formData.kam_id ? parseInt(formData.kam_id) : null,
         };
         console.log("Updating customer:", editingId, customerData);
         const response = await customerService.updateCustomer(
@@ -208,16 +276,23 @@ export default function Customers() {
       } else {
         // Create new customer
         const customerData = {
-          name: formData.name,
-          company_name: formData.company_name,
+          customer_name: formData.customer_name,
           email: formData.email || "",
-          phone: formData.phone || "",
           address: formData.address || "",
-          assigned_sales_person:
-            parseInt(formData.assigned_sales_person) || null,
-          status: formData.status || "Active",
-          link_id: formData.link_id || null,
+          customer_type: formData.customer_type,
+          company_name: formData.company_name,
+          phone: formData.phone || "",
+          total_client: formData.total_client ? parseInt(formData.total_client) : null,
+          total_active_client: formData.total_active_client ? parseInt(formData.total_active_client) : null,
+          previous_total_client: formData.previous_total_client ? parseInt(formData.previous_total_client) : null,
+          free_giveaway_client: formData.free_giveaway_client ? parseInt(formData.free_giveaway_client) : null,
+          default_percentage_share: formData.default_percentage_share ? parseFloat(formData.default_percentage_share) : null,
+          contact_person: formData.contact_person || "",
+          status: formData.status,
+          is_active: formData.is_active,
+          kam_id: formData.kam_id ? parseInt(formData.kam_id) : null,
         };
+        console.log("Creating customer with data:", customerData);
         await customerService.createCustomer(customerData);
         showSuccess("Customer created successfully");
         resetForm();
@@ -238,21 +313,44 @@ export default function Customers() {
 
   const resetForm = () => {
     setFormData({
-      name: "",
-      company_name: "",
+      customer_name: "",
       email: "",
-      phone: "",
       address: "",
-      assigned_sales_person: user?.id || "",
-      status: "Active",
-      link_id: "",
+      customer_type: "",
+      company_name: "",
+      phone: "",
+      total_client: "",
+      total_active_client: "",
+      previous_total_client: "",
+      free_giveaway_client: "",
+      default_percentage_share: "",
+      contact_person: "",
+      status: "active",
+      is_active: true,
+      kam_id: id || "",
     });
     setEditingId(null);
     setShowForm(false);
   };
 
   const handleEdit = (customer) => {
-    setFormData(customer);
+    setFormData({
+      customer_name: customer.customer_name || customer.name || "",
+      email: customer.email || "",
+      address: customer.address || "",
+      customer_type: customer.customer_type || "",
+      company_name: customer.company_name || "",
+      phone: customer.phone || "",
+      total_client: customer.total_client || "",
+      total_active_client: customer.total_active_client || "",
+      previous_total_client: customer.previous_total_client || "",
+      free_giveaway_client: customer.free_giveaway_client || "",
+      default_percentage_share: customer.default_percentage_share || "",
+      contact_person: customer.contact_person || "",
+      status: customer.status || "active",
+      is_active: customer.is_active !== undefined ? customer.is_active : true,
+      kam_id: customer.kam_id || customer.assigned_sales_person || "",
+    });
     setEditingId(customer.id);
     setShowForm(true);
   };
@@ -455,12 +553,12 @@ export default function Customers() {
       // If no search term, include the record (status already applied)
       if (!term) return true;
 
-      const name = (c.name || "").toString().toLowerCase();
+      const name = (c.customer_name || c.name || "").toString().toLowerCase();
       const company = (c.company_name || "").toString().toLowerCase();
       const email = (c.email || "").toString().toLowerCase();
       const phone = (c.phone || "").toString().toLowerCase();
       // getUserName may return username or email; use it for KAM search
-      const kam = (getUserName(c.assigned_sales_person) || "")
+      const kam = (getUserName(c.kam_id || c.assigned_sales_person) || "")
         .toString()
         .toLowerCase();
 
@@ -553,7 +651,7 @@ export default function Customers() {
                   className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl"
                 >
                   <Plus size={20} />
-                  <span>New Customer 1</span>
+                  <span>New Customer</span>
                 </motion.button>
               )}
             </div>
@@ -657,14 +755,13 @@ export default function Customers() {
                       isDark ? "text-silver-300" : "text-gray-700"
                     }`}
                   >
-                    Company Name *
+                    Company Name
                   </label>
                   <input
                     type="text"
                     name="company_name"
                     value={formData.company_name}
                     onChange={handleInputChange}
-                    required
                     className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
                       isDark
                         ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
@@ -672,21 +769,20 @@ export default function Customers() {
                     } focus:outline-none`}
                   />
                 </div>
-                {/* Name */}
+                {/* Customer Name */}
                 <div>
                   <label
                     className={`block text-sm font-medium mb-2 ${
                       isDark ? "text-silver-300" : "text-gray-700"
                     }`}
                   >
-                    Client Name *
+                    Customer Name
                   </label>
                   <input
                     type="text"
-                    name="name"
-                    value={formData.name}
+                    name="customer_name"
+                    value={formData.customer_name}
                     onChange={handleInputChange}
-                    required
                     className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
                       isDark
                         ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
@@ -694,8 +790,6 @@ export default function Customers() {
                     } focus:outline-none`}
                   />
                 </div>
-
-                
 
                 {/* Email */}
                 <div>
@@ -742,32 +836,184 @@ export default function Customers() {
                   />
                 </div>
 
-                {/* Potential and calculated monthly revenue fields removed from form */}
-
-                {/* KAM (Assigned Sales Person - select from roles) */}
+                {/* Contact Person */}
                 <div>
                   <label
                     className={`block text-sm font-medium mb-2 ${
                       isDark ? "text-silver-300" : "text-gray-700"
                     }`}
                   >
-                    KAM *
+                    Contact Person
+                  </label>
+                  <input
+                    type="text"
+                    name="contact_person"
+                    value={formData.contact_person}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                      isDark
+                        ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                        : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                    } focus:outline-none`}
+                  />
+                </div>
+
+                {/* Customer Type */}
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 ${
+                      isDark ? "text-silver-300" : "text-gray-700"
+                    }`}
+                  >
+                    Customer Type
                   </label>
                   <select
-                    name="assigned_sales_person"
-                    value={formData.assigned_sales_person}
+                    name="customer_type"
+                    value={formData.customer_type}
                     onChange={handleInputChange}
-                    required
                     className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
                       isDark
                         ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
                         : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
                     } focus:outline-none`}
                   >
-                    <option value="">Select a KAM</option>
+                    <option value="" hidden>Select Customer Type</option>
+                    <option value="bw">Bandwidth</option>
+                    <option value="channel_partner">Channel Partner</option>
+                    <option value="soho">SOHO/Home</option>
+                  </select>
+                </div>
+
+                {/* Conditional fields for channel_partner */}
+                {formData.customer_type === "channel_partner" && (
+                  <>
+                    <div>
+                      <label
+                        className={`block text-sm font-medium mb-2 ${
+                          isDark ? "text-silver-300" : "text-gray-700"
+                        }`}
+                      >
+                        Total Client
+                      </label>
+                      <input
+                        type="number"
+                        name="total_client"
+                        value={formData.total_client}
+                        onChange={handleInputChange}
+                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                          isDark
+                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                        } focus:outline-none`}
+                      />
+                    </div>
+                    <div>
+                      <label
+                        className={`block text-sm font-medium mb-2 ${
+                          isDark ? "text-silver-300" : "text-gray-700"
+                        }`}
+                      >
+                        Total Active Client
+                      </label>
+                      <input
+                        type="number"
+                        name="total_active_client"
+                        value={formData.total_active_client}
+                        onChange={handleInputChange}
+                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                          isDark
+                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                        } focus:outline-none`}
+                      />
+                    </div>
+                    <div>
+                      <label
+                        className={`block text-sm font-medium mb-2 ${
+                          isDark ? "text-silver-300" : "text-gray-700"
+                        }`}
+                      >
+                        Previous Total Client
+                      </label>
+                      <input
+                        type="number"
+                        name="previous_total_client"
+                        value={formData.previous_total_client}
+                        onChange={handleInputChange}
+                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                          isDark
+                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                        } focus:outline-none`}
+                      />
+                    </div>
+                    <div>
+                      <label
+                        className={`block text-sm font-medium mb-2 ${
+                          isDark ? "text-silver-300" : "text-gray-700"
+                        }`}
+                      >
+                        Free Giveaway Client
+                      </label>
+                      <input
+                        type="number"
+                        name="free_giveaway_client"
+                        value={formData.free_giveaway_client}
+                        onChange={handleInputChange}
+                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                          isDark
+                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                        } focus:outline-none`}
+                      />
+                    </div>
+                    <div>
+                      <label
+                        className={`block text-sm font-medium mb-2 ${
+                          isDark ? "text-silver-300" : "text-gray-700"
+                        }`}
+                      >
+                        Default Percentage Share
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        name="default_percentage_share"
+                        value={formData.default_percentage_share}
+                        onChange={handleInputChange}
+                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                          isDark
+                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                        } focus:outline-none`}
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* KAM */}
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 ${
+                      isDark ? "text-silver-300" : "text-gray-700"
+                    }`}
+                  >
+                    KAM
+                  </label>
+                  <select
+                    name="kam_id"
+                    value={formData.kam_id}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                      isDark
+                        ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                        : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                    } focus:outline-none`}
+                  >
+                    <option value="" hidden>Select a KAM</option>
                     {salesUsers.map((user) => {
                       const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
-                      const displayName = fullName || user.username || user.email;
+                      const displayName = fullName || user.kam_name || user.email;
                       return (
                         <option key={user.id} value={user.id}>
                           {displayName}
@@ -804,31 +1050,27 @@ export default function Customers() {
                         : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
                     } focus:outline-none`}
                   >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
                   </select>
                 </div>
 
-                {/* Link ID */}
+                {/* Is Active */}
                 <div>
                   <label
-                    className={`block text-sm font-medium mb-2 ${
+                    className={`flex items-center text-sm font-medium ${
                       isDark ? "text-silver-300" : "text-gray-700"
                     }`}
                   >
-                    Link ID
+                    <input
+                      type="checkbox"
+                      name="is_active"
+                      checked={formData.is_active}
+                      onChange={handleInputChange}
+                      className="mr-2"
+                    />
+                    Is Active
                   </label>
-                  <input
-                    type="text"
-                    name="link_id"
-                    value={formData.link_id}
-                    onChange={handleInputChange}
-                    className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                      isDark
-                        ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                        : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                    } focus:outline-none`}
-                  />
                 </div>
 
                 {/* Address */}
@@ -939,8 +1181,8 @@ export default function Customers() {
                 }`}
               >
                 <option value="all">All Customers</option>
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
               </select>
             </div>
           </div>
@@ -969,14 +1211,14 @@ export default function Customers() {
                           isDark ? "text-silver-300" : "text-gray-700"
                         }`}
                       >
-                        Name of Party
+                        Customer Name
                       </th>
                       <th
                         className={`px-6 py-4 text-left text-sm font-semibold ${
                           isDark ? "text-silver-300" : "text-gray-700"
                         }`}
                       >
-                        Proprietor Name
+                        Company Name
                       </th>
                       <th
                         className={`px-6 py-4 text-left text-sm font-semibold ${
@@ -991,6 +1233,62 @@ export default function Customers() {
                         }`}
                       >
                         Phone
+                      </th>
+                      <th
+                        className={`px-6 py-4 text-left text-sm font-semibold ${
+                          isDark ? "text-silver-300" : "text-gray-700"
+                        }`}
+                      >
+                        Address
+                      </th>
+                      <th
+                        className={`px-6 py-4 text-left text-sm font-semibold ${
+                          isDark ? "text-silver-300" : "text-gray-700"
+                        }`}
+                      >
+                        Customer Type
+                      </th>
+                      <th
+                        className={`px-6 py-4 text-left text-sm font-semibold ${
+                          isDark ? "text-silver-300" : "text-gray-700"
+                        }`}
+                      >
+                        Total Client
+                      </th>
+                      <th
+                        className={`px-6 py-4 text-left text-sm font-semibold ${
+                          isDark ? "text-silver-300" : "text-gray-700"
+                        }`}
+                      >
+                        Total Active Client
+                      </th>
+                      <th
+                        className={`px-6 py-4 text-left text-sm font-semibold ${
+                          isDark ? "text-silver-300" : "text-gray-700"
+                        }`}
+                      >
+                        Previous Total Client
+                      </th>
+                      <th
+                        className={`px-6 py-4 text-left text-sm font-semibold ${
+                          isDark ? "text-silver-300" : "text-gray-700"
+                        }`}
+                      >
+                        Free Giveaway Client
+                      </th>
+                      <th
+                        className={`px-6 py-4 text-left text-sm font-semibold ${
+                          isDark ? "text-silver-300" : "text-gray-700"
+                        }`}
+                      >
+                        Default Percentage Share
+                      </th>
+                      <th
+                        className={`px-6 py-4 text-left text-sm font-semibold ${
+                          isDark ? "text-silver-300" : "text-gray-700"
+                        }`}
+                      >
+                        Contact Person
                       </th>
                       <th
                         className={`px-6 py-4 text-left text-sm font-semibold ${
@@ -1028,7 +1326,7 @@ export default function Customers() {
                             isDark ? "text-white" : "text-dark-900"
                           }`}
                         >
-                          {customer.name}
+                          {customer.customer_name || customer.name}
                         </td>
                         <td
                           className={`px-6 py-4 text-sm font-medium ${
@@ -1056,7 +1354,63 @@ export default function Customers() {
                             isDark ? "text-silver-300" : "text-gray-700"
                           }`}
                         >
-                          {getUserName(customer.assigned_sales_person)}
+                          {customer.address || "-"}
+                        </td>
+                        <td
+                          className={`px-6 py-4 text-sm ${
+                            isDark ? "text-silver-300" : "text-gray-700"
+                          }`}
+                        >
+                          {getCustomerTypeDisplay(customer.customer_type)}
+                        </td>
+                        <td
+                          className={`px-6 py-4 text-sm ${
+                            isDark ? "text-silver-300" : "text-gray-700"
+                          }`}
+                        >
+                          {customer.total_client || "-"}
+                        </td>
+                        <td
+                          className={`px-6 py-4 text-sm ${
+                            isDark ? "text-silver-300" : "text-gray-700"
+                          }`}
+                        >
+                          {customer.total_active_client || "-"}
+                        </td>
+                        <td
+                          className={`px-6 py-4 text-sm ${
+                            isDark ? "text-silver-300" : "text-gray-700"
+                          }`}
+                        >
+                          {customer.previous_total_client || "-"}
+                        </td>
+                        <td
+                          className={`px-6 py-4 text-sm ${
+                            isDark ? "text-silver-300" : "text-gray-700"
+                          }`}
+                        >
+                          {customer.free_giveaway_client || "-"}
+                        </td>
+                        <td
+                          className={`px-6 py-4 text-sm ${
+                            isDark ? "text-silver-300" : "text-gray-700"
+                          }`}
+                        >
+                          {customer.default_percentage_share || "-"}
+                        </td>
+                        <td
+                          className={`px-6 py-4 text-sm ${
+                            isDark ? "text-silver-300" : "text-gray-700"
+                          }`}
+                        >
+                          {customer.contact_person || "-"}
+                        </td>
+                        <td
+                          className={`px-6 py-4 text-sm ${
+                            isDark ? "text-silver-300" : "text-gray-700"
+                          }`}
+                        >
+                          {getUserName(customer.kam_id || customer.assigned_sales_person)}
                         </td>
                         <td
                           className={`px-6 py-4 text-sm ${
@@ -1065,13 +1419,13 @@ export default function Customers() {
                         >
                           <span
                             className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                              customer.status === "Active"
+                              customer.status === "active"
                                 ? isDark
                                   ? "bg-green-900/40 text-green-300"
                                   : "bg-green-100 text-green-800"
                                 : isDark
-                                ? "bg-red-900/40 text-red-300"
-                                : "bg-red-100 text-red-800"
+                                  ? "bg-red-900/40 text-red-300"
+                                  : "bg-red-100 text-red-800"
                             }`}
                           >
                             {customer.status || "-"}
