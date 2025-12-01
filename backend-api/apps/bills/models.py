@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from apps.customers.models import CustomerMaster
+from apps.bills.utils import generate_bill_number
 
 
 class CustomerEntitlementMaster(models.Model):
@@ -44,6 +45,12 @@ class CustomerEntitlementMaster(models.Model):
 
     def __str__(self):
         return f"{self.bill_number} - {self.customer_master_id.customer_name}"
+    
+
+    def save(self, *args, **kwargs):
+        if not self.bill_number:
+            self.bill_number = generate_bill_number(self.customer_master_id.customer_name, self.pk)
+        super().save(*args, **kwargs)
 
 
 class CustomerEntitlementDetails(models.Model):

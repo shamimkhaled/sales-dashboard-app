@@ -2,6 +2,8 @@ from django.db import models
 from django.core.validators import RegexValidator, MinValueValidator
 from django.utils import timezone
 from django.conf import settings
+from apps.customers.utils import generate_customer_number
+import re
 
 
 
@@ -67,6 +69,13 @@ class CustomerMaster(models.Model):
 
     def __str__(self):
         return self.customer_name
+    
+
+    def save(self, *args, **kwargs):
+        # Generate customer number if not already set
+        if not self.customer_number:
+            self.customer_number = generate_customer_number(self.customer_name, self.pk)
+        super().save(*args, **kwargs)
 
 
 
