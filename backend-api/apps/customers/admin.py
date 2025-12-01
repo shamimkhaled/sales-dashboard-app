@@ -46,7 +46,7 @@ class CustomerMasterAdmin(admin.ModelAdmin):
         'customer_number', 'contact_person'
     ]
     ordering = ['-created_at']
-    readonly_fields = ['created_at', 'updated_at', 'customer_number']
+    readonly_fields = ['created_at', 'updated_at']
     date_hierarchy = 'created_at'
     list_per_page = 25
     list_select_related = ['kam_id', 'created_by']
