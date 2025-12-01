@@ -68,7 +68,7 @@ class InvoiceMasterViewSet(viewsets.ModelViewSet):
         serializer.save(created_by=self.request.user)
     
     def perform_update(self, serializer):
-        invoice = serializer.save()
+        invoice = serializer.save(updated_by=self.request.user)
         # Recalculate totals if needed
         self._recalculate_totals(invoice)
         # Update customer's last_bill_invoice_date

@@ -13,7 +13,7 @@ class CustomerEntitlementMaster(models.Model):
         db_column='customer_master_id',
         related_name='entitlements'
     )
-    bill_number = models.CharField(max_length=100, unique=True)
+    bill_number = models.CharField(max_length=100, unique=True, blank=True, null=True)
     activation_date = models.DateField(null=True, blank=True)
     nttn_company = models.CharField(max_length=200, blank=True, null=True)
     nttn_capacity = models.CharField(max_length=100, blank=True, null=True)
@@ -51,6 +51,10 @@ class CustomerEntitlementMaster(models.Model):
         if not self.bill_number:
             self.bill_number = generate_bill_number(self.customer_master_id.customer_name, self.pk)
         super().save(*args, **kwargs)
+        # Regenerate if still None (after first save to get pk)
+        if not self.bill_number:
+            self.bill_number = generate_bill_number(self.customer_master_id.customer_name, self.pk)
+            self.save(update_fields=['bill_number'])
 
 
 class CustomerEntitlementDetails(models.Model):
@@ -108,7 +112,7 @@ class InvoiceMaster(models.Model):
  
 
     id = models.AutoField(primary_key=True)
-    invoice_number = models.CharField(max_length=100, unique=True)
+    invoice_number = models.CharField(max_length=100, unique=True, blank=True, null=True)
     customer_entitlement_master_id = models.OneToOneField(
         CustomerEntitlementMaster,
         on_delete=models.CASCADE,
@@ -134,9 +138,27 @@ class InvoiceMaster(models.Model):
     )
     status = models.CharField(max_length=20, blank=True, null=True, default='draft')
 
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='created_invoices')
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_invoices')
+    updated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='updated_invoices')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if not self.invoice_number:
+            self.invoice_number = generate_bill_number(
+                self.customer_entitlement_master_id.customer_master_id.customer_name,
+                self.pk,
+                prefix='INV'
+            )
+        super().save(*args, **kwargs)
+        # Regenerate if still None (after first save to get pk)
+        if not self.invoice_number:
+            self.invoice_number = generate_bill_number(
+                self.customer_entitlement_master_id.customer_master_id.customer_name,
+                self.pk,
+                prefix='INV'
+            )
+            self.save(update_fields=['invoice_number'])
 
     class Meta:
         db_table = 'invoice_master'
