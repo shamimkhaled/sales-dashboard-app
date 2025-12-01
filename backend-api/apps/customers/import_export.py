@@ -12,6 +12,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from django.http import HttpResponse
 from django.utils import timezone
+from django.contrib.auth.models import User
 
 from .models import CustomerMaster, KAMMaster
 from .utils import generate_customer_number
@@ -35,25 +36,28 @@ class CustomerExporter:
         
         # Header row
         headers = [
-            'Customer ID',
-            'Customer Name',
-            'Company Name',
-            'Email',
-            'Phone',
-            'Address',
-            'Customer Type',
-            'KAM ID',
-            'Customer Number',
-            'Total Clients',
-            'Total Active Clients',
-            'Free Giveaway Clients',
-            'Default Percentage Share',
-            'Contact Person',
-            'Status',
-            'Last Bill Date',
-            'Is Active',
-            'Created At',
-            'Updated At',
+            'id',
+            'customer_name',
+            'company_name',
+            'email',
+            'phone',
+            'address',
+            'customer_type',
+            'kam_id',
+            'customer_number',
+            'total_client',
+            'total_active_client',
+            'previous_total_client',
+            'free_giveaway_client',
+            'default_percentage_share',
+            'contact_person',
+            'status',
+            'last_bill_invoice_date',
+            'is_active',
+            'created_at',
+            'created_by',
+            'updated_at',
+            'updated_by',
         ]
         writer.writerow(headers)
         
@@ -71,6 +75,7 @@ class CustomerExporter:
                 customer.customer_number,
                 customer.total_client,
                 customer.total_active_client,
+                customer.previous_total_client,
                 customer.free_giveaway_client,
                 customer.default_percentage_share,
                 customer.contact_person or '',
@@ -78,7 +83,9 @@ class CustomerExporter:
                 customer.last_bill_invoice_date or '',
                 'Yes' if customer.is_active else 'No',
                 customer.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                customer.created_by.id if customer.created_by else '',
                 customer.updated_at.strftime('%Y-%m-%d %H:%M:%S'),
+                customer.updated_by.id if customer.updated_by else '',
             ])
         
         return response
@@ -93,25 +100,28 @@ class CustomerExporter:
         data = []
         for customer in queryset:
             data.append({
-                'Customer ID': customer.id,
-                'Customer Name': customer.customer_name,
-                'Company Name': customer.company_name or '',
-                'Email': customer.email,
-                'Phone': customer.phone or '',
-                'Address': customer.address,
-                'Customer Type': customer.get_customer_type_display(),
-                'KAM ID': customer.kam_id.id if customer.kam_id else '',
-                'Customer Number': customer.customer_number,
-                'Total Clients': customer.total_client,
-                'Total Active Clients': customer.total_active_client,
-                'Free Giveaway Clients': customer.free_giveaway_client,
-                'Default % Share': float(customer.default_percentage_share),
-                'Contact Person': customer.contact_person or '',
-                'Status': customer.get_status_display(),
-                'Last Bill Date': customer.last_bill_invoice_date or '',
-                'Is Active': 'Yes' if customer.is_active else 'No',
-                'Created At': customer.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-                'Updated At': customer.updated_at.strftime('%Y-%m-%d %H:%M:%S'),
+                'id': customer.id,
+                'customer_name': customer.customer_name,
+                'company_name': customer.company_name or '',
+                'email': customer.email,
+                'phone': customer.phone or '',
+                'address': customer.address,
+                'customer_type': customer.get_customer_type_display(),
+                'kam_id': customer.kam_id.id if customer.kam_id else '',
+                'customer_number': customer.customer_number,
+                'total_client': customer.total_client,
+                'total_active_client': customer.total_active_client,
+                'previous_total_client': customer.previous_total_client,
+                'free_giveaway_client': customer.free_giveaway_client,
+                'default_percentage_share': float(customer.default_percentage_share),
+                'contact_person': customer.contact_person or '',
+                'status': customer.get_status_display(),
+                'last_bill_invoice_date': customer.last_bill_invoice_date or '',
+                'is_active': 'Yes' if customer.is_active else 'No',
+                'created_at': customer.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                'created_by': customer.created_by.id if customer.created_by else '',
+                'updated_at': customer.updated_at.strftime('%Y-%m-%d %H:%M:%S'),
+                'updated_by': customer.updated_by.id if customer.updated_by else '',
             })
         
         df = pd.DataFrame(data)
@@ -135,25 +145,28 @@ class CustomerExporter:
             
             # Set column widths
             column_widths = {
-                'A': 12,  # Customer ID
-                'B': 20,  # Customer Name
-                'C': 20,  # Company Name
-                'D': 25,  # Email
-                'E': 15,  # Phone
-                'F': 20,  # Address
-                'G': 15,  # Customer Type
-                'H': 12,  # KAM ID
-                'I': 18,  # Customer Number
-                'J': 15,  # Total Clients
-                'K': 18,  # Total Active Clients
-                'L': 18,  # Free Giveaway Clients
-                'M': 15,  # Default % Share
-                'N': 15,  # Contact Person
-                'O': 12,  # Status
-                'P': 15,  # Last Bill Date
-                'Q': 10,  # Is Active
-                'R': 20,  # Created At
-                'S': 20,  # Updated At
+                'A': 8,   # id
+                'B': 20,  # customer_name
+                'C': 18,  # company_name
+                'D': 25,  # email
+                'E': 15,  # phone
+                'F': 20,  # address
+                'G': 15,  # customer_type
+                'H': 10,  # kam_id
+                'I': 18,  # customer_number
+                'J': 12,  # total_client
+                'K': 18,  # total_active_client
+                'L': 20,  # previous_total_client
+                'M': 18,  # free_giveaway_client
+                'N': 20,  # default_percentage_share
+                'O': 15,  # contact_person
+                'P': 12,  # status
+                'Q': 20,  # last_bill_invoice_date
+                'R': 10,  # is_active
+                'S': 20,  # created_at
+                'T': 12,  # created_by
+                'U': 20,  # updated_at
+                'V': 12,  # updated_by
             }
             
             for col, width in column_widths.items():
@@ -186,28 +199,41 @@ class CustomerImporter:
     """Import customer data from CSV or Excel formats"""
     
     @staticmethod
+    def get_user_by_id(user_id):
+        """
+        Get user object by user ID
+        Returns: User object or None
+        """
+        if not user_id or not str(user_id).strip():
+            return None
+        try:
+            return User.objects.get(id=int(user_id))
+        except (ValueError, User.DoesNotExist):
+            return None
+    
+    @staticmethod
     def validate_required_fields(row_data, row_number):
         """
         Validate required fields in import data
         Returns: (is_valid, error_messages)
         """
         errors = []
-        required_fields = ['Customer Name', 'Email', 'Address', 'Customer Type']
+        required_fields = ['customer_name', 'email', 'address', 'customer_type']
         
         for field in required_fields:
             if not row_data.get(field, '').strip():
                 errors.append(f"Row {row_number}: Missing required field '{field}'")
         
         # Validate email format
-        email = row_data.get('Email', '').strip()
+        email = row_data.get('email', '').strip()
         if email and '@' not in email:
             errors.append(f"Row {row_number}: Invalid email format '{email}'")
         
         # Validate customer type
         valid_types = dict(CustomerMaster.CUSTOMER_TYPE_CHOICES)
-        customer_type = row_data.get('Customer Type', '').strip().lower()
+        customer_type = row_data.get('customer_type', '').strip().lower()
         if customer_type and customer_type not in valid_types:
-            errors.append(f"Row {row_number}: Invalid customer type '{customer_type}'. Must be one of: {', '.join(valid_types.keys())}")
+            errors.append(f"Row {row_number}: Invalid customer_type '{customer_type}'. Must be one of: {', '.join(valid_types.keys())}")
         
         return len(errors) == 0, errors
     
@@ -239,7 +265,7 @@ class CustomerImporter:
                     
                     # Get KAM by ID
                     kam = None
-                    kam_id = row.get('KAM ID', '').strip()
+                    kam_id = row.get('kam_id', '').strip()
                     if kam_id:
                         try:
                             kam = KAMMaster.objects.get(id=int(kam_id))
@@ -248,33 +274,36 @@ class CustomerImporter:
                             continue
                     
                     # Check if customer already exists
-                    email = row.get('Email', '').strip().lower()
+                    email = row.get('email', '').strip().lower()
                     if CustomerMaster.objects.filter(email=email).exists():
                         error_messages.append(f"Row {row_number}: Customer with email '{email}' already exists")
                         continue
                     
                     # Create customer
                     customer = CustomerMaster.objects.create(
-                        customer_name=row.get('Customer Name', '').strip(),
-                        company_name=row.get('Company Name', '').strip() or None,
+                        customer_name=row.get('customer_name', '').strip(),
+                        company_name=row.get('company_name', '').strip() or None,
                         email=email,
-                        phone=row.get('Phone', '').strip() or '',
-                        address=row.get('Address', '').strip(),
-                        customer_type=row.get('Customer Type', '').strip().lower(),
+                        phone=row.get('phone', '').strip() or '',
+                        address=row.get('address', '').strip(),
+                        customer_type=row.get('customer_type', '').strip().lower(),
                         kam_id=kam,
-                        contact_person=row.get('Contact Person', '').strip() or '',
-                        total_client=int(row.get('Total Clients', 0)) or 0,
-                        total_active_client=int(row.get('Total Active Clients', 0)) or 0,
-                        free_giveaway_client=int(row.get('Free Giveaway Clients', 0)) or 0,
-                        default_percentage_share=float(row.get('Default Percentage Share', 0)) or 0,
-                        status=row.get('Status', 'active').lower(),
+                        contact_person=row.get('contact_person', '').strip() or '',
+                        total_client=int(row.get('total_client', 0)) or 0,
+                        total_active_client=int(row.get('total_active_client', 0)) or 0,
+                        previous_total_client=int(row.get('previous_total_client', 0)) or 0,
+                        free_giveaway_client=int(row.get('free_giveaway_client', 0)) or 0,
+                        default_percentage_share=float(row.get('default_percentage_share', 0)) or 0,
+                        status=row.get('status', 'active').lower(),
+                        created_by=CustomerImporter.get_user_by_id(row.get('created_by', '')),
+                        updated_by=CustomerImporter.get_user_by_id(row.get('updated_by', '')),
                     )
                     
                     # Auto-generate customer number
                     customer.customer_number = generate_customer_number(customer.customer_name, customer.id)
                     customer.save()
                     
-                    # Prepare response with KAM details
+                    # Prepare response with KAM and user details
                     customer_data = {
                         'id': customer.id,
                         'customer_name': customer.customer_name,
@@ -286,6 +315,18 @@ class CustomerImporter:
                             'id': customer.kam_id.id,
                             'name': customer.kam_id.kam_name,
                             'email': customer.kam_id.email,
+                        }
+                    if customer.created_by:
+                        customer_data['created_by'] = {
+                            'id': customer.created_by.id,
+                            'username': customer.created_by.username,
+                            'email': customer.created_by.email,
+                        }
+                    if customer.updated_by:
+                        customer_data['updated_by'] = {
+                            'id': customer.updated_by.id,
+                            'username': customer.updated_by.username,
+                            'email': customer.updated_by.email,
                         }
                     created_customers.append(customer_data)
                     success_count += 1
@@ -333,7 +374,7 @@ class CustomerImporter:
                     
                     # Get KAM by ID
                     kam = None
-                    kam_id = row_data.get('KAM ID', '').strip()
+                    kam_id = row_data.get('kam_id', '').strip()
                     if kam_id:
                         try:
                             kam = KAMMaster.objects.get(id=int(kam_id))
@@ -342,33 +383,36 @@ class CustomerImporter:
                             continue
                     
                     # Check if customer already exists
-                    email = row_data.get('Email', '').strip().lower()
+                    email = row_data.get('email', '').strip().lower()
                     if CustomerMaster.objects.filter(email=email).exists():
                         error_messages.append(f"Row {row_number + 2}: Customer with email '{email}' already exists")
                         continue
                     
                     # Create customer
                     customer = CustomerMaster.objects.create(
-                        customer_name=row_data.get('Customer Name', '').strip(),
-                        company_name=row_data.get('Company Name', '').strip() or None,
+                        customer_name=row_data.get('customer_name', '').strip(),
+                        company_name=row_data.get('company_name', '').strip() or None,
                         email=email,
-                        phone=row_data.get('Phone', '').strip() or '',
-                        address=row_data.get('Address', '').strip(),
-                        customer_type=row_data.get('Customer Type', '').strip().lower(),
+                        phone=row_data.get('phone', '').strip() or '',
+                        address=row_data.get('address', '').strip(),
+                        customer_type=row_data.get('customer_type', '').strip().lower(),
                         kam_id=kam,
-                        contact_person=row_data.get('Contact Person', '').strip() or '',
-                        total_client=int(float(row_data.get('Total Clients', 0)) or 0),
-                        total_active_client=int(float(row_data.get('Total Active Clients', 0)) or 0),
-                        free_giveaway_client=int(float(row_data.get('Free Giveaway Clients', 0)) or 0),
-                        default_percentage_share=float(row_data.get('Default % Share', 0)) or 0,
-                        status=row_data.get('Status', 'active').lower(),
+                        contact_person=row_data.get('contact_person', '').strip() or '',
+                        total_client=int(float(row_data.get('total_client', 0)) or 0),
+                        total_active_client=int(float(row_data.get('total_active_client', 0)) or 0),
+                        previous_total_client=int(float(row_data.get('previous_total_client', 0)) or 0),
+                        free_giveaway_client=int(float(row_data.get('free_giveaway_client', 0)) or 0),
+                        default_percentage_share=float(row_data.get('default_percentage_share', 0)) or 0,
+                        status=row_data.get('status', 'active').lower(),
+                        created_by=CustomerImporter.get_user_by_id(row_data.get('created_by', '')),
+                        updated_by=CustomerImporter.get_user_by_id(row_data.get('updated_by', '')),
                     )
                     
                     # Auto-generate customer number
                     customer.customer_number = generate_customer_number(customer.customer_name, customer.id)
                     customer.save()
                     
-                    # Prepare response with KAM details
+                    # Prepare response with KAM and user details
                     customer_data = {
                         'id': customer.id,
                         'customer_name': customer.customer_name,
@@ -380,6 +424,18 @@ class CustomerImporter:
                             'id': customer.kam_id.id,
                             'name': customer.kam_id.kam_name,
                             'email': customer.kam_id.email,
+                        }
+                    if customer.created_by:
+                        customer_data['created_by'] = {
+                            'id': customer.created_by.id,
+                            'username': customer.created_by.username,
+                            'email': customer.created_by.email,
+                        }
+                    if customer.updated_by:
+                        customer_data['updated_by'] = {
+                            'id': customer.updated_by.id,
+                            'username': customer.updated_by.username,
+                            'email': customer.updated_by.email,
                         }
                     created_customers.append(customer_data)
                     success_count += 1
