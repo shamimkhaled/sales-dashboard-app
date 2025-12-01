@@ -70,6 +70,8 @@ export default function DataEntry() {
     active_date: "",
     billing_date: "",
     termination_date: "",
+    connection_type: "",
+    connected_pop: "",
     iig_qt: "",
     iig_qt_price: "",
     igt_qt_total: "",
@@ -317,6 +319,8 @@ export default function DataEntry() {
       active_date: "",
       billing_date: "",
       termination_date: "",
+      connection_type: "",
+      connected_pop: "",
       iig_qt: "",
       iig_qt_price: "",
       igt_qt_total: "",
@@ -859,261 +863,93 @@ export default function DataEntry() {
                 <div className="px-6 pb-6 max-h-[70vh] overflow-y-auto">
                   <form
                     onSubmit={handleSubmit}
-                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                    className="space-y-6"
                   >
-                    {/* Customer Selection */}
+                    {/* Entitlement Information */}
                     <div>
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Customer
-                      </label>
-                      {editingId !== null ? (
-                        <input
-                          type="text"
-                          value={
-                            formData.customer_id && Array.isArray(customers)
-                              ? (() => {
-                                  const customer = customers.find(
-                                    (c) =>
-                                      c.id === parseInt(formData.customer_id)
-                                  );
-                                  return customer
-                                    ? `${customer.name} - ${customer.company_name}`
-                                    : "";
-                                })()
-                              : ""
-                          }
-                          readOnly
-                          disabled
-                          className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 cursor-not-allowed opacity-75 ${
-                            isDark
-                              ? "bg-dark-700 border-dark-600 text-white"
-                              : "bg-gray-100 border-gold-200 text-dark-900"
-                          } focus:outline-none`}
-                        />
-                      ) : (
-                        <select
-                          name="customer_id"
-                          value={formData.customer_id}
-                          onChange={handleInputChange}
-                          required
-                          className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                            validationErrors.customer_id
-                              ? isDark
-                                ? "bg-dark-700 border-red-500 text-white focus:border-red-500"
-                                : "bg-white border-red-500 text-dark-900 focus:border-red-500"
-                              : isDark
-                              ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                              : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                          } focus:outline-none`}
-                        >
-                          <option value="">Select Customer</option>
-                          {Array.isArray(customers) &&
-                            customers.map((customer) => (
-                              <option key={customer.id} value={customer.id}>
-                                {customer.name} - {customer.company_name}
-                              </option>
-                            ))}
-                        </select>
-                      )}
-                      {validationErrors.customer_id && (
-                        <p className="text-red-500 text-xs mt-1">
-                          {validationErrors.customer_id}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Type Selection */}
-                    <div>
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Type
-                      </label>
-                      <select
-                        name="type"
-                        value={formData.type}
-                        onChange={handleInputChange}
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                        } focus:outline-none`}
-                      >
-                        <option value="">Select Type</option>
-                        <option value="Channel Partner">Channel Partner</option>
-                        <option value="Reseller Customer">Reseller Customer</option>
-                        <option value="SOHO Customer">SOHO Customer</option>
-                      </select>
-                    </div>
-
-                    {/* NTTN Fields */}
-                    <div>
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        NTTN Capacity
-                      </label>
-                      <input
-                        type="text"
-                        name="nttn_cap"
-                        value={formData.nttn_cap}
-                        onChange={handleInputChange}
-                        className={getFieldClassName("nttn_cap")}
-                      />
-                      {renderFieldError("nttn_cap")}
-                    </div>
-
-                    <div>
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        NTTN Company
-                      </label>
-                      <input
-                        type="text"
-                        name="nttn_com"
-                        value={formData.nttn_com}
-                        onChange={handleInputChange}
-                        className={getFieldClassName("nttn_com")}
-                      />
-                      {renderFieldError("nttn_com")}
-                    </div>
-
-                    {/* Date Fields */}
-                    <div>
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Active Date
-                      </label>
-                      <input
-                        type="date"
-                        name="active_date"
-                        value={formData.active_date}
-                        onChange={handleInputChange}
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                        } focus:outline-none`}
-                      />
-                    </div>
-
-                    <div>
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Billing Date
-                      </label>
-                      <input
-                        type="date"
-                        name="billing_date"
-                        value={formData.billing_date}
-                        onChange={handleInputChange}
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                        } focus:outline-none`}
-                      />
-                    </div>
-
-                    {/* <div>
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Termination Date
-                      </label>
-                      <input
-                        type="date"
-                        name="termination_date"
-                        value={formData.termination_date}
-                        onChange={handleInputChange}
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                        } focus:outline-none`}
-                      />
-                    </div> */}
-
-                    {/* Break after Termination Date */}
-                    <div className="lg:col-span-3 h-4"></div>
-
-                     {/* Pricing Groups: metric + price on same row */}
-                    {/* IIG-QT + Price */}
-                    {formData.type === "Reseller Customer" && (
-                      <>
-
-                        <div className="lg:col-span-1">
+                      <h3 className={`text-lg font-semibold mb-4 pb-2 border-b ${
+                        isDark ? "text-blue-400 border-dark-600" : "text-blue-600 border-gray-300"
+                      }`}>
+                        Entitlement Information
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Customer Master ID */}
+                        <div>
                           <label
                             className={`block text-sm font-medium mb-2 ${
                               isDark ? "text-silver-300" : "text-gray-700"
                             }`}
                           >
-                            IPT
+                            Customer Master ID
                           </label>
-                          <input
-                            type="number"
-                            name="iig_qt"
-                            value={formData.iig_qt}
-                            onChange={handleInputChange}
-                            step="0.01"
-                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                              isDark
-                                ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                                : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                            } focus:outline-none`}
-                          />
+                          {editingId !== null ? (
+                            <input
+                              type="text"
+                              value={
+                                formData.customer_id && Array.isArray(customers)
+                                  ? (() => {
+                                      const customer = customers.find(
+                                        (c) =>
+                                          c.id === parseInt(formData.customer_id)
+                                      );
+                                      return customer
+                                        ? `${customer.name} - ${customer.company_name}`
+                                        : "";
+                                    })()
+                                  : ""
+                              }
+                              readOnly
+                              disabled
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 cursor-not-allowed opacity-75 ${
+                                isDark
+                                  ? "bg-dark-700 border-dark-600 text-white"
+                                  : "bg-gray-100 border-gold-200 text-dark-900"
+                              } focus:outline-none`}
+                            />
+                          ) : (
+                            <select
+                              name="customer_id"
+                              value={formData.customer_id}
+                              onChange={handleInputChange}
+                              required
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                validationErrors.customer_id
+                                  ? isDark
+                                    ? "bg-dark-700 border-red-500 text-white focus:border-red-500"
+                                    : "bg-white border-red-500 text-dark-900 focus:border-red-500"
+                                  : isDark
+                                  ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                                  : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            >
+                              <option value="">Select Customer</option>
+                              {Array.isArray(customers) &&
+                                customers.map((customer) => (
+                                  <option key={customer.id} value={customer.id}>
+                                    {customer.name} - {customer.company_name}
+                                  </option>
+                                ))}
+                            </select>
+                          )}
+                          {validationErrors.customer_id && (
+                            <p className="text-red-500 text-xs mt-1">
+                              {validationErrors.customer_id}
+                            </p>
+                          )}
                         </div>
-                        <div className="lg:col-span-1">
+
+                        {/* Bill Number - Auto-generated, read-only */}
+                        <div>
                           <label
                             className={`block text-sm font-medium mb-2 ${
                               isDark ? "text-silver-300" : "text-gray-700"
                             }`}
                           >
-                            IPT Price
+                            Bill Number
                           </label>
                           <input
-                            type="number"
-                            name="iig_qt_price"
-                            value={formData.iig_qt_price}
-                            onChange={handleInputChange}
-                            step="0.01"
-                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                              isDark
-                                ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                                : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                            } focus:outline-none`}
-                          />
-                        </div>
-                        <div className="lg:col-span-1">
-                          <label
-                            className={`block text-sm font-medium mb-2 ${
-                              isDark ? "text-silver-300" : "text-gray-700"
-                            }`}
-                          >
-                            IPT Total
-                          </label>
-                          <input
-                            type="number"
-                            value={formData.igt_qt_total}
+                            type="text"
+                            value={editingId ? formData.bill_number || "Auto-generated" : "Auto-generated"}
                             readOnly
                             disabled
                             className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 cursor-not-allowed opacity-75 ${
@@ -1124,442 +960,186 @@ export default function DataEntry() {
                           />
                         </div>
 
-                    {/* FNA + Price + Total */}
-                    <div className="lg:col-span-1">
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        FNA
-                      </label>
-                      <input
-                        type="number"
-                        name="fna"
-                        value={formData.fna}
-                        onChange={handleInputChange}
-                        step="0.01"
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                        } focus:outline-none`}
-                      />
-                    </div>
-                    <div className="lg:col-span-1">
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        FNA Price
-                      </label>
-                      <input
-                        type="number"
-                        name="fna_price"
-                        value={formData.fna_price}
-                        onChange={handleInputChange}
-                        step="0.01"
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                        } focus:outline-none`}
-                      />
-                    </div>
-                    <div className="lg:col-span-1">
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        FNA Total
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.fna_total}
-                        readOnly
-                        disabled
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 cursor-not-allowed opacity-75 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white"
-                            : "bg-gray-100 border-gold-200 text-dark-900"
-                        } focus:outline-none`}
-                      />
+                        {/* Activation Date */}
+                        <div>
+                          <label
+                            className={`block text-sm font-medium mb-2 ${
+                              isDark ? "text-silver-300" : "text-gray-700"
+                            }`}
+                          >
+                            Activation Date
+                          </label>
+                          <input
+                            type="date"
+                            name="active_date"
+                            value={formData.active_date}
+                            onChange={handleInputChange}
+                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                              isDark
+                                ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                                : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                            } focus:outline-none`}
+                          />
+                        </div>
+
+                        {/* Total Bill */}
+                        <div>
+                          <label
+                            className={`block text-sm font-medium mb-2 ${
+                              isDark ? "text-silver-300" : "text-gray-700"
+                            }`}
+                          >
+                            Total Bill
+                          </label>
+                          <input
+                            type="number"
+                            name="total_bill"
+                            value={formData.total_bill}
+                            onChange={handleInputChange}
+                            step="0.01"
+                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                              isDark
+                                ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                                : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                            } focus:outline-none`}
+                          />
+                        </div>
+                      </div>
                     </div>
 
-                    {/* GGC + Price + Total */}
-                    <div className="lg:col-span-1">
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        GGC
-                      </label>
-                      <input
-                        type="number"
-                        name="ggc"
-                        value={formData.ggc}
-                        onChange={handleInputChange}
-                        step="0.01"
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                        } focus:outline-none`}
-                      />
-                    </div>
-                    <div className="lg:col-span-1">
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        GGC Price
-                      </label>
-                      <input
-                        type="number"
-                        name="ggc_price"
-                        value={formData.ggc_price}
-                        onChange={handleInputChange}
-                        step="0.01"
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                        } focus:outline-none`}
-                      />
-                    </div>
-                    <div className="lg:col-span-1">
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        GGC Total
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.ggc_total}
-                        readOnly
-                        disabled
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 cursor-not-allowed opacity-75 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white"
-                            : "bg-gray-100 border-gold-200 text-dark-900"
-                        } focus:outline-none`}
-                      />
-                    </div>
-
-                    {/* CDN + Price + Total */}
-                    <div className="lg:col-span-1">
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        CDN
-                      </label>
-                      <input
-                        type="number"
-                        name="cdn"
-                        value={formData.cdn}
-                        onChange={handleInputChange}
-                        step="0.01"
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                        } focus:outline-none`}
-                      />
-                    </div>
-                    <div className="lg:col-span-1">
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        CDN Price
-                      </label>
-                      <input
-                        type="number"
-                        name="cdn_price"
-                        value={formData.cdn_price}
-                        onChange={handleInputChange}
-                        step="0.01"
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                        } focus:outline-none`}
-                      />
-                    </div>
-                    <div className="lg:col-span-1">
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        CDN Total
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.cdn_total}
-                        readOnly
-                        disabled
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 cursor-not-allowed opacity-75 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white"
-                            : "bg-gray-100 border-gold-200 text-dark-900"
-                        } focus:outline-none`}
-                      />
-                    </div>
-
-                    {/* BDIX + Price + Total */}
-                    <div className="lg:col-span-1">
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        NIX
-                      </label>
-                      <input
-                        type="number"
-                        name="bdix"
-                        value={formData.bdix}
-                        onChange={handleInputChange}
-                        step="0.01"
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                        } focus:outline-none`}
-                      />
-                    </div>
-                    <div className="lg:col-span-1">
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        NIX Price
-                      </label>
-                      <input
-                        type="number"
-                        name="bdix_price"
-                        value={formData.bdix_price}
-                        onChange={handleInputChange}
-                        step="0.01"
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                        } focus:outline-none`}
-                      />
-                    </div>
-                    <div className="lg:col-span-1">
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        NIX Total
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.bdix_total}
-                        readOnly
-                        disabled
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 cursor-not-allowed opacity-75 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white"
-                            : "bg-gray-100 border-gold-200 text-dark-900"
-                        } focus:outline-none`}
-                      />
-                    </div>
-
-                    {/* BAISHAN + Price + Total */}
-                    <div className="lg:col-span-1">
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        BAISHAN
-                      </label>
-                      <input
-                        type="number"
-                        name="baishan"
-                        value={formData.baishan}
-                        onChange={handleInputChange}
-                        step="0.01"
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                        } focus:outline-none`}
-                      />
-                    </div>
-                    <div className="lg:col-span-1">
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        BAISHAN Price
-                      </label>
-                      <input
-                        type="number"
-                        name="baishan_price"
-                        value={formData.baishan_price}
-                        onChange={handleInputChange}
-                        step="0.01"
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                        } focus:outline-none`}
-                      />
-                    </div>
-                    <div className="lg:col-span-1">
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        BAISHAN Total
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.baishan_total}
-                        readOnly
-                        disabled
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 cursor-not-allowed opacity-75 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white"
-                            : "bg-gray-100 border-gold-200 text-dark-900"
-                        } focus:outline-none`}
-                      />
-                    </div>
-                    
-                      </>
-                    )}
-
-                    {/* Bill Summary */}
-                    {/* <div>
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Total Bill
-                      </label>
-                      <input
-                        type="number"
-                        name="total_bill"
-                        value={formData.total_bill}
-                        onChange={handleInputChange}
-                        step="0.01"
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                        } focus:outline-none`}
-                      />
-                    </div> */}
-
-                    {/* <div>
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Total Received
-                      </label>
-                      <input
-                        type="number"
-                        name="total_received"
-                        value={formData.total_received}
-                        onChange={handleInputChange}
-                        step="0.01"
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                        } focus:outline-none`}
-                      />
-                    </div> */}
-{/* 
+                    {/* NTTN Information */}
                     <div>
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Total Due
-                      </label>
-                      <input
-                        type="number"
-                        name="total_due"
-                        value={formData.total_due}
-                        onChange={handleInputChange}
-                        step="0.01"
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                        } focus:outline-none`}
-                      />
-                    </div> */}
+                      <h3 className={`text-lg font-semibold mb-4 pb-2 border-b ${
+                        isDark ? "text-blue-400 border-dark-600" : "text-blue-600 border-gray-300"
+                      }`}>
+                        NTTN Information
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* NTTN Company */}
+                        <div>
+                          <label
+                            className={`block text-sm font-medium mb-2 ${
+                              isDark ? "text-silver-300" : "text-gray-700"
+                            }`}
+                          >
+                            NTTN Company
+                          </label>
+                          <input
+                            type="text"
+                            name="nttn_com"
+                            value={formData.nttn_com}
+                            onChange={handleInputChange}
+                            className={getFieldClassName("nttn_com")}
+                          />
+                          {renderFieldError("nttn_com")}
+                        </div>
 
-                    <div>
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Discount 
-                      </label>
-                      <input
-                        type="number"
-                        name="discount"
-                        value={formData.discount}
-                        onChange={handleInputChange}
-                        step="0.01"
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                        } focus:outline-none`}
-                      />
+                        {/* NTTN Capacity */}
+                        <div>
+                          <label
+                            className={`block text-sm font-medium mb-2 ${
+                              isDark ? "text-silver-300" : "text-gray-700"
+                            }`}
+                          >
+                            NTTN Capacity
+                          </label>
+                          <input
+                            type="text"
+                            name="nttn_cap"
+                            value={formData.nttn_cap}
+                            onChange={handleInputChange}
+                            className={getFieldClassName("nttn_cap")}
+                          />
+                          {renderFieldError("nttn_cap")}
+                        </div>
+                      </div>
                     </div>
 
+                    {/* Home Package Information */}
                     <div>
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Status
-                      </label>
-                      <select
-                        name="status"
-                        value={formData.status}
-                        onChange={handleInputChange}
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                        } focus:outline-none`}
-                      >
-                        <option value="Active">Active</option>
-                        <option value="Inactive">Inactive</option>
-                      </select>
+                      <h3 className={`text-lg font-semibold mb-4 pb-2 border-b ${
+                        isDark ? "text-blue-400 border-dark-600" : "text-blue-600 border-gray-300"
+                      }`}>
+                        Home Package Information
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Type of BW */}
+                        <div>
+                          <label
+                            className={`block text-sm font-medium mb-2 ${
+                              isDark ? "text-silver-300" : "text-gray-700"
+                            }`}
+                          >
+                            Type of BW
+                          </label>
+                          <select
+                            name="type"
+                            value={formData.type}
+                            onChange={handleInputChange}
+                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                              isDark
+                                ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                                : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                            } focus:outline-none`}
+                          >
+                            <option value="">Select Type</option>
+                            <option value="Shared">Shared</option>
+                            <option value="Dedicated">Dedicated</option>
+                          </select>
+                        </div>
+
+                        {/* Type of Connection */}
+                        <div>
+                          <label
+                            className={`block text-sm font-medium mb-2 ${
+                              isDark ? "text-silver-300" : "text-gray-700"
+                            }`}
+                          >
+                            Type of Connection
+                          </label>
+                          <select
+                            name="type"
+                            value={formData.type}
+                            onChange={handleInputChange}
+                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                              isDark
+                                ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                                : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                            } focus:outline-none`}
+                          >
+                            <option value="">Select Type</option>
+                            <option value="pppoe">pppoe</option>
+                            <option value="static">static</option>
+                          </select>
+                        </div>
+
+                        {/* Connected POP */}
+                        <div>
+                          <label
+                            className={`block text-sm font-medium mb-2 ${
+                              isDark ? "text-silver-300" : "text-gray-700"
+                            }`}
+                          >
+                            Connected POP
+                          </label>
+                          <input
+                            type="text"
+                            name="connected_pop"
+                            value={formData.connected_pop || ""}
+                            onChange={handleInputChange}
+                            placeholder="Banani"
+                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                              isDark
+                                ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                                : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                            } focus:outline-none`}
+                          />
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="lg:col-span-3">
+                    {/* Remarks Field */}
+                    <div>
                       <label
                         className={`block text-sm font-medium mb-2 ${
                           isDark ? "text-silver-300" : "text-gray-700"
@@ -1571,7 +1151,8 @@ export default function DataEntry() {
                         name="remarks"
                         value={formData.remarks}
                         onChange={handleInputChange}
-                        rows="2"
+                        rows="3"
+                        placeholder="Enter any additional notes or comments"
                         className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
                           isDark
                             ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
@@ -1580,7 +1161,8 @@ export default function DataEntry() {
                       />
                     </div>
 
-                    <div className="lg:col-span-3 flex gap-3">
+                    {/* Form Actions */}
+                    <div className="flex gap-3 pt-4">
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
@@ -1754,13 +1336,20 @@ export default function DataEntry() {
             >
               {/* Constrain list to its own scrollable area */}
               <div className="overflow-x-auto overflow-y-auto max-w-full max-h-[65vh]">
-                <table className="min-w-[2000px] text-xs sm:text-sm">
+                <table className="min-w-[1200px] text-xs sm:text-sm">
                   <thead className="sticky top-0 z-10 bg-white dark:bg-dark-800">
                     <tr
                       className={`border-b ${
                         isDark ? "border-dark-700" : "border-gold-100"
                       }`}
                     >
+                      <th
+                        className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
+                          isDark ? "text-silver-300" : "text-gray-700"
+                        }`}
+                      >
+                        Customer Master ID
+                      </th>
                       <th
                         className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
                           isDark ? "text-silver-300" : "text-gray-700"
@@ -1773,63 +1362,49 @@ export default function DataEntry() {
                           isDark ? "text-silver-300" : "text-gray-700"
                         }`}
                       >
-                        Customer Name
+                        Activation Date
+                      </th>
+                      <th
+                        className={`px-2 sm:px-4 py-3 text-right font-semibold whitespace-nowrap ${
+                          isDark ? "text-silver-300" : "text-gray-700"
+                        }`}
+                      >
+                        Total Bill
                       </th>
                       <th
                         className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
                           isDark ? "text-silver-300" : "text-gray-700"
                         }`}
                       >
-                        Address
+                        NTTN Company
                       </th>
                       <th
                         className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
                           isDark ? "text-silver-300" : "text-gray-700"
                         }`}
                       >
-                        Email
+                        NTTN Capacity
                       </th>
                       <th
                         className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
                           isDark ? "text-silver-300" : "text-gray-700"
                         }`}
                       >
-                        Company
+                        Type of BW
                       </th>
                       <th
                         className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
                           isDark ? "text-silver-300" : "text-gray-700"
                         }`}
                       >
-                        Phone
+                        Type of Connection
                       </th>
                       <th
                         className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
                           isDark ? "text-silver-300" : "text-gray-700"
                         }`}
                       >
-                        Link ID
-                      </th>
-                      <th
-                        className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        NTTN COM
-                      </th>
-                      <th
-                        className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        NTTN CAP
-                      </th>
-                      <th
-                        className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Active Date
+                        Connected POP
                       </th>
                       <th
                         className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
@@ -1843,125 +1418,6 @@ export default function DataEntry() {
                           isDark ? "text-silver-300" : "text-gray-700"
                         }`}
                       >
-                        Termination
-                      </th>
-                      <th
-                        className={`px-2 sm:px-4 py-3 text-right font-semibold whitespace-nowrap ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        IIG-QT
-                      </th>
-                      <th
-                        className={`px-2 sm:px-4 py-3 text-right font-semibold whitespace-nowrap ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Price
-                      </th>
-                      <th
-                        className={`px-2 sm:px-4 py-3 text-right font-semibold whitespace-nowrap ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        FNA
-                      </th>
-                      <th
-                        className={`px-2 sm:px-4 py-3 text-right font-semibold whitespace-nowrap ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Price
-                      </th>
-                      <th
-                        className={`px-2 sm:px-4 py-3 text-right font-semibold whitespace-nowrap ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        GGC
-                      </th>
-                      <th
-                        className={`px-2 sm:px-4 py-3 text-right font-semibold whitespace-nowrap ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Price
-                      </th>
-                      <th
-                        className={`px-2 sm:px-4 py-3 text-right font-semibold whitespace-nowrap ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        CDN
-                      </th>
-                      <th
-                        className={`px-2 sm:px-4 py-3 text-right font-semibold whitespace-nowrap ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Price
-                      </th>
-                      <th
-                        className={`px-2 sm:px-4 py-3 text-right font-semibold whitespace-nowrap ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        BDIX
-                      </th>
-                      <th
-                        className={`px-2 sm:px-4 py-3 text-right font-semibold whitespace-nowrap ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Price
-                      </th>
-                      <th
-                        className={`px-2 sm:px-4 py-3 text-right font-semibold whitespace-nowrap ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        BAISHAN
-                      </th>
-                      <th
-                        className={`px-2 sm:px-4 py-3 text-right font-semibold whitespace-nowrap ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Price
-                      </th>
-                      <th
-                        className={`px-2 sm:px-4 py-3 text-right font-semibold whitespace-nowrap ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Total Bill
-                      </th>
-                      <th
-                        className={`px-2 sm:px-4 py-3 text-right font-semibold whitespace-nowrap ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Total Received
-                      </th>
-                      <th
-                        className={`px-2 sm:px-4 py-3 text-right font-semibold whitespace-nowrap ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Total Due
-                      </th>
-                      <th
-                        className={`px-2 sm:px-4 py-3 text-right font-semibold whitespace-nowrap ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Discount
-                      </th>
-                      <th
-                        className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
                         Remarks
                       </th>
                       <th
@@ -1969,14 +1425,14 @@ export default function DataEntry() {
                           isDark ? "text-silver-300" : "text-gray-700"
                         }`}
                       >
-                        KAM
+                        Created By
                       </th>
                       <th
                         className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
                           isDark ? "text-silver-300" : "text-gray-700"
                         }`}
                       >
-                        Status
+                        Updated By
                       </th>
                       <th
                         className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
@@ -1995,6 +1451,16 @@ export default function DataEntry() {
                           isDark ? "bg-dark-700" : "bg-gray-50"
                         } ${isDark ? "border-dark-700" : "border-gray-100"}`}
                       >
+                        {/* Customer Master ID */}
+                        <td
+                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap ${
+                            isDark ? "text-gray-100" : "text-gray-900"
+                          }`}
+                        >
+                          {getCustomerDetails(bill).name || "-"}
+                        </td>
+                        
+                        {/* Bill Number */}
                         <td
                           className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap`}
                         >
@@ -2009,62 +1475,8 @@ export default function DataEntry() {
                             {bill.bill_number || "-"}
                           </button>
                         </td>
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap ${
-                            isDark ? "text-gray-100" : "text-gray-900"
-                          }`}
-                        >
-                          {getCustomerDetails(bill).name}
-                        </td>
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
-                            isDark ? "text-silver-300" : "text-gray-700"
-                          }`}
-                        >
-                          {getCustomerDetails(bill).address}
-                        </td>
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
-                            isDark ? "text-silver-300" : "text-gray-700"
-                          }`}
-                        >
-                          {getCustomerDetails(bill).email}
-                        </td>
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
-                            isDark ? "text-silver-300" : "text-gray-700"
-                          }`}
-                        >
-                          {getCustomerDetails(bill).company_name}
-                        </td>
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
-                            isDark ? "text-silver-300" : "text-gray-700"
-                          }`}
-                        >
-                          {getCustomerDetails(bill).phone}
-                        </td>
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
-                            isDark ? "text-silver-300" : "text-gray-700"
-                          }`}
-                        >
-                          -
-                        </td>
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
-                            isDark ? "text-silver-300" : "text-gray-700"
-                          }`}
-                        >
-                          {bill.nttn_com || "-"}
-                        </td>
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
-                            isDark ? "text-silver-300" : "text-gray-700"
-                          }`}
-                        >
-                          {bill.nttn_cap || "-"}
-                        </td>
+
+                        {/* Activation Date */}
                         <td
                           className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
                             isDark ? "text-silver-400" : "text-gray-600"
@@ -2074,6 +1486,62 @@ export default function DataEntry() {
                             ? new Date(bill.active_date).toLocaleDateString()
                             : "-"}
                         </td>
+
+                        {/* Total Bill */}
+                        <td
+                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
+                            isDark ? "text-blue-400" : "text-blue-600"
+                          }`}
+                        >
+                          {bill.total_bill?.toLocaleString() || "0"}
+                        </td>
+
+                        {/* NTTN Company */}
+                        <td
+                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
+                            isDark ? "text-silver-300" : "text-gray-700"
+                          }`}
+                        >
+                          {bill.nttn_com || "-"}
+                        </td>
+
+                        {/* NTTN Capacity */}
+                        <td
+                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
+                            isDark ? "text-silver-300" : "text-gray-700"
+                          }`}
+                        >
+                          {bill.nttn_cap || "-"}
+                        </td>
+
+                        {/* Type of BW */}
+                        <td
+                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
+                            isDark ? "text-silver-300" : "text-gray-700"
+                          }`}
+                        >
+                          {bill.type || "-"}
+                        </td>
+
+                        {/* Type of Connection */}
+                        <td
+                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
+                            isDark ? "text-silver-300" : "text-gray-700"
+                          }`}
+                        >
+                          {bill.connection_type || "-"}
+                        </td>
+
+                        {/* Connected POP */}
+                        <td
+                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
+                            isDark ? "text-silver-300" : "text-gray-700"
+                          }`}
+                        >
+                          {bill.connected_pop || "-"}
+                        </td>
+
+                        {/* Billing Date */}
                         <td
                           className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
                             isDark ? "text-silver-400" : "text-gray-600"
@@ -2083,167 +1551,36 @@ export default function DataEntry() {
                             ? new Date(bill.billing_date).toLocaleDateString()
                             : "-"}
                         </td>
+
+                        {/* Remarks */}
                         <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
-                            isDark ? "text-silver-400" : "text-gray-600"
-                          }`}
-                        >
-                          {bill.termination_date
-                            ? new Date(
-                                bill.termination_date
-                              ).toLocaleDateString()
-                            : "-"}
-                        </td>
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                            isDark ? "text-gray-100" : "text-gray-900"
-                          }`}
-                        >
-                          {bill.iig_qt || "0"}
-                        </td>
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                            isDark ? "text-gray-100" : "text-gray-900"
-                          }`}
-                        >
-                          {bill.iig_qt_price || "0"}
-                        </td>
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                            isDark ? "text-gray-100" : "text-gray-900"
-                          }`}
-                        >
-                          {bill.fna || "0"}
-                        </td>
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                            isDark ? "text-gray-100" : "text-gray-900"
-                          }`}
-                        >
-                          {bill.fna_price || "0"}
-                        </td>
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                            isDark ? "text-gray-100" : "text-gray-900"
-                          }`}
-                        >
-                          {bill.ggc || "0"}
-                        </td>
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                            isDark ? "text-gray-100" : "text-gray-900"
-                          }`}
-                        >
-                          {bill.ggc_price || "0"}
-                        </td>
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                            isDark ? "text-gray-100" : "text-gray-900"
-                          }`}
-                        >
-                          {bill.cdn || "0"}
-                        </td>
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                            isDark ? "text-gray-100" : "text-gray-900"
-                          }`}
-                        >
-                          {bill.cdn_price || "0"}
-                        </td>
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                            isDark ? "text-gray-100" : "text-gray-900"
-                          }`}
-                        >
-                          {bill.bdix || "0"}
-                        </td>
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                            isDark ? "text-gray-100" : "text-gray-900"
-                          }`}
-                        >
-                          {bill.bdix_price || "0"}
-                        </td>
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                            isDark ? "text-gray-100" : "text-gray-900"
-                          }`}
-                        >
-                          {bill.baishan || "0"}
-                        </td>
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                            isDark ? "text-gray-100" : "text-gray-900"
-                          }`}
-                        >
-                          {bill.baishan_price || "0"}
-                        </td>
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                            isDark ? "text-gray-100" : "text-gray-900"
-                          }`}
-                        >
-                          {bill.total_bill?.toLocaleString() || "0"}
-                        </td>
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                            isDark ? "text-green-400" : "text-green-600"
-                          }`}
-                        >
-                          {bill.total_received?.toLocaleString() || "0"}
-                        </td>
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                            isDark ? "text-red-400" : "text-red-600"
-                          }`}
-                        >
-                          {bill.total_due?.toLocaleString() || "0"}
-                        </td>
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm text-right whitespace-nowrap ${
+                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm max-w-xs truncate ${
                             isDark ? "text-silver-300" : "text-gray-700"
                           }`}
-                        >
-                          {bill.discount?.toLocaleString() || "0"}
-                        </td>
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
-                            isDark ? "text-silver-300" : "text-gray-700"
-                          }`}
+                          title={bill.remarks || "-"}
                         >
                           {bill.remarks || "-"}
                         </td>
+
+                        {/* Created By */}
                         <td
                           className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
                             isDark ? "text-silver-300" : "text-gray-700"
                           }`}
                         >
-                          {(() => {
-                            const customer = customers.find(
-                              (c) =>
-                                c.id === (bill.customer || bill.customer_id)
-                            );
-                            return (
-                              customer?.assigned_sales_person_details
-                                ?.username || "-"
-                            );
-                          })()}
+                          {bill.created_by_details?.username || bill.created_by || "-"}
                         </td>
-                        <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm`}>
-                          <span
-                            className={`px-2 sm:px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
-                              bill.status === "Active"
-                                ? isDark
-                                  ? "bg-green-900/30 text-green-400"
-                                  : "bg-green-100 text-green-700"
-                                : isDark
-                                ? "bg-red-900/30 text-red-400"
-                                : "bg-red-100 text-red-700"
-                            }`}
-                          >
-                            {bill.status}
-                          </span>
+
+                        {/* Updated By */}
+                        <td
+                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
+                            isDark ? "text-silver-300" : "text-gray-700"
+                          }`}
+                        >
+                          {bill.updated_by_details?.username || bill.updated_by || "-"}
                         </td>
+
+                        {/* Actions */}
                         <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm`}>
                           <div className="flex items-center space-x-1">
                             {hasPermission("bills:update") && (
