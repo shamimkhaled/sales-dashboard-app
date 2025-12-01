@@ -74,6 +74,14 @@ class CustomerMasterViewSet(viewsets.ModelViewSet):
             self.required_permissions = ['customers:update']
         return CustomerMasterSerializer
     
+    def perform_create(self, serializer):
+        """Create customer and auto-set created_by and updated_by"""
+        serializer.save(created_by=self.request.user, updated_by=self.request.user)
+    
+    def perform_update(self, serializer):
+        """Update customer and auto-set updated_by"""
+        serializer.save(updated_by=self.request.user)
+    
     @action(detail=True, methods=['get'])
     def entitlements(self, request, pk=None):
         """Get all entitlements for a customer"""

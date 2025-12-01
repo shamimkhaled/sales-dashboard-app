@@ -49,7 +49,7 @@ class CustomerMaster(models.Model):
     address = models.TextField()
     customer_type = models.CharField(max_length=20, choices=CUSTOMER_TYPE_CHOICES)
     kam_id = models.ForeignKey(KAMMaster, on_delete=models.SET_NULL, null=True, blank=True, related_name='customers')
-    customer_number = models.CharField(max_length=50, unique=True)
+    customer_number = models.CharField(max_length=50, unique=True, blank=True, help_text="Auto-generated")
     total_client = models.IntegerField(default=0, help_text="MAC only")
     total_active_client = models.IntegerField(default=0, help_text="MAC only")
     previous_total_client = models.IntegerField(default=0, help_text="MAC only")
@@ -60,9 +60,9 @@ class CustomerMaster(models.Model):
     last_bill_invoice_date = models.DateTimeField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='created_customers')
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_customers', help_text="Auto-set to current user")
     updated_at = models.DateTimeField(auto_now=True)
-    updated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='updated_customers')
+    updated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='updated_customers', help_text="Auto-set to current user")
 
     class Meta:
         db_table = 'customer_master'
@@ -75,6 +75,16 @@ class CustomerMaster(models.Model):
         # Generate customer number if not already set
         if not self.customer_number:
             self.customer_number = generate_customer_number(self.customer_name, self.pk)
+        
+        # Get the current user from the request context if available
+        request = kwargs.pop('request', None)
+        if request and request.user.is_authenticated:
+            # Set created_by on first creation
+            if not self.pk:
+                self.created_by = request.user
+            # Always update updated_by
+            self.updated_by = request.user
+        
         super().save(*args, **kwargs)
 
 
