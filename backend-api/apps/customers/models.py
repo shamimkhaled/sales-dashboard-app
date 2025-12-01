@@ -47,12 +47,12 @@ class CustomerMaster(models.Model):
     address = models.TextField()
     customer_type = models.CharField(max_length=20, choices=CUSTOMER_TYPE_CHOICES)
     kam_id = models.ForeignKey(KAMMaster, on_delete=models.SET_NULL, null=True, blank=True, related_name='customers')
-    customer_number = models.CharField(max_length=50, unique=True)
-    total_client = models.IntegerField(default=0, help_text="MAC only")
-    total_active_client = models.IntegerField(default=0, help_text="MAC only")
-    previous_total_client = models.IntegerField(default=0, help_text="MAC only")
-    free_giveaway_client = models.IntegerField(default=0, help_text="MAC only")
-    default_percentage_share = models.DecimalField(max_digits=5, decimal_places=2, default=0, help_text="MAC only")
+    customer_number = models.CharField(max_length=50, unique=True, blank=True)
+    total_client = models.IntegerField(null=True, blank=True, help_text="MAC only")
+    total_active_client = models.IntegerField(null=True, blank=True, help_text="MAC only")
+    previous_total_client = models.IntegerField(null=True, blank=True, help_text="MAC only")
+    free_giveaway_client = models.IntegerField(null=True, blank=True, help_text="MAC only")
+    default_percentage_share = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, help_text="MAC only")
     contact_person = models.CharField(max_length=200, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
     last_bill_invoice_date = models.DateTimeField(null=True, blank=True)
@@ -64,6 +64,16 @@ class CustomerMaster(models.Model):
 
     class Meta:
         db_table = 'customer_master'
+
+    def save(self, *args, **kwargs):
+        if not self.customer_number:
+            # Generate unique customer number
+            import time
+            import random
+            timestamp = str(int(time.time()))[-4:]  # Last 4 digits of timestamp
+            random_part = str(random.randint(1000, 9999))  # 4 random digits
+            self.customer_number = f"C{timestamp}{random_part}"
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.customer_name
@@ -136,6 +146,8 @@ class ProspectAttachment(models.Model):
 
     class Meta:
         db_table = 'sales_prospect_attachments'
+
+
 
 
 
