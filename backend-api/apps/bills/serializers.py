@@ -215,7 +215,7 @@ class CustomerEntitlementDetailsSerializer(serializers.ModelSerializer):
     
     def get_bandwidth_type(self, obj):
         """Extract bandwidth type from remarks (ipt, gcc, cdn, nix, baishan)"""
-        if obj.type == 'bw' and obj.remarks:
+        if obj.type == 'bw' and hasattr(obj, 'remarks') and obj.remarks:
             # Remarks format: "IPT - ..." or "GCC - ..." etc.
             remarks_upper = obj.remarks.upper()
             for bw_type in ['IPT', 'GCC', 'CDN', 'NIX', 'BAISHAN']:

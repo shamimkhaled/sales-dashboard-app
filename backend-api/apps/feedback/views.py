@@ -118,10 +118,15 @@ class FeedbackDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         qs = super().get_queryset()
+        
+        # Skip role checking during schema generation
+        if getattr(self, 'swagger_fake_view', False):
+            return qs
+        
         user = self.request.user
         
         # Sales persons can only see their own feedback and public feedback
-        if user.role and user.role.name == 'sales_person':
+        if user.is_authenticated and hasattr(user, 'role') and user.role and user.role.name == 'sales_person':
             qs = qs.filter(
                 Q(submitted_by=user) | Q(status__in=['pending', 'approved', 'completed'])
             )
@@ -250,10 +255,14 @@ class FeedbackCommentDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         qs = FeedbackComment.objects.select_related('user', 'feedback').all()
         
+        # Skip role checking during schema generation
+        if getattr(self, 'swagger_fake_view', False):
+            return qs
+        
         user = self.request.user
         # Non-admins can only see public comments
         is_admin = user.is_superuser or (
-            user.role and user.role.name in ['super_admin', 'admin', 'sales_manager']
+            user.is_authenticated and hasattr(user, 'role') and user.role and user.role.name in ['super_admin', 'admin', 'sales_manager']
         )
         if not is_admin:
             qs = qs.filter(is_internal=False)

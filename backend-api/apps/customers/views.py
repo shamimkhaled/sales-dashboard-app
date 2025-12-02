@@ -59,10 +59,15 @@ class CustomerMasterViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         qs = CustomerMaster.objects.select_related('kam_id', 'created_by').prefetch_related('entitlements')
+        
+        # Skip role checking during schema generation
+        if getattr(self, 'swagger_fake_view', False):
+            return qs
+        
         user = self.request.user
         
         # Filter by KAM if user is sales_person
-        if user.role and user.role.name == 'sales_person':
+        if user.is_authenticated and hasattr(user, 'role') and user.role and user.role.name == 'sales_person':
             qs = qs.filter(kam_id__kam_name=user.username)
         
         return qs

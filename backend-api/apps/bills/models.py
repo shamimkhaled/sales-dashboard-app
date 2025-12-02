@@ -92,6 +92,7 @@ class CustomerEntitlementDetails(models.Model):
     unit_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, help_text="Only MAC & BW - BW bandwidth prices (ipt,gcc,cdn,nix,baishan) stored here")
     custom_mac_percentage_share = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, help_text="MAC only")
     last_changes_updated_date = models.DateField(null=True, blank=True)
+    remarks = models.TextField(blank=True, null=True, help_text="Additional remarks or notes (e.g., bandwidth type for BW customers)")
     is_active = models.BooleanField(default=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='created_entitlement_details')
