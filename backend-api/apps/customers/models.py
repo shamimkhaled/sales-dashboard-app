@@ -87,9 +87,10 @@ class CustomerMaster(models.Model):
         # Generate customer number after first save (so we have pk)
         if not self.customer_number and self.pk:
             self.customer_number = generate_customer_number(self.customer_name, self.pk)
-            # Only save the customer_number field if it was just generated
+            # Save only the customer_number field without force_insert/update_fields conflicts
             if self.customer_number:
-                super().save(update_fields=['customer_number'], *args, **kwargs)
+                # Use regular save without update_fields to avoid conflicts
+                super().save()
 
 
 
