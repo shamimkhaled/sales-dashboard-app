@@ -2113,18 +2113,16 @@ export default function DataEntry() {
                         isDark ? "border-dark-700" : "border-gold-100"
                       }`}
                     >
-                      {/* Common columns for all types */}
-                      <th
-                        className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Customer Name
-                      </th>
-                      
                       {/* Bandwidth specific columns */}
                       {customerTypeFilter === "Bandwidth" && (
                         <>
+                          <th
+                            className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
+                              isDark ? "text-silver-300" : "text-gray-700"
+                            }`}
+                          >
+                            Customer Name
+                          </th>
                           <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
                             Network Name
                           </th>
@@ -2203,6 +2201,13 @@ export default function DataEntry() {
                       {/* Channel specific columns */}
                       {customerTypeFilter === "Channel" && (
                         <>
+                          <th
+                            className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
+                              isDark ? "text-silver-300" : "text-gray-700"
+                            }`}
+                          >
+                            Customer Name
+                          </th>
                           <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
                             NTTN
                           </th>
@@ -2266,6 +2271,13 @@ export default function DataEntry() {
                       {/* Home/SOHO specific columns */}
                       {customerTypeFilter === "Home/SOHO" && (
                         <>
+                          <th
+                            className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
+                              isDark ? "text-silver-300" : "text-gray-700"
+                            }`}
+                          >
+                            Customer Name
+                          </th>
                           <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
                             Type of Client
                           </th>
@@ -2302,77 +2314,36 @@ export default function DataEntry() {
                         </>
                       )}
                       
-                      {/* Default columns when no specific type is selected */}
-                      {!customerTypeFilter && (
-                        <>
-                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
-                            Bill Number
-                          </th>
-                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
-                            Activation Date
-                          </th>
-                          <th className={`px-2 sm:px-4 py-3 text-right font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
-                            Total Bill
-                          </th>
-                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
-                            NTTN Company
-                          </th>
-                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
-                            NTTN Capacity
-                          </th>
-                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
-                            Type of BW
-                          </th>
-                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
-                            Type of Connection
-                          </th>
-                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
-                            Connected POP
-                          </th>
-                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
-                            Billing Date
-                          </th>
-                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
-                            Remarks
-                          </th>
-                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
-                            Created By
-                          </th>
-                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
-                            Updated By
-                          </th>
-                        </>
+                      {/* Actions column - only show when customer type is selected */}
+                      {customerTypeFilter && (
+                        <th
+                          className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
+                            isDark ? "text-silver-300" : "text-gray-700"
+                          }`}
+                        >
+                          Actions
+                        </th>
                       )}
-                      
-                      <th
-                        className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Actions
-                      </th>
                     </tr>
                   </thead>
                   <tbody className={isDark ? "bg-dark-800" : "bg-white"}>
-                    {bills.map((bill, index) => (
+                    {customerTypeFilter && bills.map((bill, index) => (
                       <tr
                         key={bill.id}
                         className={`border-b transition-colors duration-300 hover:${
                           isDark ? "bg-dark-700" : "bg-gray-50"
                         } ${isDark ? "border-dark-700" : "border-gray-100"}`}
                       >
-                        {/* Common column - Customer Name */}
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap ${
-                            isDark ? "text-gray-100" : "text-gray-900"
-                          }`}
-                        >
-                          {getCustomerDetails(bill).name || "-"}
-                        </td>
-                        
                         {/* Bandwidth specific columns */}
                         {customerTypeFilter === "Bandwidth" && (
                           <>
+                            <td
+                              className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap ${
+                                isDark ? "text-gray-100" : "text-gray-900"
+                              }`}
+                            >
+                              {getCustomerDetails(bill).name || "-"}
+                            </td>
                             <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
                               {getCustomerDetails(bill).company_name || "-"}
                             </td>
@@ -2451,6 +2422,13 @@ export default function DataEntry() {
                         {/* Channel specific columns */}
                         {customerTypeFilter === "Channel" && (
                           <>
+                            <td
+                              className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap ${
+                                isDark ? "text-gray-100" : "text-gray-900"
+                              }`}
+                            >
+                              {getCustomerDetails(bill).name || "-"}
+                            </td>
                             <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
                               {bill.nttn_com || "-"}
                             </td>
@@ -2514,6 +2492,13 @@ export default function DataEntry() {
                         {/* Home/SOHO specific columns */}
                         {customerTypeFilter === "Home/SOHO" && (
                           <>
+                            <td
+                              className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap ${
+                                isDark ? "text-gray-100" : "text-gray-900"
+                              }`}
+                            >
+                              {getCustomerDetails(bill).name || "-"}
+                            </td>
                             <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
                               {bill.client_type || "-"}
                             </td>
