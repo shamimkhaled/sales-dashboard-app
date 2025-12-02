@@ -49,7 +49,7 @@ class CustomerMaster(models.Model):
     address = models.TextField()
     customer_type = models.CharField(max_length=20, choices=CUSTOMER_TYPE_CHOICES)
     kam_id = models.ForeignKey(KAMMaster, on_delete=models.SET_NULL, null=True, blank=True, related_name='customers')
-    customer_number = models.CharField(max_length=50, unique=True, blank=True, help_text="Auto-generated")
+    customer_number = models.CharField(max_length=50, unique=True, null=True, blank=True, help_text="Auto-generated")
     total_client = models.IntegerField(default=0, blank=True, null=True, help_text="MAC only")
     total_active_client = models.IntegerField(default=0, blank=True, null=True, help_text="MAC only")
     previous_total_client = models.IntegerField(default=0, blank=True, null=True, help_text="MAC only")
@@ -88,7 +88,8 @@ class CustomerMaster(models.Model):
         if not self.customer_number and self.pk:
             self.customer_number = generate_customer_number(self.customer_name, self.pk)
             # Only save the customer_number field if it was just generated
-            super().save(update_fields=['customer_number'], *args, **kwargs)
+            if self.customer_number:
+                super().save(update_fields=['customer_number'], *args, **kwargs)
 
 
 
