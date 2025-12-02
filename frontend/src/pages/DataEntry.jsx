@@ -45,8 +45,10 @@ export default function DataEntry() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [monthFilter, setMonthFilter] = useState("");
+  const [customerTypeFilter, setCustomerTypeFilter] = useState("");
   const [bills, setBills] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [salesUsers, setSalesUsers] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [fileType, setFileType] = useState("excel");
@@ -55,6 +57,7 @@ export default function DataEntry() {
   const [billToDelete, setBillToDelete] = useState(null);
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewingBill, setViewingBill] = useState(null);
+  const [selectedCustomerType, setSelectedCustomerType] = useState("");
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -104,7 +107,47 @@ export default function DataEntry() {
 
   useEffect(() => {
     fetchCustomers();
+    fetchSalesUsers();
   }, []);
+
+  // Helper function to format customer type for display
+  const formatCustomerType = (type) => {
+    const typeMap = {
+      'soho': 'Home/SOHO',
+      'bw': 'Bandwidth',
+      'channel_partner': 'Channel Partner'
+    };
+    return typeMap[type] || type;
+  };
+
+  const fetchSalesUsers = async () => {
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || "/api";
+      const response = await fetch(`${API_URL}/customers/kam/`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch KAM list");
+      }
+
+      const data = await response.json();
+      let users = [];
+      if (Array.isArray(data)) {
+        users = data;
+      } else if (data?.data && Array.isArray(data.data)) {
+        users = data.data;
+      } else if (data?.results && Array.isArray(data.results)) {
+        users = data.results;
+      }
+      setSalesUsers(users);
+    } catch (err) {
+      console.error("Failed to fetch sales users:", err);
+      setSalesUsers([]);
+    }
+  };
 
   const fetchBills = async () => {
     try {
@@ -210,6 +253,33 @@ export default function DataEntry() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
+    // If customer is selected, find their type and KAM name
+    if (name === 'customer_id' && value) {
+      const selectedCustomer = customers.find(c => c.id === parseInt(value));
+      
+      if (selectedCustomer) {
+        setSelectedCustomerType(selectedCustomer.customer_type || "");
+        
+        // Get KAM name from salesUsers using kam_id
+        const kamId = selectedCustomer.kam_id || selectedCustomer.assigned_sales_person || selectedCustomer.kam;
+        
+        let kamName = "";
+        if (kamId) {
+          const kamUser = salesUsers.find(u => u.id === parseInt(kamId));
+          kamName = kamUser?.kam_name || kamUser?.name || kamUser?.username || "";
+        }
+        
+        // Auto-populate KAM name from customer data
+        setFormData((prev) => ({
+          ...prev,
+          customer_id: value,
+          kam_name: kamName
+        }));
+        return; // Return early since we've already updated formData
+      }
+    }
+    
     setFormData((prev) => {
       const newData = { ...prev, [name]: value };
 
@@ -880,7 +950,7 @@ export default function DataEntry() {
                               isDark ? "text-silver-300" : "text-gray-700"
                             }`}
                           >
-                            Customer Master ID
+                            Customer Name
                           </label>
                           {editingId !== null ? (
                             <input
@@ -893,7 +963,7 @@ export default function DataEntry() {
                                           c.id === parseInt(formData.customer_id)
                                       );
                                       return customer
-                                        ? `${customer.name} - ${customer.company_name}`
+                                        ? (customer.customer_name || customer.name || "")
                                         : "";
                                     })()
                                   : ""
@@ -912,6 +982,10 @@ export default function DataEntry() {
                               value={formData.customer_id}
                               onChange={handleInputChange}
                               required
+                              style={{
+                                color: isDark ? '#ffffff' : '#1a1a1a',
+                                backgroundColor: isDark ? '#1f2937' : '#ffffff'
+                              }}
                               className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
                                 validationErrors.customer_id
                                   ? isDark
@@ -923,12 +997,18 @@ export default function DataEntry() {
                               } focus:outline-none`}
                             >
                               <option value="">Select Customer</option>
-                              {Array.isArray(customers) &&
+                              {Array.isArray(customers) && customers.length > 0 ? (
                                 customers.map((customer) => (
-                                  <option key={customer.id} value={customer.id}>
-                                    {customer.name} - {customer.company_name}
+                                  <option 
+                                    key={customer.id} 
+                                    value={customer.id}
+                                  >
+                                    {customer.customer_name || customer.name || 'Unnamed Customer'}
                                   </option>
-                                ))}
+                                ))
+                              ) : (
+                                <option value="" disabled>No customers available</option>
+                              )}
                             </select>
                           )}
                           {validationErrors.customer_id && (
@@ -938,18 +1018,51 @@ export default function DataEntry() {
                           )}
                         </div>
 
-                        {/* Bill Number - Auto-generated, read-only */}
+                        {/* Display Selected Customer Name */}
+                        {formData.customer_id && (
+                          <div>
+                            <label
+                              className={`block text-sm font-medium mb-2 ${
+                                isDark ? "text-silver-300" : "text-gray-700"
+                              }`}
+                            >
+                              Company Name
+                            </label>
+                            <input
+                              type="text"
+                              value={
+                                Array.isArray(customers)
+                                  ? (() => {
+                                      const customer = customers.find(
+                                        (c) => c.id === parseInt(formData.customer_id)
+                                      );
+                                      return customer ? (customer.company_name || "") : "";
+                                    })()
+                                  : ""
+                              }
+                              readOnly
+                              disabled
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 cursor-not-allowed opacity-75 ${
+                                isDark
+                                  ? "bg-dark-700 border-dark-600 text-white"
+                                  : "bg-gray-100 border-gold-200 text-dark-900"
+                              } focus:outline-none`}
+                            />
+                          </div>
+                        )}
+
+                        {/* Customer Type - Read-only, auto-populated */}
                         <div>
                           <label
                             className={`block text-sm font-medium mb-2 ${
                               isDark ? "text-silver-300" : "text-gray-700"
                             }`}
                           >
-                            Bill Number
+                            Customer Type
                           </label>
                           <input
                             type="text"
-                            value={editingId ? formData.bill_number || "Auto-generated" : "Auto-generated"}
+                            value={selectedCustomerType ? formatCustomerType(selectedCustomerType) : "Select a customer first"}
                             readOnly
                             disabled
                             className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 cursor-not-allowed opacity-75 ${
@@ -960,43 +1073,43 @@ export default function DataEntry() {
                           />
                         </div>
 
-                        {/* Activation Date */}
+                        {/* KAM Name */}
                         <div>
                           <label
                             className={`block text-sm font-medium mb-2 ${
                               isDark ? "text-silver-300" : "text-gray-700"
                             }`}
                           >
-                            Activation Date
+                            KAM Name
                           </label>
                           <input
-                            type="date"
-                            name="active_date"
-                            value={formData.active_date}
-                            onChange={handleInputChange}
-                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                            type="text"
+                            name="kam_name"
+                            value={formData.kam_name}
+                            readOnly
+                            disabled
+                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 cursor-not-allowed opacity-75 ${
                               isDark
-                                ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                                : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                                ? "bg-dark-700 border-dark-600 text-white"
+                                : "bg-gray-100 border-gold-200 text-dark-900"
                             } focus:outline-none`}
                           />
                         </div>
 
-                        {/* Total Bill */}
-                        <div>
+                        {/* Remarks */}
+                        <div className="md:col-span-2">
                           <label
                             className={`block text-sm font-medium mb-2 ${
                               isDark ? "text-silver-300" : "text-gray-700"
                             }`}
                           >
-                            Total Bill
+                            Remarks
                           </label>
-                          <input
-                            type="number"
-                            name="total_bill"
-                            value={formData.total_bill}
+                          <textarea
+                            name="remarks"
+                            value={formData.remarks}
                             onChange={handleInputChange}
-                            step="0.01"
+                            rows="3"
                             className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
                               isDark
                                 ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
@@ -1007,159 +1120,882 @@ export default function DataEntry() {
                       </div>
                     </div>
 
-                    {/* NTTN Information */}
-                    <div>
-                      <h3 className={`text-lg font-semibold mb-4 pb-2 border-b ${
-                        isDark ? "text-blue-400 border-dark-600" : "text-blue-600 border-gray-300"
-                      }`}>
-                        NTTN Information
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* NTTN Company */}
+                    {/* Common Fields - Show for all customer types when a customer is selected */}
+                    {selectedCustomerType && (
+                      <>
+                        {/* Common Information for all customer types */}
                         <div>
-                          <label
-                            className={`block text-sm font-medium mb-2 ${
-                              isDark ? "text-silver-300" : "text-gray-700"
-                            }`}
-                          >
-                            NTTN Company
-                          </label>
-                          <input
-                            type="text"
-                            name="nttn_com"
-                            value={formData.nttn_com}
-                            onChange={handleInputChange}
-                            className={getFieldClassName("nttn_com")}
-                          />
-                          {renderFieldError("nttn_com")}
-                        </div>
+                          <h3 className={`text-lg font-semibold mb-4 pb-2 border-b ${
+                            isDark ? "text-blue-400 border-dark-600" : "text-blue-600 border-gray-300"
+                          }`}>
+                            Common Information
+                          </h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Activation Date */}
+                            <div>
+                              <label
+                                className={`block text-sm font-medium mb-2 ${
+                                  isDark ? "text-silver-300" : "text-gray-700"
+                                }`}
+                              >
+                                Activation Date
+                              </label>
+                              <input
+                                type="date"
+                                name="active_date"
+                                value={formData.active_date}
+                                onChange={handleInputChange}
+                                className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                  isDark
+                                    ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                                    : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                                } focus:outline-none`}
+                              />
+                            </div>
 
-                        {/* NTTN Capacity */}
-                        <div>
-                          <label
-                            className={`block text-sm font-medium mb-2 ${
-                              isDark ? "text-silver-300" : "text-gray-700"
-                            }`}
-                          >
-                            NTTN Capacity
-                          </label>
-                          <input
-                            type="text"
-                            name="nttn_cap"
-                            value={formData.nttn_cap}
-                            onChange={handleInputChange}
-                            className={getFieldClassName("nttn_cap")}
-                          />
-                          {renderFieldError("nttn_cap")}
+                            {/* Total Bill */}
+                            <div>
+                              <label
+                                className={`block text-sm font-medium mb-2 ${
+                                  isDark ? "text-silver-300" : "text-gray-700"
+                                }`}
+                              >
+                                Total Bill
+                              </label>
+                              <input
+                                type="number"
+                                name="total_bill"
+                                value={formData.total_bill}
+                                onChange={handleInputChange}
+                                step="0.01"
+                                className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                  isDark
+                                    ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                                    : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                                } focus:outline-none`}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {/* Bandwidth Specific Fields */}
+                    {selectedCustomerType === "bw" && (
+                      <div>
+                        <h3 className={`text-lg font-semibold mb-4 pb-2 border-b ${
+                          isDark ? "text-blue-400 border-dark-600" : "text-blue-600 border-gray-300"
+                        }`}>
+                          Bandwidth Information
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Network Name */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              Network Name
+                            </label>
+                            <input
+                              type="text"
+                              name="network_name"
+                              value={formData.network_name}
+                              onChange={handleInputChange}
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* NTTN */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              NTTN
+                            </label>
+                            <input
+                              type="text"
+                              name="nttn_com"
+                              value={formData.nttn_com}
+                              onChange={handleInputChange}
+                              className={getFieldClassName("nttn_com")}
+                            />
+                            {renderFieldError("nttn_com")}
+                          </div>
+
+                          {/* Link/SCR ID */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              Link/SCR ID
+                            </label>
+                            <input
+                              type="text"
+                              name="link_scr_id"
+                              value={formData.link_scr_id}
+                              onChange={handleInputChange}
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* Type */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              Type
+                            </label>
+                            <input
+                              type="text"
+                              name="type"
+                              value={formData.type}
+                              onChange={handleInputChange}
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* NTTN Capacity */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              NTTN Capacity
+                            </label>
+                            <input
+                              type="text"
+                              name="nttn_cap"
+                              value={formData.nttn_cap}
+                              onChange={handleInputChange}
+                              className={getFieldClassName("nttn_cap")}
+                            />
+                            {renderFieldError("nttn_cap")}
+                          </div>
+
+                          {/* NTTN USES */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              NTTN USES
+                            </label>
+                            <input
+                              type="text"
+                              name="nttn_uses"
+                              value={formData.nttn_uses}
+                              onChange={handleInputChange}
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* INT */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              INT
+                            </label>
+                            <input
+                              type="text"
+                              name="iig_qt"
+                              value={formData.iig_qt}
+                              onChange={handleInputChange}
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* INT Price */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              INT Price
+                            </label>
+                            <input
+                              type="number"
+                              name="iig_qt_price"
+                              value={formData.iig_qt_price}
+                              onChange={handleInputChange}
+                              step="0.01"
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* GGC */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              GGC
+                            </label>
+                            <input
+                              type="text"
+                              name="ggc"
+                              value={formData.ggc}
+                              onChange={handleInputChange}
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* GGC Price */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              GGC Price
+                            </label>
+                            <input
+                              type="number"
+                              name="ggc_price"
+                              value={formData.ggc_price}
+                              onChange={handleInputChange}
+                              step="0.01"
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* FNA */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              FNA
+                            </label>
+                            <input
+                              type="text"
+                              name="fna"
+                              value={formData.fna}
+                              onChange={handleInputChange}
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* FNA Price */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              FNA Price
+                            </label>
+                            <input
+                              type="number"
+                              name="fna_price"
+                              value={formData.fna_price}
+                              onChange={handleInputChange}
+                              step="0.01"
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* BDiX */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              BDiX
+                            </label>
+                            <input
+                              type="text"
+                              name="bdix"
+                              value={formData.bdix}
+                              onChange={handleInputChange}
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* BDiX Price */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              BDiX Price
+                            </label>
+                            <input
+                              type="number"
+                              name="bdix_price"
+                              value={formData.bdix_price}
+                              onChange={handleInputChange}
+                              step="0.01"
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* CDN */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              CDN
+                            </label>
+                            <input
+                              type="text"
+                              name="cdn"
+                              value={formData.cdn}
+                              onChange={handleInputChange}
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* CDN Price */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              CDN Price
+                            </label>
+                            <input
+                              type="number"
+                              name="cdn_price"
+                              value={formData.cdn_price}
+                              onChange={handleInputChange}
+                              step="0.01"
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* Baishan */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              Baishan
+                            </label>
+                            <input
+                              type="text"
+                              name="baishan"
+                              value={formData.baishan}
+                              onChange={handleInputChange}
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* Baishan Price */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              Baishan Price
+                            </label>
+                            <input
+                              type="number"
+                              name="baishan_price"
+                              value={formData.baishan_price}
+                              onChange={handleInputChange}
+                              step="0.01"
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* PNI */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              PNI
+                            </label>
+                            <input
+                              type="text"
+                              name="pni"
+                              value={formData.pni}
+                              onChange={handleInputChange}
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* Max Uses */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              Max Uses
+                            </label>
+                            <input
+                              type="text"
+                              name="max_uses"
+                              value={formData.max_uses}
+                              onChange={handleInputChange}
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* Connection Date */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              Connection Date
+                            </label>
+                            <input
+                              type="date"
+                              name="active_date"
+                              value={formData.active_date}
+                              onChange={handleInputChange}
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* Delivery Status */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              Delivery Status
+                            </label>
+                            <select
+                              name="delivery_status"
+                              value={formData.delivery_status}
+                              onChange={handleInputChange}
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            >
+                              <option value="">Select Status</option>
+                              <option value="Delivered">Delivered</option>
+                              <option value="Pending">Pending</option>
+                              <option value="In Progress">In Progress</option>
+                            </select>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    )}
 
-                    {/* Home Package Information */}
-                    <div>
-                      <h3 className={`text-lg font-semibold mb-4 pb-2 border-b ${
-                        isDark ? "text-blue-400 border-dark-600" : "text-blue-600 border-gray-300"
-                      }`}>
-                        Home Package Information
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Type of BW */}
-                        <div>
-                          <label
-                            className={`block text-sm font-medium mb-2 ${
-                              isDark ? "text-silver-300" : "text-gray-700"
-                            }`}
-                          >
-                            Type of BW
-                          </label>
-                          <select
-                            name="type"
-                            value={formData.type}
-                            onChange={handleInputChange}
-                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                              isDark
-                                ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                                : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                            } focus:outline-none`}
-                          >
-                            <option value="">Select Type</option>
-                            <option value="Shared">Shared</option>
-                            <option value="Dedicated">Dedicated</option>
-                          </select>
-                        </div>
+                    {/* Channel Specific Fields */}
+                    {selectedCustomerType === "channel_partner" && (
+                      <div>
+                        <h3 className={`text-lg font-semibold mb-4 pb-2 border-b ${
+                          isDark ? "text-blue-400 border-dark-600" : "text-blue-600 border-gray-300"
+                        }`}>
+                          Channel Information
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* NTTN */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              NTTN
+                            </label>
+                            <input
+                              type="text"
+                              name="nttn_com"
+                              value={formData.nttn_com}
+                              onChange={handleInputChange}
+                              className={getFieldClassName("nttn_com")}
+                            />
+                            {renderFieldError("nttn_com")}
+                          </div>
 
-                        {/* Type of Connection */}
-                        <div>
-                          <label
-                            className={`block text-sm font-medium mb-2 ${
-                              isDark ? "text-silver-300" : "text-gray-700"
-                            }`}
-                          >
-                            Type of Connection
-                          </label>
-                          <select
-                            name="type"
-                            value={formData.type}
-                            onChange={handleInputChange}
-                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                              isDark
-                                ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                                : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                            } focus:outline-none`}
-                          >
-                            <option value="">Select Type</option>
-                            <option value="pppoe">pppoe</option>
-                            <option value="static">static</option>
-                          </select>
-                        </div>
+                          {/* Link/SRC ID */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              Link/SRC ID
+                            </label>
+                            <input
+                              type="text"
+                              name="link_src_id"
+                              value={formData.link_src_id}
+                              onChange={handleInputChange}
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
 
-                        {/* Connected POP */}
-                        <div>
-                          <label
-                            className={`block text-sm font-medium mb-2 ${
-                              isDark ? "text-silver-300" : "text-gray-700"
-                            }`}
-                          >
-                            Connected POP
-                          </label>
-                          <input
-                            type="text"
-                            name="connected_pop"
-                            value={formData.connected_pop || ""}
-                            onChange={handleInputChange}
-                            placeholder="Banani"
-                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                              isDark
-                                ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                                : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                            } focus:outline-none`}
-                          />
+                          {/* Type */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              Type
+                            </label>
+                            <input
+                              type="text"
+                              name="type"
+                              value={formData.type}
+                              onChange={handleInputChange}
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* NTTN Capacity */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              NTTN Capacity
+                            </label>
+                            <input
+                              type="text"
+                              name="nttn_cap"
+                              value={formData.nttn_cap}
+                              onChange={handleInputChange}
+                              className={getFieldClassName("nttn_cap")}
+                            />
+                            {renderFieldError("nttn_cap")}
+                          </div>
+
+                          {/* Kloud % */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              Kloud %
+                            </label>
+                            <input
+                              type="number"
+                              name="kloud_percentage"
+                              value={formData.kloud_percentage}
+                              onChange={handleInputChange}
+                              step="0.01"
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* Client % */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              Client %
+                            </label>
+                            <input
+                              type="number"
+                              name="client_percentage"
+                              value={formData.client_percentage}
+                              onChange={handleInputChange}
+                              step="0.01"
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* Rate */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              Rate
+                            </label>
+                            <input
+                              type="number"
+                              name="rate"
+                              value={formData.rate}
+                              onChange={handleInputChange}
+                              step="0.01"
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* Mbps */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              Mbps
+                            </label>
+                            <input
+                              type="text"
+                              name="mbps"
+                              value={formData.mbps}
+                              onChange={handleInputChange}
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* Max Uses */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              Max Uses
+                            </label>
+                            <input
+                              type="text"
+                              name="max_uses"
+                              value={formData.max_uses}
+                              onChange={handleInputChange}
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* Total User */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              Total User
+                            </label>
+                            <input
+                              type="text"
+                              name="total_user"
+                              value={formData.total_user}
+                              onChange={handleInputChange}
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* Current Client */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              Current Client
+                            </label>
+                            <input
+                              type="text"
+                              name="current_client"
+                              value={formData.current_client}
+                              onChange={handleInputChange}
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* Last Update (Current) */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              Last Update (Current)
+                            </label>
+                            <input
+                              type="date"
+                              name="last_update_current"
+                              value={formData.last_update_current}
+                              onChange={handleInputChange}
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* Free Client */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              Free Client
+                            </label>
+                            <input
+                              type="text"
+                              name="free_client"
+                              value={formData.free_client}
+                              onChange={handleInputChange}
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* Previous Client */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              Previous Client
+                            </label>
+                            <input
+                              type="text"
+                              name="previous_client"
+                              value={formData.previous_client}
+                              onChange={handleInputChange}
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* Last Update (Previous) */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              Last Update (Previous)
+                            </label>
+                            <input
+                              type="date"
+                              name="last_update_previous"
+                              value={formData.last_update_previous}
+                              onChange={handleInputChange}
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* Connection Date */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              Connection Date
+                            </label>
+                            <input
+                              type="date"
+                              name="active_date"
+                              value={formData.active_date}
+                              onChange={handleInputChange}
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* Delivery Status */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              Delivery Status
+                            </label>
+                            <select
+                              name="delivery_status"
+                              value={formData.delivery_status}
+                              onChange={handleInputChange}
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            >
+                              <option value="">Select Status</option>
+                              <option value="Delivered">Delivered</option>
+                              <option value="Pending">Pending</option>
+                              <option value="In Progress">In Progress</option>
+                            </select>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    )}
 
-                    {/* Remarks Field */}
-                    <div>
-                      <label
-                        className={`block text-sm font-medium mb-2 ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Remarks
-                      </label>
-                      <textarea
-                        name="remarks"
-                        value={formData.remarks}
-                        onChange={handleInputChange}
-                        rows="3"
-                        placeholder="Enter any additional notes or comments"
-                        className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                          isDark
-                            ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                            : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                        } focus:outline-none`}
-                      />
-                    </div>
+                    {/* Home/SOHO Specific Fields */}
+                    {selectedCustomerType === "soho" && (
+                      <div>
+                        <h3 className={`text-lg font-semibold mb-4 pb-2 border-b ${
+                          isDark ? "text-blue-400 border-dark-600" : "text-blue-600 border-gray-300"
+                        }`}>
+                          Home/SOHO Information
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Type of Client */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              Type of Client
+                            </label>
+                            <input
+                              type="text"
+                              name="client_type"
+                              value={formData.client_type}
+                              onChange={handleInputChange}
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* Type of BW */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              Type of BW
+                            </label>
+                            <select
+                              name="type"
+                              value={formData.type}
+                              onChange={handleInputChange}
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            >
+                              <option value="">Select Type</option>
+                              <option value="Shared">Shared</option>
+                              <option value="Dedicated">Dedicated</option>
+                            </select>
+                          </div>
+
+                          {/* Type of Connection */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              Type of Connection
+                            </label>
+                            <select
+                              name="connection_type"
+                              value={formData.connection_type}
+                              onChange={handleInputChange}
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            >
+                              <option value="">Select Type</option>
+                              <option value="pppoe">pppoe</option>
+                              <option value="static">static</option>
+                            </select>
+                          </div>
+
+                          {/* Connected POP */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              Connected POP
+                            </label>
+                            <input
+                              type="text"
+                              name="connected_pop"
+                              value={formData.connected_pop}
+                              onChange={handleInputChange}
+                              placeholder="Banani"
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* User ID */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              User ID
+                            </label>
+                            <input
+                              type="text"
+                              name="user_id"
+                              value={formData.user_id}
+                              onChange={handleInputChange}
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* Package */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              Package
+                            </label>
+                            <input
+                              type="text"
+                              name="package_name"
+                              value={formData.package_name}
+                              onChange={handleInputChange}
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+
+                          {/* Activation Date */}
+                          <div>
+                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              Activation Date
+                            </label>
+                            <input
+                              type="date"
+                              name="active_date"
+                              value={formData.active_date}
+                              onChange={handleInputChange}
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Remarks - Common for all customer types */}
+                    {selectedCustomerType && (
+                      <div>
+                        <label
+                          className={`block text-sm font-medium mb-2 ${
+                            isDark ? "text-silver-300" : "text-gray-700"
+                          }`}
+                        >
+                          Remarks
+                        </label>
+                        <textarea
+                          name="remarks"
+                          value={formData.remarks}
+                          onChange={handleInputChange}
+                          rows="3"
+                          placeholder="Enter any additional notes or comments"
+                          className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                            isDark
+                              ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                              : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                          } focus:outline-none`}
+                        />
+                      </div>
+                    )}
 
                     {/* Form Actions */}
                     <div className="flex gap-3 pt-4">
@@ -1226,6 +2062,32 @@ export default function DataEntry() {
                       : "bg-white text-dark-900 placeholder-gray-400 focus:outline-none"
                   }`}
                 />
+              </div>
+
+              <div
+                className={`relative ${
+                  isDark ? "bg-dark-800" : "bg-white"
+                } rounded-lg border transition-all duration-300 ${
+                  isDark ? "border-dark-700" : "border-gold-200"
+                }`}
+              >
+                <select
+                  value={customerTypeFilter}
+                  onChange={(e) => {
+                    setCustomerTypeFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className={`w-full px-4 py-2 pr-8 rounded-lg transition-all duration-300 appearance-none ${
+                    isDark
+                      ? "bg-dark-800 text-white focus:outline-none"
+                      : "bg-white text-dark-900 focus:outline-none"
+                  }`}
+                >
+                  <option value="" disabled selected>Select Customer Type</option>
+                  <option value="Bandwidth">Bandwidth</option>
+                  <option value="Channel">Channel</option>
+                  <option value="Home/SOHO">Home/SOHO</option>
+                </select>
               </div>
 
               <div
@@ -1343,97 +2205,237 @@ export default function DataEntry() {
                         isDark ? "border-dark-700" : "border-gold-100"
                       }`}
                     >
+                      {/* Common columns for all types */}
                       <th
                         className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
                           isDark ? "text-silver-300" : "text-gray-700"
                         }`}
                       >
-                        Customer Master ID
+                        Customer Name
                       </th>
-                      <th
-                        className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Bill Number
-                      </th>
-                      <th
-                        className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Activation Date
-                      </th>
-                      <th
-                        className={`px-2 sm:px-4 py-3 text-right font-semibold whitespace-nowrap ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Total Bill
-                      </th>
-                      <th
-                        className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        NTTN Company
-                      </th>
-                      <th
-                        className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        NTTN Capacity
-                      </th>
-                      <th
-                        className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Type of BW
-                      </th>
-                      <th
-                        className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Type of Connection
-                      </th>
-                      <th
-                        className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Connected POP
-                      </th>
-                      <th
-                        className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Billing Date
-                      </th>
-                      <th
-                        className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Remarks
-                      </th>
-                      <th
-                        className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Created By
-                      </th>
-                      <th
-                        className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Updated By
-                      </th>
+                      
+                      {/* Bandwidth specific columns */}
+                      {customerTypeFilter === "Bandwidth" && (
+                        <>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Network Name
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            NTTN
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Link/SCR ID
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Type
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            NTTN Capacity
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            NTTN USES
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            INT
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-right font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Price
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            GGC
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-right font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Price
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            FNA
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-right font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Price
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            BDiX
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-right font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Price
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            CDN
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-right font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Price
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Baishan
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-right font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Price
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            PNI
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Max Uses
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Connection Date
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Delivery Status
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            KAM Name
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Remarks
+                          </th>
+                        </>
+                      )}
+                      
+                      {/* Channel specific columns */}
+                      {customerTypeFilter === "Channel" && (
+                        <>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            NTTN
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Link/SRC ID
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Type
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            NTTN Capacity
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Kloud %
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Client %
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-right font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Rate
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Mbps
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Max Uses
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Total User
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Current Client
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Last Update
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Free Client
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Previous Client
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Last Update
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Connection Date
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Delivery Status
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            KAM Name
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Remarks
+                          </th>
+                        </>
+                      )}
+                      
+                      {/* Home/SOHO specific columns */}
+                      {customerTypeFilter === "Home/SOHO" && (
+                        <>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Type of Client
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Type of BW
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Type of Connection
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Connected POP
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            User ID
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Package
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Addresses
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Contact No
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Activation Date
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            KAM
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Remarks
+                          </th>
+                        </>
+                      )}
+                      
+                      {/* Default columns when no specific type is selected */}
+                      {!customerTypeFilter && (
+                        <>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Bill Number
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Activation Date
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-right font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Total Bill
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            NTTN Company
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            NTTN Capacity
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Type of BW
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Type of Connection
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Connected POP
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Billing Date
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Remarks
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Created By
+                          </th>
+                          <th className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Updated By
+                          </th>
+                        </>
+                      )}
+                      
                       <th
                         className={`px-2 sm:px-4 py-3 text-left font-semibold whitespace-nowrap ${
                           isDark ? "text-silver-300" : "text-gray-700"
@@ -1451,7 +2453,7 @@ export default function DataEntry() {
                           isDark ? "bg-dark-700" : "bg-gray-50"
                         } ${isDark ? "border-dark-700" : "border-gray-100"}`}
                       >
-                        {/* Customer Master ID */}
+                        {/* Common column - Customer Name */}
                         <td
                           className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap ${
                             isDark ? "text-gray-100" : "text-gray-900"
@@ -1460,127 +2462,238 @@ export default function DataEntry() {
                           {getCustomerDetails(bill).name || "-"}
                         </td>
                         
-                        {/* Bill Number */}
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap`}
-                        >
-                          <button
-                            onClick={() => handleViewClick(bill)}
-                            className={`font-medium underline decoration-dotted underline-offset-2 transition-colors duration-200 hover:no-underline ${
-                              isDark 
-                                ? "text-blue-400 hover:text-blue-300" 
-                                : "text-blue-600 hover:text-blue-700"
-                            }`}
-                          >
-                            {bill.bill_number || "-"}
-                          </button>
-                        </td>
-
-                        {/* Activation Date */}
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
-                            isDark ? "text-silver-400" : "text-gray-600"
-                          }`}
-                        >
-                          {bill.active_date
-                            ? new Date(bill.active_date).toLocaleDateString()
-                            : "-"}
-                        </td>
-
-                        {/* Total Bill */}
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${
-                            isDark ? "text-blue-400" : "text-blue-600"
-                          }`}
-                        >
-                          {bill.total_bill?.toLocaleString() || "0"}
-                        </td>
-
-                        {/* NTTN Company */}
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
-                            isDark ? "text-silver-300" : "text-gray-700"
-                          }`}
-                        >
-                          {bill.nttn_com || "-"}
-                        </td>
-
-                        {/* NTTN Capacity */}
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
-                            isDark ? "text-silver-300" : "text-gray-700"
-                          }`}
-                        >
-                          {bill.nttn_cap || "-"}
-                        </td>
-
-                        {/* Type of BW */}
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
-                            isDark ? "text-silver-300" : "text-gray-700"
-                          }`}
-                        >
-                          {bill.type || "-"}
-                        </td>
-
-                        {/* Type of Connection */}
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
-                            isDark ? "text-silver-300" : "text-gray-700"
-                          }`}
-                        >
-                          {bill.connection_type || "-"}
-                        </td>
-
-                        {/* Connected POP */}
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
-                            isDark ? "text-silver-300" : "text-gray-700"
-                          }`}
-                        >
-                          {bill.connected_pop || "-"}
-                        </td>
-
-                        {/* Billing Date */}
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
-                            isDark ? "text-silver-400" : "text-gray-600"
-                          }`}
-                        >
-                          {bill.billing_date
-                            ? new Date(bill.billing_date).toLocaleDateString()
-                            : "-"}
-                        </td>
-
-                        {/* Remarks */}
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm max-w-xs truncate ${
-                            isDark ? "text-silver-300" : "text-gray-700"
-                          }`}
-                          title={bill.remarks || "-"}
-                        >
-                          {bill.remarks || "-"}
-                        </td>
-
-                        {/* Created By */}
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
-                            isDark ? "text-silver-300" : "text-gray-700"
-                          }`}
-                        >
-                          {bill.created_by_details?.username || bill.created_by || "-"}
-                        </td>
-
-                        {/* Updated By */}
-                        <td
-                          className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${
-                            isDark ? "text-silver-300" : "text-gray-700"
-                          }`}
-                        >
-                          {bill.updated_by_details?.username || bill.updated_by || "-"}
-                        </td>
-
-                        {/* Actions */}
+                        {/* Bandwidth specific columns */}
+                        {customerTypeFilter === "Bandwidth" && (
+                          <>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {getCustomerDetails(bill).company_name || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.nttn_com || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.bill_number || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.type || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.nttn_cap || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.nttn_uses || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.iig_qt || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm text-right whitespace-nowrap ${isDark ? "text-blue-400" : "text-blue-600"}`}>
+                              {bill.iig_qt_price?.toLocaleString() || "0"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.ggc || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm text-right whitespace-nowrap ${isDark ? "text-blue-400" : "text-blue-600"}`}>
+                              {bill.ggc_price?.toLocaleString() || "0"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.fna || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm text-right whitespace-nowrap ${isDark ? "text-blue-400" : "text-blue-600"}`}>
+                              {bill.fna_price?.toLocaleString() || "0"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.bdix || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm text-right whitespace-nowrap ${isDark ? "text-blue-400" : "text-blue-600"}`}>
+                              {bill.bdix_price?.toLocaleString() || "0"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.cdn || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm text-right whitespace-nowrap ${isDark ? "text-blue-400" : "text-blue-600"}`}>
+                              {bill.cdn_price?.toLocaleString() || "0"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.baishan || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm text-right whitespace-nowrap ${isDark ? "text-blue-400" : "text-blue-600"}`}>
+                              {bill.baishan_price?.toLocaleString() || "0"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.pni || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.max_uses || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-400" : "text-gray-600"}`}>
+                              {bill.active_date ? new Date(bill.active_date).toLocaleDateString() : "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.delivery_status || bill.status || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {getCustomerDetails(bill).kam_name || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm max-w-xs truncate ${isDark ? "text-silver-300" : "text-gray-700"}`} title={bill.remarks || "-"}>
+                              {bill.remarks || "-"}
+                            </td>
+                          </>
+                        )}
+                        
+                        {/* Channel specific columns */}
+                        {customerTypeFilter === "Channel" && (
+                          <>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.nttn_com || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.bill_number || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.type || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.nttn_cap || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.kloud_percentage || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.client_percentage || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm text-right whitespace-nowrap ${isDark ? "text-blue-400" : "text-blue-600"}`}>
+                              {bill.rate?.toLocaleString() || "0"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.mbps || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.max_uses || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.total_user || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.current_client || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-400" : "text-gray-600"}`}>
+                              {bill.last_update_current ? new Date(bill.last_update_current).toLocaleDateString() : "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.free_client || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.previous_client || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-400" : "text-gray-600"}`}>
+                              {bill.last_update_previous ? new Date(bill.last_update_previous).toLocaleDateString() : "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-400" : "text-gray-600"}`}>
+                              {bill.active_date ? new Date(bill.active_date).toLocaleDateString() : "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.delivery_status || bill.status || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {getCustomerDetails(bill).kam_name || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm max-w-xs truncate ${isDark ? "text-silver-300" : "text-gray-700"}`} title={bill.remarks || "-"}>
+                              {bill.remarks || "-"}
+                            </td>
+                          </>
+                        )}
+                        
+                        {/* Home/SOHO specific columns */}
+                        {customerTypeFilter === "Home/SOHO" && (
+                          <>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.client_type || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.type || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.connection_type || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.connected_pop || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.user_id || bill.bill_number || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.package_name || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm max-w-xs truncate ${isDark ? "text-silver-300" : "text-gray-700"}`} title={getCustomerDetails(bill).address || "-"}>
+                              {getCustomerDetails(bill).address || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {getCustomerDetails(bill).phone || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-400" : "text-gray-600"}`}>
+                              {bill.active_date ? new Date(bill.active_date).toLocaleDateString() : "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {getCustomerDetails(bill).kam_name || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm max-w-xs truncate ${isDark ? "text-silver-300" : "text-gray-700"}`} title={bill.remarks || "-"}>
+                              {bill.remarks || "-"}
+                            </td>
+                          </>
+                        )}
+                        
+                        {/* Default columns when no specific type is selected */}
+                        {!customerTypeFilter && (
+                          <>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap`}>
+                              <button
+                                onClick={() => handleViewClick(bill)}
+                                className={`font-medium underline decoration-dotted underline-offset-2 transition-colors duration-200 hover:no-underline ${
+                                  isDark 
+                                    ? "text-blue-400 hover:text-blue-300" 
+                                    : "text-blue-600 hover:text-blue-700"
+                                }`}
+                              >
+                                {bill.bill_number || "-"}
+                              </button>
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-400" : "text-gray-600"}`}>
+                              {bill.active_date ? new Date(bill.active_date).toLocaleDateString() : "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm font-semibold text-right whitespace-nowrap ${isDark ? "text-blue-400" : "text-blue-600"}`}>
+                              {bill.total_bill?.toLocaleString() || "0"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.nttn_com || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.nttn_cap || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.type || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.connection_type || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.connected_pop || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-400" : "text-gray-600"}`}>
+                              {bill.billing_date ? new Date(bill.billing_date).toLocaleDateString() : "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm max-w-xs truncate ${isDark ? "text-silver-300" : "text-gray-700"}`} title={bill.remarks || "-"}>
+                              {bill.remarks || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.created_by_details?.username || bill.created_by || "-"}
+                            </td>
+                            <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                              {bill.updated_by_details?.username || bill.updated_by || "-"}
+                            </td>
+                          </>
+                        )}
+                        
+                        {/* Actions Column - Always visible */}
                         <td className={`px-2 sm:px-4 py-3 text-xs sm:text-sm`}>
                           <div className="flex items-center space-x-1">
                             {hasPermission("bills:update") && (
@@ -1972,7 +3085,7 @@ export default function DataEntry() {
                   isDark ? "text-silver-400" : "text-gray-600"
                 }`}
               >
-                No bills found. Create one to get started!
+                No bills found. Select Customer Type or create one to get started!
               </p>
             </motion.div>
           )}
