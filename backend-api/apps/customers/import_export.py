@@ -12,12 +12,13 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from django.http import HttpResponse
 from django.utils import timezone
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 
 from .models import CustomerMaster, KAMMaster
 from .utils import generate_customer_number
 
 logger = logging.getLogger(__name__)
+User = get_user_model()
 
 
 class CustomerExporter:
