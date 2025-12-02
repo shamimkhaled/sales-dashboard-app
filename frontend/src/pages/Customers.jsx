@@ -394,7 +394,7 @@ export default function Customers() {
       formDataToSend.append("file", file);
 
       const API_URL = import.meta.env.VITE_API_URL || "/api";
-      const response = await fetch(`${API_URL}/customers/import/`, {
+      const response = await fetch(`${API_URL}/customers/import_customers/`, {
         method: "POST",
         body: formDataToSend,
         headers: {
@@ -448,7 +448,7 @@ export default function Customers() {
   const handleExport = async () => {
     try {
       setLoading(true);
-      const API_URL = import.meta.env.VITE_API_URL || "/api";
+      const API_URL = "http://103.146.220.225:223/api";
 
       // Fetch CSV from export API
       const response = await fetch(`${API_URL}/customers/export/`, {
