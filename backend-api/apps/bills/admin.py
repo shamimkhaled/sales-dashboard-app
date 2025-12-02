@@ -29,7 +29,7 @@ class CustomerEntitlementMasterAdmin(admin.ModelAdmin):
         'customer_master_id__customer_number', 'customer_master_id__email'
     ]
     ordering = ['-created_at']
-    readonly_fields = ['created_at', 'updated_at']
+    readonly_fields = ['bill_number', 'created_at', 'updated_at']
     date_hierarchy = 'created_at'
     list_per_page = 25
     list_select_related = ['customer_master_id', 'created_by', 'updated_by']
@@ -37,7 +37,7 @@ class CustomerEntitlementMasterAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('Entitlement Information', {
-            'fields': ('customer_master_id', 'bill_number', 'activation_date', 'total_bill')
+            'fields': ('customer_master_id', 'activation_date', 'total_bill')
         }),
         ('NTTN Information', {
             'fields': ('nttn_company', 'nttn_capacity'),
@@ -85,7 +85,7 @@ class CustomerEntitlementDetailsAdmin(admin.ModelAdmin):
         'cust_entitlement_id__customer_master_id__customer_name'
     ]
     ordering = ['-created_at']
-    readonly_fields = ['created_at', 'updated_at', 'last_changes_updated_date']
+    readonly_fields = ['created_at', 'updated_at', 'last_changes_updated_date', 'created_by', 'updated_by']
     date_hierarchy = 'created_at'
     list_per_page = 25
     list_select_related = ['cust_entitlement_id__customer_master_id', 'package_pricing_id', 'created_by', 'updated_by']
@@ -159,7 +159,7 @@ class InvoiceMasterAdmin(admin.ModelAdmin):
     ]
     ordering = ['-created_at']
     readonly_fields = [
-        'created_at', 'updated_at', 'total_bill_amount', 
+        'invoice_number', 'created_by', 'updated_by', 'created_at', 'updated_at', 'total_bill_amount', 
         'total_paid_amount', 'total_balance_due', 'total_vat_amount', 
         'total_discount_amount'
     ]
@@ -175,7 +175,7 @@ class InvoiceMasterAdmin(admin.ModelAdmin):
     fieldsets = (
         ('Invoice Information', {
             'fields': (
-                'invoice_number', 'customer_entitlement_master_id', 
+                'customer_entitlement_master_id', 
                 'issue_date', 'information_master_id', 'status'
             )
         }),
@@ -190,7 +190,7 @@ class InvoiceMasterAdmin(admin.ModelAdmin):
             'fields': ('remarks',)
         }),
         ('Metadata', {
-            'fields': ('created_by', 'created_at', 'updated_at'),
+            'fields': ('created_by', 'updated_by', 'created_at', 'updated_at'),
             'classes': ('collapse',)
         }),
     )

@@ -46,7 +46,7 @@ class CustomerMasterAdmin(admin.ModelAdmin):
         'customer_number', 'contact_person'
     ]
     ordering = ['-created_at']
-    readonly_fields = ['created_at', 'updated_at', 'customer_number']
+    readonly_fields = ['customer_number', 'created_at', 'updated_at', 'created_by', 'updated_by']
     date_hierarchy = 'created_at'
     list_per_page = 25
     list_select_related = ['kam_id', 'created_by']
@@ -77,6 +77,15 @@ class CustomerMasterAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         return qs.select_related('kam_id', 'created_by', 'updated_by').prefetch_related('entitlements')
+    
+    def save_model(self, request, obj, form, change):
+        """Override save_model to pass request to model's save method"""
+        # Set created_by on first creation if not already set
+        if not change and not obj.created_by:
+            obj.created_by = request.user
+        # Always update updated_by
+        obj.updated_by = request.user
+        obj.save(request=request)
 
 
 class ProspectStatusHistoryInline(admin.TabularInline):

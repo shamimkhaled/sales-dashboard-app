@@ -20,6 +20,7 @@ from .serializers import (
 )
 from .utils import convert_prospect_to_customer
 from .email_service import send_prospect_confirmation_email, send_customer_lost_email
+from .import_export import CustomerExporter, CustomerImporter
 from apps.authentication.permissions import RequirePermissions
 
 
@@ -72,6 +73,14 @@ class CustomerMasterViewSet(viewsets.ModelViewSet):
         elif self.action == 'destroy':
             self.required_permissions = ['customers:update']
         return CustomerMasterSerializer
+    
+    def perform_create(self, serializer):
+        """Create customer and auto-set created_by and updated_by"""
+        serializer.save(created_by=self.request.user, updated_by=self.request.user)
+    
+    def perform_update(self, serializer):
+        """Update customer and auto-set updated_by"""
+        serializer.save(updated_by=self.request.user)
     
     @action(detail=True, methods=['get'])
     def entitlements(self, request, pk=None):
@@ -197,6 +206,157 @@ class CustomerMasterViewSet(viewsets.ModelViewSet):
             serializer = InvoiceMasterSerializer(invoices[1])
             return Response(serializer.data)
         return Response({'detail': 'No previous bill found'}, status=status.HTTP_404_NOT_FOUND)
+
+    @action(detail=False, methods=['get'])
+    def export(self, request):
+        """
+        Export customers to CSV, Excel, or PDF format
+        Query parameters:
+        - format: 'csv', 'excel' (default: 'csv')
+        - customer_type: Filter by customer type
+        - status: Filter by status
+        - is_active: Filter by active status (true/false)
+        """
+        queryset = self.filter_queryset(self.get_queryset())
+        export_format = request.query_params.get('format', 'csv').lower()
+        
+        try:
+            if export_format == 'excel':
+                return CustomerExporter.export_to_excel(queryset)
+            elif export_format == 'csv':
+                return CustomerExporter.export_to_csv(queryset)
+            else:
+                return Response(
+                    {'error': 'Invalid format. Choose from: csv, excel'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        except Exception as e:
+            return Response(
+                {'error': f'Export failed: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=False, methods=['post'], parser_classes=(MultiPartParser, FormParser))
+    def import_customers(self, request):
+        """
+        Import customers from CSV or Excel file
+        Request body:
+        - file: The file to import (multipart/form-data)
+        - file_format: 'csv' or 'excel' (auto-detect from filename if not provided)
+        """
+        self.required_permissions = ['customers:create']
+        
+        if 'file' not in request.FILES:
+            return Response(
+                {'error': 'No file provided'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        uploaded_file = request.FILES['file']
+        file_format = request.data.get('file_format', '').lower()
+        
+        # Auto-detect format from filename if not provided
+        if not file_format:
+            if uploaded_file.name.endswith('.xlsx'):
+                file_format = 'excel'
+            elif uploaded_file.name.endswith('.csv'):
+                file_format = 'csv'
+            else:
+                return Response(
+                    {'error': 'Unable to determine file format. Please specify file_format parameter.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        try:
+            file_content = uploaded_file.read()
+            
+            if file_format == 'excel':
+                success_count, error_messages, created_customers = CustomerImporter.import_from_excel(file_content)
+            elif file_format == 'csv':
+                success_count, error_messages, created_customers = CustomerImporter.import_from_csv(file_content)
+            else:
+                return Response(
+                    {'error': 'Invalid file format. Choose from: csv, excel'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            return Response({
+                'success': True,
+                'message': f'Successfully imported {success_count} customers',
+                'success_count': success_count,
+                'error_count': len(error_messages),
+                'created_customers': created_customers,
+                'errors': error_messages if error_messages else []
+            }, status=status.HTTP_201_CREATED if success_count > 0 else status.HTTP_400_BAD_REQUEST)
+        
+        except Exception as e:
+            return Response(
+                {'error': f'Import failed: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=False, methods=['get'])
+    def export_template(self, request):
+        """
+        Export a template file for importing customers
+        Query parameters:
+        - format: 'csv', 'excel' (default: 'csv')
+        """
+        export_format = request.query_params.get('format', 'csv').lower()
+        
+        template_data = [{
+            'Customer ID': '',
+            'Customer Name': 'Example Corp',
+            'Company Name': 'Example Company',
+            'Email': 'contact@example.com',
+            'Phone': '+1234567890',
+            'Address': '123 Business St, City',
+            'Customer Type': 'channel_partner',
+            'KAM Name': 'John Doe',
+            'Customer Number': '',
+            'Total Clients': 10,
+            'Total Active Clients': 8,
+            'Free Giveaway Clients': 0,
+            'Default % Share': 20.5,
+            'Contact Person': 'Jane Smith',
+            'Status': 'active',
+            'Last Bill Date': '',
+            'Is Active': 'Yes',
+            'Created At': '',
+            'Updated At': '',
+        }]
+        
+        try:
+            if export_format == 'excel':
+                df = pd.DataFrame(template_data)
+                output = BytesIO()
+                with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                    df.to_excel(writer, sheet_name='Template', index=False)
+                output.seek(0)
+                response = HttpResponse(
+                    output.read(),
+                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                )
+                response['Content-Disposition'] = 'attachment; filename="customers_template.xlsx"'
+                return response
+            elif export_format == 'csv':
+                output = BytesIO()
+                df = pd.DataFrame(template_data)
+                df.to_csv(output, index=False)
+                output.seek(0)
+                response = HttpResponse(output.getvalue(), content_type='text/csv')
+                response['Content-Disposition'] = 'attachment; filename="customers_template.csv"'
+                return response
+            else:
+                return Response(
+                    {'error': 'Invalid format. Choose from: csv, excel'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        except Exception as e:
+            return Response(
+                {'error': f'Template generation failed: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 

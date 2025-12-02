@@ -80,11 +80,13 @@ class CustomerMasterSerializer(serializers.ModelSerializer):
     total_paid = serializers.SerializerMethodField()
     total_due = serializers.SerializerMethodField()
     active_entitlements_count = serializers.SerializerMethodField()
+    created_by_details = serializers.SerializerMethodField()
+    updated_by_details = serializers.SerializerMethodField()
     
     class Meta:
         model = CustomerMaster
         fields = '__all__'
-        read_only_fields = ['created_at', 'updated_at', 'customer_number', 'last_bill_invoice_date']
+        read_only_fields = ['created_at', 'updated_at', 'customer_number', 'last_bill_invoice_date', 'created_by', 'updated_by']
     
     def get_kam_details(self, obj):
         if obj.kam_id:
@@ -93,6 +95,28 @@ class CustomerMasterSerializer(serializers.ModelSerializer):
                 'name': obj.kam_id.kam_name,
                 'email': obj.kam_id.email,
                 'phone': obj.kam_id.phone,
+            }
+        return None
+    
+    def get_created_by_details(self, obj):
+        if obj.created_by:
+            return {
+                'id': obj.created_by.id,
+                'username': obj.created_by.username,
+                'email': obj.created_by.email,
+                'first_name': obj.created_by.first_name,
+                'last_name': obj.created_by.last_name,
+            }
+        return None
+    
+    def get_updated_by_details(self, obj):
+        if obj.updated_by:
+            return {
+                'id': obj.updated_by.id,
+                'username': obj.updated_by.username,
+                'email': obj.updated_by.email,
+                'first_name': obj.updated_by.first_name,
+                'last_name': obj.updated_by.last_name,
             }
         return None
     

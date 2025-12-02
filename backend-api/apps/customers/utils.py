@@ -10,22 +10,25 @@ logger = logging.getLogger(__name__)
 
 def generate_customer_number(customer_name, customer_id):
     """
-    Generate unique customer number in format: KTL-{8 chars customer name}-{customer id}
+    Generate unique customer number in format: KTL-{5 chars customer name}-{customer id}
     
-    Example: KTL-CyberXTe-5
+    Example: KTL-Arman-5
     
     Args:
         customer_name: Customer name or company name
-        customer_id: Customer ID
+        customer_id: Customer ID (Primary Key)
     
     Returns:
         str: Generated customer number
     """
-    # Clean customer name: remove special characters, take first 8 characters
-    clean_name = re.sub(r'[^a-zA-Z0-9]', '', customer_name or 'CUSTOMER')
-    clean_name = clean_name[:8].upper() if len(clean_name) >= 8 else clean_name.upper().ljust(8, 'X')
+    if not customer_id:
+        return None
     
-    # Generate customer number: KTL-{8 chars}-{customer_id}
+    # Clean customer name: remove special characters, take first 5 characters
+    clean_name = re.sub(r'[^a-zA-Z0-9]', '', customer_name or 'CUST')
+    clean_name = clean_name[:5].upper()
+    
+    # Generate customer number: KTL-{5 chars}-{customer_id}
     customer_number = f"KTL-{clean_name}-{customer_id}"
     
     return customer_number

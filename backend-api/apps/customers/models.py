@@ -2,6 +2,8 @@ from django.db import models
 from django.core.validators import RegexValidator, MinValueValidator
 from django.utils import timezone
 from django.conf import settings
+from apps.customers.utils import generate_customer_number
+import re
 
 
 
@@ -47,7 +49,7 @@ class CustomerMaster(models.Model):
     address = models.TextField()
     customer_type = models.CharField(max_length=20, choices=CUSTOMER_TYPE_CHOICES)
     kam_id = models.ForeignKey(KAMMaster, on_delete=models.SET_NULL, null=True, blank=True, related_name='customers')
-    customer_number = models.CharField(max_length=50, unique=True)
+    customer_number = models.CharField(max_length=50, unique=True, blank=True, help_text="Auto-generated")
     total_client = models.IntegerField(default=0, help_text="MAC only")
     total_active_client = models.IntegerField(default=0, help_text="MAC only")
     previous_total_client = models.IntegerField(default=0, help_text="MAC only")
@@ -58,15 +60,35 @@ class CustomerMaster(models.Model):
     last_bill_invoice_date = models.DateTimeField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='created_customers')
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_customers', help_text="Auto-set to current user")
     updated_at = models.DateTimeField(auto_now=True)
-    updated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='updated_customers')
+    updated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='updated_customers', help_text="Auto-set to current user")
 
     class Meta:
         db_table = 'customer_master'
 
     def __str__(self):
         return self.customer_name
+    
+
+    def save(self, *args, **kwargs):
+        # Get the current user from the request context if available
+        request = kwargs.pop('request', None)
+        if request and request.user.is_authenticated:
+            # Set created_by on first creation
+            if not self.pk:
+                self.created_by = request.user
+            # Always update updated_by
+            self.updated_by = request.user
+        
+        # First save to get the pk if it's a new record
+        super().save(*args, **kwargs)
+        
+        # Generate customer number after first save (so we have pk)
+        if not self.customer_number and self.pk:
+            self.customer_number = generate_customer_number(self.customer_name, self.pk)
+            # Only save the customer_number field if it was just generated
+            super().save(update_fields=['customer_number'], *args, **kwargs)
 
 
 
