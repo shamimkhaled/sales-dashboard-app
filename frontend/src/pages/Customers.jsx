@@ -210,12 +210,12 @@ export default function Customers() {
       // Handle customer_type changes
       if (name === 'customer_type') {
         if (newValue === 'bw' || newValue === 'soho') {
-          // Set fields to 0 for bw and soho
-          updated.total_client = '0';
-          updated.total_active_client = '0';
-          updated.previous_total_client = '0';
-          updated.free_giveaway_client = '0';
-          updated.default_percentage_share = '0';
+          // Preserve previous data if not null, else set to 0 for bw and soho
+          updated.total_client = updated.total_client || '0';
+          updated.total_active_client = updated.total_active_client || '0';
+          updated.previous_total_client = updated.previous_total_client || '0';
+          updated.free_giveaway_client = updated.free_giveaway_client || '0';
+          updated.default_percentage_share = updated.default_percentage_share || '0';
         } else if (newValue === 'channel_partner') {
           // Clear fields for channel_partner (allow user input)
           updated.total_client = '';
@@ -334,6 +334,7 @@ export default function Customers() {
   };
 
   const handleEdit = (customer) => {
+    const isBwOrSoho = customer.customer_type === 'bw' || customer.customer_type === 'soho';
     setFormData({
       customer_name: customer.customer_name || customer.name || "",
       email: customer.email || "",
@@ -341,11 +342,11 @@ export default function Customers() {
       customer_type: customer.customer_type || "",
       company_name: customer.company_name || "",
       phone: customer.phone || "",
-      total_client: customer.total_client || "",
-      total_active_client: customer.total_active_client || "",
-      previous_total_client: customer.previous_total_client || "",
-      free_giveaway_client: customer.free_giveaway_client || "",
-      default_percentage_share: customer.default_percentage_share || "",
+      total_client: isBwOrSoho ? (customer.total_client || "0") : (customer.total_client || ""),
+      total_active_client: isBwOrSoho ? (customer.total_active_client || "0") : (customer.total_active_client || ""),
+      previous_total_client: isBwOrSoho ? (customer.previous_total_client || "0") : (customer.previous_total_client || ""),
+      free_giveaway_client: isBwOrSoho ? (customer.free_giveaway_client || "0") : (customer.free_giveaway_client || ""),
+      default_percentage_share: isBwOrSoho ? (customer.default_percentage_share || "0") : (customer.default_percentage_share || ""),
       contact_person: customer.contact_person || "",
       status: customer.status || "active",
       is_active: customer.is_active !== undefined ? customer.is_active : true,
@@ -392,8 +393,8 @@ export default function Customers() {
       const formDataToSend = new FormData();
       formDataToSend.append("file", file);
 
-      const API_URL = import.meta.env.VITE_API_URL || "/api";
-      const response = await fetch(`${API_URL}/customers/import/`, {
+      const API_URL = "http://103.146.220.225:223/api";
+      const response = await fetch(`${API_URL}/customers/import_customers/`, {
         method: "POST",
         body: formDataToSend,
         headers: {
@@ -447,81 +448,23 @@ export default function Customers() {
   const handleExport = async () => {
     try {
       setLoading(true);
-      const API_URL = import.meta.env.VITE_API_URL || "/api";
+      const API_URL = "http://103.146.220.225:223/api";
 
-      // Fetch all customers data
-      const response = await fetch(`${API_URL}/customers/?page_size=10000`, {
+      // Fetch CSV from export API
+      const response = await fetch(`${API_URL}/customers/export/`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
       });
 
       if (!response.ok) {
-        throw new Error("Failed to fetch customers data");
+        throw new Error("Failed to export customers");
       }
 
-      const data = await response.json();
-      const customersData = data.results || data.data || [];
+      // Get the CSV content as blob
+      const blob = await response.blob();
 
-      // Define CSV headers matching backend fields
-      const headers = [
-        "id",
-        "name",
-        "company_name",
-        "email",
-        "phone",
-        "address",
-        // "potential_revenue",
-        "calculated_monthly_revenue",
-        "assigned_sales_person",
-        "assigned_sales_person_details",
-        "status",
-        "link_id",
-        "created_at",
-        "updated_at",
-      ];
-
-      // Convert customers data to CSV rows
-      const rows = customersData.map((customer) => [
-        customer.id || "",
-        customer.name || "",
-        customer.company_name || "",
-        customer.email || "",
-        customer.phone || "",
-        customer.address || "",
-        // customer.potential_revenue || "",
-        customer.calculated_monthly_revenue || "",
-        customer.assigned_sales_person || "",
-        customer.assigned_sales_person_details || "",
-        customer.status || "",
-        customer.link_id || "",
-        customer.created_at || "",
-        customer.updated_at || "",
-      ]);
-
-      // Combine headers and rows
-      const csvContent = [
-        headers.join(","),
-        ...rows.map((row) =>
-          row
-            .map((cell) => {
-              // Escape quotes and wrap in quotes if contains comma or quotes
-              const cellStr = String(cell);
-              if (
-                cellStr.includes(",") ||
-                cellStr.includes('"') ||
-                cellStr.includes("\n")
-              ) {
-                return `"${cellStr.replace(/"/g, '""')}"`;
-              }
-              return cellStr;
-            })
-            .join(",")
-        ),
-      ].join("\n");
-
-      // Create blob and download
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      // Create download link
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
