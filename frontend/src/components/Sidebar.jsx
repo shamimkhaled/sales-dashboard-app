@@ -66,7 +66,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       permission: null, // Dashboard is always visible to authenticated users
     },
     {
-      name: "Bill Entry",
+      name: "Entitlement",
       path: "/data-entry",
       icon: FileText,
       permission: "bills:read",
