@@ -72,10 +72,6 @@ class CustomerMaster(models.Model):
     
 
     def save(self, *args, **kwargs):
-        # Generate customer number if not already set
-        if not self.customer_number:
-            self.customer_number = generate_customer_number(self.customer_name, self.pk)
-        
         # Get the current user from the request context if available
         request = kwargs.pop('request', None)
         if request and request.user.is_authenticated:
@@ -85,7 +81,14 @@ class CustomerMaster(models.Model):
             # Always update updated_by
             self.updated_by = request.user
         
+        # First save to get the pk if it's a new record
         super().save(*args, **kwargs)
+        
+        # Generate customer number after first save (so we have pk)
+        if not self.customer_number and self.pk:
+            self.customer_number = generate_customer_number(self.customer_name, self.pk)
+            # Only save the customer_number field if it was just generated
+            super().save(update_fields=['customer_number'], *args, **kwargs)
 
 
 
