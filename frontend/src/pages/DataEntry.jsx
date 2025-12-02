@@ -875,8 +875,8 @@ export default function DataEntry() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-hidden">
-        <div className="h-full max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-y-hidden">
+      <div className="flex-1 overflow-y-auto">
+        <div className="h-full max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {error && (
             <ErrorAlert message={error} onClose={() => setError(null)} />
           )}
@@ -909,13 +909,13 @@ export default function DataEntry() {
                 }`}
               >
                 <div
-                  className={`sticky top-0 z-10 p-6 pb-4 ${
+                  className={`sticky top-0 z-10 p-4 sm:p-6 pb-3 sm:pb-4 ${
                     isDark ? "bg-dark-800" : "bg-white"
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <h2
-                      className={`text-2xl font-serif font-bold ${
+                      className={`text-xl sm:text-2xl font-serif font-bold ${
                         isDark ? "text-white" : "text-dark-900"
                       }`}
                     >
@@ -925,15 +925,15 @@ export default function DataEntry() {
                       onClick={resetForm}
                       className="p-2 rounded-lg transition-all bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 shadow-md"
                     >
-                      <X size={24} />
+                      <X size={20} className="sm:w-6 sm:h-6" />
                     </button>
                   </div>
                 </div>
 
-                <div className="px-6 pb-6 max-h-[70vh] overflow-y-auto">
+                <div className="px-4 sm:px-6 pb-4 sm:pb-6">
                   <form
                     onSubmit={handleSubmit}
-                    className="space-y-6"
+                    className="space-y-4 sm:space-y-6"
                   >
                     {/* Entitlement Information */}
                     <div>
@@ -1119,66 +1119,6 @@ export default function DataEntry() {
                         </div>
                       </div>
                     </div>
-
-                    {/* Common Fields - Show for all customer types when a customer is selected */}
-                    {selectedCustomerType && (
-                      <>
-                        {/* Common Information for all customer types */}
-                        <div>
-                          <h3 className={`text-lg font-semibold mb-4 pb-2 border-b ${
-                            isDark ? "text-blue-400 border-dark-600" : "text-blue-600 border-gray-300"
-                          }`}>
-                            Common Information
-                          </h3>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* Activation Date */}
-                            <div>
-                              <label
-                                className={`block text-sm font-medium mb-2 ${
-                                  isDark ? "text-silver-300" : "text-gray-700"
-                                }`}
-                              >
-                                Activation Date
-                              </label>
-                              <input
-                                type="date"
-                                name="active_date"
-                                value={formData.active_date}
-                                onChange={handleInputChange}
-                                className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                                  isDark
-                                    ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                                    : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                                } focus:outline-none`}
-                              />
-                            </div>
-
-                            {/* Total Bill */}
-                            <div>
-                              <label
-                                className={`block text-sm font-medium mb-2 ${
-                                  isDark ? "text-silver-300" : "text-gray-700"
-                                }`}
-                              >
-                                Total Bill
-                              </label>
-                              <input
-                                type="number"
-                                name="total_bill"
-                                value={formData.total_bill}
-                                onChange={handleInputChange}
-                                step="0.01"
-                                className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                                  isDark
-                                    ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                                    : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                                } focus:outline-none`}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </>
-                    )}
 
                     {/* Bandwidth Specific Fields */}
                     {selectedCustomerType === "bw" && (
