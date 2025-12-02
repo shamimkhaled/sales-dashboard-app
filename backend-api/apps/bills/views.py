@@ -268,7 +268,7 @@ class CustomerEntitlementMasterViewSet(viewsets.ModelViewSet):
     ).prefetch_related('details')
     serializer_class = CustomerEntitlementMasterSerializer
     permission_classes = [permissions.IsAuthenticated, RequirePermissions]
-    required_permissions = ['bills:read']
+    required_permissions = ['entitlements:read']
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['customer_master_id', 'activation_date']
     search_fields = ['bill_number', 'customer_master_id__customer_name']
@@ -276,9 +276,9 @@ class CustomerEntitlementMasterViewSet(viewsets.ModelViewSet):
     
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update']:
-            self.required_permissions = ['bills:create']
+            self.required_permissions = ['entitlements:create']
         elif self.action == 'destroy':
-            self.required_permissions = ['bills:update']
+            self.required_permissions = ['entitlements:delete']
         return CustomerEntitlementMasterSerializer
     
     def perform_create(self, serializer):
@@ -365,7 +365,7 @@ class CustomerEntitlementDetailsViewSet(viewsets.ModelViewSet):
     )
     serializer_class = CustomerEntitlementDetailsSerializer
     permission_classes = [permissions.IsAuthenticated, RequirePermissions]
-    required_permissions = ['bills:read']
+    required_permissions = ['entitlement_details:read']
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['cust_entitlement_id', 'type', 'status', 'is_active']
     search_fields = ['cust_entitlement_id__bill_number']
@@ -373,9 +373,9 @@ class CustomerEntitlementDetailsViewSet(viewsets.ModelViewSet):
     
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update']:
-            self.required_permissions = ['bills:create']
+            self.required_permissions = ['entitlement_details:create']
         elif self.action == 'destroy':
-            self.required_permissions = ['bills:update']
+            self.required_permissions = ['entitlement_details:delete']
         return CustomerEntitlementDetailsSerializer
     
     def perform_create(self, serializer):
