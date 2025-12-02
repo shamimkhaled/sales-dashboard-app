@@ -393,7 +393,7 @@ export default function Customers() {
       const formDataToSend = new FormData();
       formDataToSend.append("file", file);
 
-      const API_URL = import.meta.env.VITE_API_URL || "/api";
+      const API_URL = "http://103.146.220.225:223/api";
       const response = await fetch(`${API_URL}/customers/import_customers/`, {
         method: "POST",
         body: formDataToSend,
