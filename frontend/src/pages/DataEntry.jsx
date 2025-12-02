@@ -1532,22 +1532,6 @@ export default function DataEntry() {
                             />
                           </div>
 
-                          {/* Type */}
-                          <div>
-                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
-                              Type
-                            </label>
-                            <input
-                              type="text"
-                              name="type"
-                              value={formData.type}
-                              onChange={handleInputChange}
-                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                              } focus:outline-none`}
-                            />
-                          </div>
-
                           {/* NTTN Capacity */}
                           <div>
                             <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
@@ -1795,33 +1779,17 @@ export default function DataEntry() {
                             <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
                               Type of Client
                             </label>
-                            <input
-                              type="text"
+                            <select
                               name="client_type"
                               value={formData.client_type}
                               onChange={handleInputChange}
                               className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
                                 isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
                               } focus:outline-none`}
-                            />
-                          </div>
-
-                          {/* Type of BW */}
-                          <div>
-                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
-                              Type of BW
-                            </label>
-                            <select
-                              name="type"
-                              value={formData.type}
-                              onChange={handleInputChange}
-                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                              } focus:outline-none`}
                             >
                               <option value="">Select Type</option>
-                              <option value="Shared">Shared</option>
-                              <option value="Dedicated">Dedicated</option>
+                              <option value="Home">Home</option>
+                              <option value="Office">Office</option>
                             </select>
                           </div>
 
