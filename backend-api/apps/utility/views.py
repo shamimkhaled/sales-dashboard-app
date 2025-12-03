@@ -16,7 +16,7 @@ class UtilityInformationMasterListView(generics.ListAPIView):
     queryset = UtilityInformationMaster.objects.filter(is_active=True).prefetch_related('details')
     serializer_class = UtilityInformationMasterSerializer
     permission_classes = [permissions.IsAuthenticated, RequirePermissions]
-    required_permissions = ['bills:read']
+    required_permissions = ['utilities:read']
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ['is_active']
     ordering_fields = ['created_at']
@@ -27,7 +27,7 @@ class UtilityInformationMasterDetailView(generics.RetrieveAPIView):
     queryset = UtilityInformationMaster.objects.prefetch_related('details')
     serializer_class = UtilityInformationMasterSerializer
     permission_classes = [permissions.IsAuthenticated, RequirePermissions]
-    required_permissions = ['bills:read']
+    required_permissions = ['utilities:read']
 
 
 class UtilityDetailsListView(generics.ListAPIView):
@@ -35,7 +35,7 @@ class UtilityDetailsListView(generics.ListAPIView):
     queryset = UtilityDetails.objects.select_related('utility_master_id').filter(is_active=True)
     serializer_class = UtilityDetailsSerializer
     permission_classes = [permissions.IsAuthenticated, RequirePermissions]
-    required_permissions = ['bills:read']
+    required_permissions = ['utilities:read']
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['utility_master_id', 'type', 'is_active']
     search_fields = ['name', 'number']
@@ -47,5 +47,5 @@ class UtilityDetailsDetailView(generics.RetrieveAPIView):
     queryset = UtilityDetails.objects.select_related('utility_master_id')
     serializer_class = UtilityDetailsSerializer
     permission_classes = [permissions.IsAuthenticated, RequirePermissions]
-    required_permissions = ['bills:read']
+    required_permissions = ['utilities:read']
 

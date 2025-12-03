@@ -29,7 +29,7 @@ class PaymentMasterViewSet(viewsets.ModelViewSet):
     ).prefetch_related('details')
     serializer_class = PaymentMasterSerializer
     permission_classes = [permissions.IsAuthenticated, RequirePermissions]
-    required_permissions = ['bills:read']
+    required_permissions = ['payments:read']
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['status', 'payment_method', 'invoice_master_id']
     search_fields = ['invoice_master_id__invoice_number', 'transaction_id']
@@ -37,9 +37,9 @@ class PaymentMasterViewSet(viewsets.ModelViewSet):
     
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update']:
-            self.required_permissions = ['bills:create']
+            self.required_permissions = ['payments:create']
         elif self.action == 'destroy':
-            self.required_permissions = ['bills:update']
+            self.required_permissions = ['payments:delete']
         return PaymentMasterSerializer
     
     def get_queryset(self):
@@ -156,21 +156,16 @@ class PaymentDetailsViewSet(viewsets.ModelViewSet):
         'payment_master_id', 'received_by', 'created_by'
     )
     permission_classes = [permissions.IsAuthenticated, RequirePermissions]
-    required_permissions = ['bills:read']
+    required_permissions = ['payments:read']
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ['payment_master_id', 'status']
     search_fields = ['transaction_id']
     
     def get_serializer_class(self):
-        if self.action == 'create':
-            return PaymentDetailsCreateSerializer
-        return PaymentDetailsSerializer
-    
-    def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update']:
-            self.required_permissions = ['bills:create']
+            self.required_permissions = ['payments:create']
         elif self.action == 'destroy':
-            self.required_permissions = ['bills:update']
+            self.required_permissions = ['payments:delete']
         if self.action == 'create':
             return PaymentDetailsCreateSerializer
         return PaymentDetailsSerializer
