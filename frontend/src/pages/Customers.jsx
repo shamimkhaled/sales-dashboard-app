@@ -36,6 +36,7 @@ export default function Customers() {
   const [success, setSuccess] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [filterCustomerType, setFilterCustomerType] = useState("all");
   const [customers, setCustomers] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -110,7 +111,7 @@ export default function Customers() {
     }
     // already on page 1 — fetch with new search/filter
     fetchCustomers();
-  }, [searchTerm, filterStatus]);
+  }, [searchTerm, filterStatus, filterCustomerType]);
 
   // Fetch customers when current page or page size changes
   useEffect(() => {
@@ -493,7 +494,13 @@ export default function Customers() {
         if (statusVal !== filterStatus) return false;
       }
 
-      // If no search term, include the record (status already applied)
+      // Apply customer type filter
+      if (filterCustomerType && filterCustomerType !== "all") {
+        const typeVal = (c.customer_type || "").toString();
+        if (typeVal !== filterCustomerType) return false;
+      }
+
+      // If no search term, include the record (filters already applied)
       if (!term) return true;
 
       const name = (c.customer_name || c.name || "").toString().toLowerCase();
@@ -513,7 +520,7 @@ export default function Customers() {
         kam.includes(term)
       );
     });
-  }, [customers, searchTerm, salesUsers, filterStatus]);
+  }, [customers, searchTerm, salesUsers, filterStatus, filterCustomerType]);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -1117,15 +1124,44 @@ export default function Customers() {
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
+                className={`pl-10 pr-4 pe-12 py-2 rounded-lg transition-all duration-300 ${
+                  isDark
+                    ? "bg-dark-800 text-white focus:outline-none"
+                    : "bg-white text-dark-900 focus:outline-none"
+                }`}
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+
+            <div
+              className={`relative ${
+                isDark ? "bg-dark-800" : "bg-white"
+              } rounded-lg border transition-all duration-300 ${
+                isDark ? "border-dark-700" : "border-gold-200"
+              }`}
+            >
+              <Filter
+                className={`absolute left-3 top-3 ${
+                  isDark ? "text-silver-500" : "text-gray-400"
+                }`}
+                size={20}
+              />
+              <select
+                value={filterCustomerType}
+                onChange={(e) => setFilterCustomerType(e.target.value)}
                 className={`pl-10 pr-4 pe-10 py-2 rounded-lg transition-all duration-300 ${
                   isDark
                     ? "bg-dark-800 text-white focus:outline-none"
                     : "bg-white text-dark-900 focus:outline-none"
                 }`}
               >
-                <option value="all">All Customers</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
+                <option value="all">All Types</option>
+                <option value="bw">Bandwidth</option>
+                <option value="channel_partner">Channel Partner</option>
+                <option value="soho">SOHO/Home</option>
               </select>
             </div>
           </div>
