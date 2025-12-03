@@ -58,6 +58,7 @@ export default function DataEntry() {
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewingBill, setViewingBill] = useState(null);
   const [selectedCustomerType, setSelectedCustomerType] = useState("");
+  const [formCustomerTypeFilter, setFormCustomerTypeFilter] = useState("");
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -254,6 +255,19 @@ export default function DataEntry() {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     
+    // If form customer type filter is changed
+    if (name === 'form_customer_type_filter') {
+      setFormCustomerTypeFilter(value);
+      // Reset customer selection when customer type changes
+      setFormData((prev) => ({
+        ...prev,
+        customer_id: "",
+        kam_name: ""
+      }));
+      setSelectedCustomerType("");
+      return;
+    }
+    
     // If customer is selected, find their type and KAM name
     if (name === 'customer_id' && value) {
       const selectedCustomer = customers.find(c => c.id === parseInt(value));
@@ -418,6 +432,8 @@ export default function DataEntry() {
     });
     setEditingId(null);
     setShowForm(false);
+    setFormCustomerTypeFilter("");
+    setSelectedCustomerType("");
   };
 
   const handleEdit = (bill) => {
@@ -943,7 +959,52 @@ export default function DataEntry() {
                         Entitlement Information
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Customer Master ID */}
+                        {/* Customer Type Filter - First Field */}
+                        <div>
+                          <label
+                            className={`block text-sm font-medium mb-2 ${
+                              isDark ? "text-silver-300" : "text-gray-700"
+                            }`}
+                          >
+                            Customer Type <span className="text-red-500">*</span>
+                          </label>
+                          {editingId !== null ? (
+                            <input
+                              type="text"
+                              value={selectedCustomerType ? formatCustomerType(selectedCustomerType) : ""}
+                              readOnly
+                              disabled
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 cursor-not-allowed opacity-75 ${
+                                isDark
+                                  ? "bg-dark-700 border-dark-600 text-white"
+                                  : "bg-gray-100 border-gold-200 text-dark-900"
+                              } focus:outline-none`}
+                            />
+                          ) : (
+                            <select
+                              name="form_customer_type_filter"
+                              value={formCustomerTypeFilter}
+                              onChange={handleInputChange}
+                              required
+                              style={{
+                                color: isDark ? '#ffffff' : '#1a1a1a',
+                                backgroundColor: isDark ? '#1f2937' : '#ffffff'
+                              }}
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
+                                isDark
+                                  ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                                  : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                              } focus:outline-none`}
+                            >
+                              <option value="">Select Customer Type</option>
+                              <option value="bw">Bandwidth</option>
+                              <option value="channel_partner">Channel Partner</option>
+                              <option value="soho">Home/SOHO</option>
+                            </select>
+                          )}
+                        </div>
+
+                        {/* Customer Name - Second Field (Filtered by customer type) */}
                         <div>
                           <label
                             className={`block text-sm font-medium mb-2 ${
@@ -951,6 +1012,16 @@ export default function DataEntry() {
                             }`}
                           >
                             Customer Name
+                            {!editingId && formCustomerTypeFilter && (() => {
+                              const filteredCustomers = customers.filter(c => c.customer_type === formCustomerTypeFilter);
+                              return (
+                                <span className={`ml-2 text-xs ${
+                                  isDark ? "text-blue-400" : "text-blue-600"
+                                }`}>
+                                  ({filteredCustomers.length} available)
+                                </span>
+                              );
+                            })()}
                           </label>
                           {editingId !== null ? (
                             <input
@@ -982,6 +1053,7 @@ export default function DataEntry() {
                               value={formData.customer_id}
                               onChange={handleInputChange}
                               required
+                              disabled={!formCustomerTypeFilter}
                               style={{
                                 color: isDark ? '#ffffff' : '#1a1a1a',
                                 backgroundColor: isDark ? '#1f2937' : '#ffffff'
@@ -994,21 +1066,25 @@ export default function DataEntry() {
                                   : isDark
                                   ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
                                   : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                              } focus:outline-none`}
+                              } focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed`}
                             >
-                              <option value="">Select Customer</option>
-                              {Array.isArray(customers) && customers.length > 0 ? (
-                                customers.map((customer) => (
-                                  <option 
-                                    key={customer.id} 
-                                    value={customer.id}
-                                  >
-                                    {customer.customer_name || customer.name || 'Unnamed Customer'}
-                                  </option>
-                                ))
-                              ) : (
-                                <option value="" disabled>No customers available</option>
-                              )}
+                              <option value="">
+                                {formCustomerTypeFilter ? "Select Customer" : "Select customer type first"}
+                              </option>
+                              {formCustomerTypeFilter && Array.isArray(customers) && customers.length > 0 ? (
+                                customers
+                                  .filter(customer => customer.customer_type === formCustomerTypeFilter)
+                                  .map((customer) => (
+                                    <option 
+                                      key={customer.id} 
+                                      value={customer.id}
+                                    >
+                                      {customer.customer_name || customer.name || 'Unnamed Customer'}
+                                    </option>
+                                  ))
+                              ) : formCustomerTypeFilter ? (
+                                <option value="" disabled>No customers available for this type</option>
+                              ) : null}
                             </select>
                           )}
                           {validationErrors.customer_id && (
@@ -1018,7 +1094,7 @@ export default function DataEntry() {
                           )}
                         </div>
 
-                        {/* Display Selected Customer Name */}
+                        {/* Display Selected Customer Company Name */}
                         {formData.customer_id && (
                           <div>
                             <label
@@ -1051,50 +1127,30 @@ export default function DataEntry() {
                           </div>
                         )}
 
-                        {/* Customer Type - Read-only, auto-populated */}
-                        <div>
-                          <label
-                            className={`block text-sm font-medium mb-2 ${
-                              isDark ? "text-silver-300" : "text-gray-700"
-                            }`}
-                          >
-                            Customer Type
-                          </label>
-                          <input
-                            type="text"
-                            value={selectedCustomerType ? formatCustomerType(selectedCustomerType) : "Select a customer first"}
-                            readOnly
-                            disabled
-                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 cursor-not-allowed opacity-75 ${
-                              isDark
-                                ? "bg-dark-700 border-dark-600 text-white"
-                                : "bg-gray-100 border-gold-200 text-dark-900"
-                            } focus:outline-none`}
-                          />
-                        </div>
-
                         {/* KAM Name */}
-                        <div>
-                          <label
-                            className={`block text-sm font-medium mb-2 ${
-                              isDark ? "text-silver-300" : "text-gray-700"
-                            }`}
-                          >
-                            KAM Name
-                          </label>
-                          <input
-                            type="text"
-                            name="kam_name"
-                            value={formData.kam_name}
-                            readOnly
-                            disabled
-                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 cursor-not-allowed opacity-75 ${
-                              isDark
-                                ? "bg-dark-700 border-dark-600 text-white"
-                                : "bg-gray-100 border-gold-200 text-dark-900"
-                            } focus:outline-none`}
-                          />
-                        </div>
+                        {formData.customer_id && (
+                          <div>
+                            <label
+                              className={`block text-sm font-medium mb-2 ${
+                                isDark ? "text-silver-300" : "text-gray-700"
+                              }`}
+                            >
+                              KAM Name
+                            </label>
+                            <input
+                              type="text"
+                              name="kam_name"
+                              value={formData.kam_name}
+                              readOnly
+                              disabled
+                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 cursor-not-allowed opacity-75 ${
+                                isDark
+                                  ? "bg-dark-700 border-dark-600 text-white"
+                                  : "bg-gray-100 border-gold-200 text-dark-900"
+                              } focus:outline-none`}
+                            />
+                          </div>
+                        )}
 
                         {/* Remarks */}
                         <div className="md:col-span-2">
