@@ -46,7 +46,7 @@ class PackagePricingViewSet(viewsets.ModelViewSet):
     queryset = PackagePricing.objects.select_related('package_master_id').filter(is_active=True)
     serializer_class = PackagePricingSerializer
     permission_classes = [permissions.IsAuthenticated, RequirePermissions]
-    required_permissions = ['packages:read']
+    required_permissions = ['package_pricing:read']
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['package_master_id', 'is_active']
     ordering_fields = ['val_start_at', 'val_end_at', 'created_at']
@@ -58,6 +58,6 @@ class PackagePricingViewSet(viewsets.ModelViewSet):
     
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            self.required_permissions = ['packages:write']
+            self.required_permissions = ['package_pricing:write']
         return PackagePricingSerializer
 

@@ -6,8 +6,8 @@ from .views import (
 )
 
 router = DefaultRouter()
-router.register(r'', PackageMasterViewSet, basename='package')
 router.register(r'package-pricings', PackagePricingViewSet, basename='package-pricing')
+router.register(r'', PackageMasterViewSet, basename='package')
 
 urlpatterns = [
     path('', include(router.urls)),

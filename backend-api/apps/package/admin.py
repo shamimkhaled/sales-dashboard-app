@@ -8,7 +8,7 @@ class PackagePricingInline(admin.TabularInline):
     model = PackagePricing
     extra = 1
     fields = [
-        'rate', 'description', 'is_active', 
+        'mbps', 'rate', 'description', 'is_active', 
         'val_start_at', 'val_end_at'
     ]
     readonly_fields = ['created_at', 'updated_at']
@@ -73,7 +73,7 @@ class PackageMasterAdmin(admin.ModelAdmin):
 @admin.register(PackagePricing)
 class PackagePricingAdmin(admin.ModelAdmin):
     list_display = [
-        'id', 'package_name', 'package_type', 'rate', 
+        'id', 'package_name', 'package_type', 'mbps', 'rate',
         'val_start_at', 'val_end_at', 'is_active', 'is_currently_active', 'created_at'
     ]
     list_filter = ['is_active', 'val_start_at', 'val_end_at', 'package_master_id__package_type']
@@ -86,7 +86,7 @@ class PackagePricingAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('Pricing Information', {
-            'fields': ('package_master_id', 'rate', 'description', 'is_active')
+            'fields': ('package_master_id', 'mbps', 'rate', 'description', 'is_active')
         }),
         ('Validity Period', {
             'fields': ('val_start_at', 'val_end_at')

@@ -34,6 +34,7 @@ class PackagePricing(models.Model):
         related_name='pricings'
     )
     rate = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, help_text="Only for home packages")
+    mbps = models.IntegerField(null=True, blank=True, help_text="Bandwidth in Mbps")
     description = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
     val_start_at = models.DateField(help_text="Validity start date")

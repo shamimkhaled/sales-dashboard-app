@@ -59,6 +59,8 @@ PERMISSIONS = [
     # Packages & Utilities
     ('packages:read', 'packages', 'read', 'Read packages'),
     ('packages:write', 'packages', 'update', 'Manage packages'),
+    ('package_pricing:read', 'package_pricing:create', 'package_pricing:update', 'package_pricing:delete'),
+
     ('utilities:read', 'utilities', 'read', 'Read utilities'),
     ('utilities:write', 'utilities', 'update', 'Manage utilities'),
     
