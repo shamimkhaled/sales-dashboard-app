@@ -159,9 +159,9 @@ class InvoiceMasterAdmin(admin.ModelAdmin):
     ]
     ordering = ['-created_at']
     readonly_fields = [
-        'invoice_number', 'created_by', 'updated_by', 'created_at', 'updated_at', 'total_bill_amount', 
-        'total_paid_amount', 'total_balance_due', 'total_vat_amount', 
-        'total_discount_amount'
+        'invoice_number', 'created_by', 'updated_by', 'created_at', 'updated_at', 
+        # 'total_bill_amount', 'total_paid_amount', 'total_balance_due', 'total_vat_amount', 
+        # 'total_discount_amount'
     ]
     date_hierarchy = 'issue_date'
     list_per_page = 25
@@ -179,7 +179,7 @@ class InvoiceMasterAdmin(admin.ModelAdmin):
                 'issue_date', 'information_master_id', 'status'
             )
         }),
-        ('Amounts (Auto Calculated)', {
+        ('Amounts', {
             'fields': (
                 'total_bill_amount', 'total_paid_amount', 'total_balance_due',
                 'total_vat_amount', 'total_discount_amount'

@@ -8,7 +8,7 @@ from django.db import transaction, models
 
 
 
-def generate_bill_number(customer_name, bill_id, billing_date=None):
+def generate_bill_number(customer_name, bill_id, billing_date=None, prefix='KTL-BL'):
     """
     Generate unique bill number in format: KTL-BL-{5 chars customer name}-{bill id}-{DDMMYYYY}
     
@@ -34,7 +34,7 @@ def generate_bill_number(customer_name, bill_id, billing_date=None):
     # Format date as DDMMYYYY
     date_str = billing_date.strftime('%d%m%Y')
     
-    # Generate bill number: KTL-BL-{5 chars}-{bill_id}-{DDMMYYYY}
-    bill_number = f"KTL-BL-{clean_name}-{bill_id}-{date_str}"
+    # Generate bill number: {prefix}-{5 chars}-{bill_id}-{DDMMYYYY}
+    bill_number = f"{prefix}-{clean_name}-{bill_id}-{date_str}"
     
     return bill_number
