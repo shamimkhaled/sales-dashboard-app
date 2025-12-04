@@ -19,14 +19,15 @@ class PackagePricingInline(admin.TabularInline):
 class PackageMasterAdmin(admin.ModelAdmin):
     list_display = [
         'id', 'package_name', 'package_type', 'is_active', 
-        'pricings_count', 'active_pricing', 'created_at'
+        # 'pricings_count', 'active_pricing',
+          'created_at'
     ]
     list_filter = ['package_type', 'is_active', 'created_at']
     search_fields = ['package_name']
     ordering = ['package_name']
     readonly_fields = ['created_at', 'updated_at']
     list_per_page = 25
-    inlines = [PackagePricingInline]
+    # inlines = [PackagePricingInline]
     
     fieldsets = (
         ('Package Information', {
@@ -38,36 +39,36 @@ class PackageMasterAdmin(admin.ModelAdmin):
         }),
     )
     
-    def pricings_count(self, obj):
-        """Display count of pricing records"""
-        count = obj.pricings.count()
-        return format_html('<span style="color: blue; font-weight: bold;">{}</span>', count)
-    pricings_count.short_description = 'Pricings Count'
+    # def pricings_count(self, obj):
+    #     """Display count of pricing records"""
+    #     count = obj.pricings.count()
+    #     return format_html('<span style="color: blue; font-weight: bold;">{}</span>', count)
+    # pricings_count.short_description = 'Pricings Count'
     
-    def active_pricing(self, obj):
-        """Display active pricing if available"""
-        from django.utils import timezone
-        today = timezone.now().date()
-        active = obj.pricings.filter(
-            is_active=True,
-            val_start_at__lte=today,
-            val_end_at__gte=today
-        ).first()
-        if active:
-            rate_value = float(active.rate) if active.rate else 0
-            rate_formatted = f"{rate_value:.2f}"
-            return format_html(
-                '<span style="color: green; font-weight: bold;">{}</span> ({} to {})',
-                rate_formatted,
-                active.val_start_at,
-                active.val_end_at
-            )
-        return format_html('<span style="color: red;">No Active Pricing</span>')
-    active_pricing.short_description = 'Active Pricing'
+    # def active_pricing(self, obj):
+    #     """Display active pricing if available"""
+    #     from django.utils import timezone
+    #     today = timezone.now().date()
+    #     active = obj.pricings.filter(
+    #         is_active=True,
+    #         val_start_at__lte=today,
+    #         val_end_at__gte=today
+    #     ).first()
+    #     if active:
+    #         rate_value = float(active.rate) if active.rate else 0
+    #         rate_formatted = f"{rate_value:.2f}"
+    #         return format_html(
+    #             '<span style="color: green; font-weight: bold;">{}</span> ({} to {})',
+    #             rate_formatted,
+    #             active.val_start_at,
+    #             active.val_end_at
+    #         )
+    #     return format_html('<span style="color: red;">No Active Pricing</span>')
+    # active_pricing.short_description = 'Active Pricing'
     
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        return qs.prefetch_related('pricings')
+    # def get_queryset(self, request):
+    #     qs = super().get_queryset(request)
+    #     return qs.prefetch_related('pricings')
 
 
 @admin.register(PackagePricing)
