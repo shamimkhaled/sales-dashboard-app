@@ -24,6 +24,7 @@ import ErrorAlert from "../components/ErrorAlert";
 import Pagination from "../components/Pagination";
 import { billService } from "../services/billService";
 import { customerService } from "../services/customerService";
+import { packageService } from "../services/packageService";
 
 // TODO: Future RBAC Implementation
 // - Add role-based access control for different user types (super admin, admin, user)
@@ -59,6 +60,10 @@ export default function DataEntry() {
   const [viewingBill, setViewingBill] = useState(null);
   const [selectedCustomerType, setSelectedCustomerType] = useState("");
   const [formCustomerTypeFilter, setFormCustomerTypeFilter] = useState("");
+  const [packages, setPackages] = useState([]);
+  const [bandwidthPackageRows, setBandwidthPackageRows] = useState([
+    { id: 1, packageId: "", mbps: "", unitPrice: "", total: "", startDate: new Date().toISOString().split('T')[0], endDate: new Date().toISOString().split('T')[0] }
+  ]);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -109,6 +114,7 @@ export default function DataEntry() {
   useEffect(() => {
     fetchCustomers();
     fetchSalesUsers();
+    fetchPackages();
   }, []);
 
   // Helper function to format customer type for display
@@ -252,6 +258,26 @@ export default function DataEntry() {
     }
   };
 
+  const fetchPackages = async () => {
+    try {
+      const response = await packageService.getAllPackages({ type: 'bw' });
+      // Handle Django REST Framework paginated response
+      if (Array.isArray(response)) {
+        setPackages(response);
+      } else if (response && Array.isArray(response.results)) {
+        setPackages(response.results);
+      } else if (response && Array.isArray(response.data)) {
+        setPackages(response.data);
+      } else {
+        setPackages([]);
+        console.warn("Unexpected packages response format:", response);
+      }
+    } catch (err) {
+      console.error("Failed to fetch packages:", err);
+      setPackages([]);
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     
@@ -319,6 +345,42 @@ export default function DataEntry() {
 
       return newData;
     });
+  };
+
+  // Handle bandwidth package row changes
+  const handleBandwidthPackageChange = (rowId, field, value) => {
+    setBandwidthPackageRows((prev) =>
+      prev.map((row) => {
+        if (row.id === rowId) {
+          const updatedRow = { ...row, [field]: value };
+          // Calculate total when mbps or unitPrice changes
+          if (field === "mbps" || field === "unitPrice") {
+            const mbps = parseFloat(field === "mbps" ? value : row.mbps) || 0;
+            const unitPrice = parseFloat(field === "unitPrice" ? value : row.unitPrice) || 0;
+            updatedRow.total = (mbps * unitPrice).toFixed(2);
+          }
+          return updatedRow;
+        }
+        return row;
+      })
+    );
+  };
+
+  // Add new bandwidth package row
+  const addBandwidthPackageRow = () => {
+    const newId = Math.max(...bandwidthPackageRows.map((r) => r.id), 0) + 1;
+    const today = new Date().toISOString().split('T')[0];
+    setBandwidthPackageRows((prev) => [
+      ...prev,
+      { id: newId, packageId: "", mbps: "", unitPrice: "", total: "", startDate: today, endDate: today }
+    ]);
+  };
+
+  // Remove bandwidth package row
+  const removeBandwidthPackageRow = (rowId) => {
+    if (bandwidthPackageRows.length > 1) {
+      setBandwidthPackageRows((prev) => prev.filter((row) => row.id !== rowId));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -434,6 +496,10 @@ export default function DataEntry() {
     setShowForm(false);
     setFormCustomerTypeFilter("");
     setSelectedCustomerType("");
+    const today = new Date().toISOString().split('T')[0];
+    setBandwidthPackageRows([
+      { id: 1, packageId: "", mbps: "", unitPrice: "", total: "", startDate: today, endDate: today }
+    ]);
   };
 
   const handleEdit = (bill) => {
@@ -1151,28 +1217,6 @@ export default function DataEntry() {
                             />
                           </div>
                         )}
-
-                        {/* Remarks */}
-                        <div className="md:col-span-2">
-                          <label
-                            className={`block text-sm font-medium mb-2 ${
-                              isDark ? "text-silver-300" : "text-gray-700"
-                            }`}
-                          >
-                            Remarks
-                          </label>
-                          <textarea
-                            name="remarks"
-                            value={formData.remarks}
-                            onChange={handleInputChange}
-                            rows="3"
-                            className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                              isDark
-                                ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
-                                : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                            } focus:outline-none`}
-                          />
-                        </div>
                       </div>
                     </div>
 
@@ -1184,7 +1228,9 @@ export default function DataEntry() {
                         }`}>
                           Bandwidth Information
                         </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                        {/* Network Fields - Right below the title */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                           {/* Network Name */}
                           <div>
                             <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
@@ -1232,22 +1278,6 @@ export default function DataEntry() {
                             />
                           </div>
 
-                          {/* Type */}
-                          <div>
-                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
-                              Type
-                            </label>
-                            <input
-                              type="text"
-                              name="type"
-                              value={formData.type}
-                              onChange={handleInputChange}
-                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                              } focus:outline-none`}
-                            />
-                          </div>
-
                           {/* NTTN Capacity */}
                           <div>
                             <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
@@ -1278,271 +1308,143 @@ export default function DataEntry() {
                               } focus:outline-none`}
                             />
                           </div>
+                        </div>
 
-                          {/* INT */}
-                          <div>
-                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
-                              INT
-                            </label>
-                            <input
-                              type="text"
-                              name="iig_qt"
-                              value={formData.iig_qt}
-                              onChange={handleInputChange}
-                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                              } focus:outline-none`}
-                            />
-                          </div>
+                        {/* Dynamic Package Rows */}
+                        <div className="mb-6">
+                          <label className={`block text-sm font-medium mb-3 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
+                            Package Details
+                          </label>
+                          <div className="space-y-3">
+                            {bandwidthPackageRows.map((row, index) => (
+                              <div key={row.id} className="flex flex-wrap items-center gap-3">
+                                {/* Package Name Dropdown */}
+                                <div className="flex-1 min-w-[150px]">
+                                  <select
+                                    value={row.packageId}
+                                    onChange={(e) => handleBandwidthPackageChange(row.id, "packageId", e.target.value)}
+                                    style={{
+                                      color: isDark ? '#ffffff' : '#1a1a1a',
+                                      backgroundColor: isDark ? '#1f2937' : '#ffffff'
+                                    }}
+                                    className={`w-full px-3 py-2 rounded-lg border transition-all duration-300 ${
+                                      isDark
+                                        ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                                        : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                                    } focus:outline-none`}
+                                  >
+                                    <option value="">Package Name</option>
+                                    {packages.map((pkg) => (
+                                      <option key={pkg.id} value={pkg.id}>
+                                        {pkg.package_name || pkg.name}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
 
-                          {/* INT Price */}
-                          <div>
-                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
-                              INT Price
-                            </label>
-                            <input
-                              type="number"
-                              name="iig_qt_price"
-                              value={formData.iig_qt_price}
-                              onChange={handleInputChange}
-                              step="0.01"
-                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                              } focus:outline-none`}
-                            />
-                          </div>
+                                {/* Mbps */}
+                                <div className="w-20">
+                                  <input
+                                    type="number"
+                                    placeholder="Mbps"
+                                    value={row.mbps}
+                                    onChange={(e) => handleBandwidthPackageChange(row.id, "mbps", e.target.value)}
+                                    className={`w-full px-3 py-2 rounded-lg border transition-all duration-300 ${
+                                      isDark
+                                        ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                                        : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                                    } focus:outline-none`}
+                                  />
+                                </div>
 
-                          {/* GGC */}
-                          <div>
-                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
-                              GGC
-                            </label>
-                            <input
-                              type="text"
-                              name="ggc"
-                              value={formData.ggc}
-                              onChange={handleInputChange}
-                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                              } focus:outline-none`}
-                            />
-                          </div>
+                                {/* Unit Price */}
+                                <div className="w-24">
+                                  <input
+                                    type="number"
+                                    placeholder="Unit Price"
+                                    step="0.01"
+                                    value={row.unitPrice}
+                                    onChange={(e) => handleBandwidthPackageChange(row.id, "unitPrice", e.target.value)}
+                                    className={`w-full px-3 py-2 rounded-lg border transition-all duration-300 ${
+                                      isDark
+                                        ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                                        : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                                    } focus:outline-none`}
+                                  />
+                                </div>
 
-                          {/* GGC Price */}
-                          <div>
-                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
-                              GGC Price
-                            </label>
-                            <input
-                              type="number"
-                              name="ggc_price"
-                              value={formData.ggc_price}
-                              onChange={handleInputChange}
-                              step="0.01"
-                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                              } focus:outline-none`}
-                            />
-                          </div>
+                                {/* Total */}
+                                <div className="w-24">
+                                  <input
+                                    type="text"
+                                    placeholder="Total"
+                                    value={row.total}
+                                    readOnly
+                                    className={`w-full px-3 py-2 rounded-lg border transition-all duration-300 cursor-not-allowed ${
+                                      isDark
+                                        ? "bg-dark-800 border-dark-600 text-white"
+                                        : "bg-gray-100 border-gold-200 text-dark-900"
+                                    } focus:outline-none`}
+                                  />
+                                </div>
 
-                          {/* FNA */}
-                          <div>
-                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
-                              FNA
-                            </label>
-                            <input
-                              type="text"
-                              name="fna"
-                              value={formData.fna}
-                              onChange={handleInputChange}
-                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                              } focus:outline-none`}
-                            />
-                          </div>
+                                {/* Start Date */}
+                                <div className="w-36">
+                                  <input
+                                    type="date"
+                                    placeholder="Start Date"
+                                    value={row.startDate}
+                                    onChange={(e) => handleBandwidthPackageChange(row.id, "startDate", e.target.value)}
+                                    className={`w-full px-3 py-2 rounded-lg border transition-all duration-300 ${
+                                      isDark
+                                        ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                                        : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                                    } focus:outline-none`}
+                                  />
+                                </div>
 
-                          {/* FNA Price */}
-                          <div>
-                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
-                              FNA Price
-                            </label>
-                            <input
-                              type="number"
-                              name="fna_price"
-                              value={formData.fna_price}
-                              onChange={handleInputChange}
-                              step="0.01"
-                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                              } focus:outline-none`}
-                            />
-                          </div>
+                                {/* End Date */}
+                                <div className="w-36">
+                                  <input
+                                    type="date"
+                                    placeholder="End Date"
+                                    value={row.endDate}
+                                    onChange={(e) => handleBandwidthPackageChange(row.id, "endDate", e.target.value)}
+                                    className={`w-full px-3 py-2 rounded-lg border transition-all duration-300 ${
+                                      isDark
+                                        ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500"
+                                        : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
+                                    } focus:outline-none`}
+                                  />
+                                </div>
 
-                          {/* BDiX */}
-                          <div>
-                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
-                              BDiX
-                            </label>
-                            <input
-                              type="text"
-                              name="bdix"
-                              value={formData.bdix}
-                              onChange={handleInputChange}
-                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                              } focus:outline-none`}
-                            />
-                          </div>
-
-                          {/* BDiX Price */}
-                          <div>
-                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
-                              BDiX Price
-                            </label>
-                            <input
-                              type="number"
-                              name="bdix_price"
-                              value={formData.bdix_price}
-                              onChange={handleInputChange}
-                              step="0.01"
-                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                              } focus:outline-none`}
-                            />
-                          </div>
-
-                          {/* CDN */}
-                          <div>
-                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
-                              CDN
-                            </label>
-                            <input
-                              type="text"
-                              name="cdn"
-                              value={formData.cdn}
-                              onChange={handleInputChange}
-                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                              } focus:outline-none`}
-                            />
-                          </div>
-
-                          {/* CDN Price */}
-                          <div>
-                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
-                              CDN Price
-                            </label>
-                            <input
-                              type="number"
-                              name="cdn_price"
-                              value={formData.cdn_price}
-                              onChange={handleInputChange}
-                              step="0.01"
-                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                              } focus:outline-none`}
-                            />
-                          </div>
-
-                          {/* Baishan */}
-                          <div>
-                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
-                              Baishan
-                            </label>
-                            <input
-                              type="text"
-                              name="baishan"
-                              value={formData.baishan}
-                              onChange={handleInputChange}
-                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                              } focus:outline-none`}
-                            />
-                          </div>
-
-                          {/* Baishan Price */}
-                          <div>
-                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
-                              Baishan Price
-                            </label>
-                            <input
-                              type="number"
-                              name="baishan_price"
-                              value={formData.baishan_price}
-                              onChange={handleInputChange}
-                              step="0.01"
-                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                              } focus:outline-none`}
-                            />
-                          </div>
-
-                          {/* PNI */}
-                          <div>
-                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
-                              PNI
-                            </label>
-                            <input
-                              type="text"
-                              name="pni"
-                              value={formData.pni}
-                              onChange={handleInputChange}
-                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                              } focus:outline-none`}
-                            />
-                          </div>
-
-                          {/* Max Uses */}
-                          <div>
-                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
-                              Max Uses
-                            </label>
-                            <input
-                              type="text"
-                              name="max_uses"
-                              value={formData.max_uses}
-                              onChange={handleInputChange}
-                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                              } focus:outline-none`}
-                            />
-                          </div>
-
-                          {/* Connection Date */}
-                          <div>
-                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
-                              Connection Date
-                            </label>
-                            <input
-                              type="date"
-                              name="active_date"
-                              value={formData.active_date}
-                              onChange={handleInputChange}
-                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                              } focus:outline-none`}
-                            />
-                          </div>
-
-                          {/* Delivery Status */}
-                          <div>
-                            <label className={`block text-sm font-medium mb-2 ${isDark ? "text-silver-300" : "text-gray-700"}`}>
-                              Delivery Status
-                            </label>
-                            <select
-                              name="delivery_status"
-                              value={formData.delivery_status}
-                              onChange={handleInputChange}
-                              className={`w-full px-4 py-2 rounded-lg border transition-all duration-300 ${
-                                isDark ? "bg-dark-700 border-dark-600 text-white focus:border-gold-500" : "bg-white border-gold-200 text-dark-900 focus:border-gold-500"
-                              } focus:outline-none`}
-                            >
-                              <option value="">Select Status</option>
-                              <option value="Delivered">Delivered</option>
-                              <option value="Pending">Pending</option>
-                              <option value="In Progress">In Progress</option>
-                            </select>
+                                {/* Add/Remove Buttons */}
+                                <div className="flex gap-2">
+                                  {index === bandwidthPackageRows.length - 1 && (
+                                    <motion.button
+                                      type="button"
+                                      whileHover={{ scale: 1.05 }}
+                                      whileTap={{ scale: 0.95 }}
+                                      onClick={addBandwidthPackageRow}
+                                      className="px-3 py-2 rounded-lg font-medium transition-all duration-300 bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 shadow-md"
+                                    >
+                                      <Plus size={18} />
+                                    </motion.button>
+                                  )}
+                                  {bandwidthPackageRows.length > 1 && (
+                                    <motion.button
+                                      type="button"
+                                      whileHover={{ scale: 1.05 }}
+                                      whileTap={{ scale: 0.95 }}
+                                      onClick={() => removeBandwidthPackageRow(row.id)}
+                                      className="px-3 py-2 rounded-lg font-medium transition-all duration-300 bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 shadow-md"
+                                    >
+                                      <Trash2 size={18} />
+                                    </motion.button>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       </div>
