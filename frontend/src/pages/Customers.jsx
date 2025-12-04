@@ -1124,7 +1124,7 @@ export default function Customers() {
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className={`pl-10 pr-4 pe-12 py-2 rounded-lg transition-all duration-300 ${
+                className={`pl-10 pr-4 pe-16 py-2 rounded-lg transition-all duration-300 ${
                   isDark
                     ? "bg-dark-800 text-white focus:outline-none"
                     : "bg-white text-dark-900 focus:outline-none"
@@ -1152,7 +1152,7 @@ export default function Customers() {
               <select
                 value={filterCustomerType}
                 onChange={(e) => setFilterCustomerType(e.target.value)}
-                className={`pl-10 pr-4 pe-10 py-2 rounded-lg transition-all duration-300 ${
+                className={`pl-10 pr-8 pe-10 py-2 rounded-lg transition-all duration-300 ${
                   isDark
                     ? "bg-dark-800 text-white focus:outline-none"
                     : "bg-white text-dark-900 focus:outline-none"
@@ -1227,41 +1227,45 @@ export default function Customers() {
                       >
                         Customer Type
                       </th>
-                      <th
-                        className={`px-6 py-4 text-left text-sm font-semibold ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Total Client
-                      </th>
-                      <th
-                        className={`px-6 py-4 text-left text-sm font-semibold ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Total Active Client
-                      </th>
-                      <th
-                        className={`px-6 py-4 text-left text-sm font-semibold ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Previous Total Client
-                      </th>
-                      <th
-                        className={`px-6 py-4 text-left text-sm font-semibold ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Free Giveaway Client
-                      </th>
-                      <th
-                        className={`px-6 py-4 text-left text-sm font-semibold ${
-                          isDark ? "text-silver-300" : "text-gray-700"
-                        }`}
-                      >
-                        Default Percentage Share
-                      </th>
+                      {filterCustomerType === "channel_partner" && (
+                        <>
+                          <th
+                            className={`px-6 py-4 text-left text-sm font-semibold ${
+                              isDark ? "text-silver-300" : "text-gray-700"
+                            }`}
+                          >
+                            Total Client
+                          </th>
+                          <th
+                            className={`px-6 py-4 text-left text-sm font-semibold ${
+                              isDark ? "text-silver-300" : "text-gray-700"
+                            }`}
+                          >
+                            Total Active Client
+                          </th>
+                          <th
+                            className={`px-6 py-4 text-left text-sm font-semibold ${
+                              isDark ? "text-silver-300" : "text-gray-700"
+                            }`}
+                          >
+                            Previous Total Client
+                          </th>
+                          <th
+                            className={`px-6 py-4 text-left text-sm font-semibold ${
+                              isDark ? "text-silver-300" : "text-gray-700"
+                            }`}
+                          >
+                            Free Giveaway Client
+                          </th>
+                          <th
+                            className={`px-6 py-4 text-left text-sm font-semibold ${
+                              isDark ? "text-silver-300" : "text-gray-700"
+                            }`}
+                          >
+                            Default Percentage Share
+                          </th>
+                        </>
+                      )}
                       <th
                         className={`px-6 py-4 text-left text-sm font-semibold ${
                           isDark ? "text-silver-300" : "text-gray-700"
@@ -1342,41 +1346,45 @@ export default function Customers() {
                         >
                           {getCustomerTypeDisplay(customer.customer_type)}
                         </td>
-                        <td
-                          className={`px-6 py-4 text-sm ${
-                            isDark ? "text-silver-300" : "text-gray-700"
-                          }`}
-                        >
-                          {customer.total_client || "-"}
-                        </td>
-                        <td
-                          className={`px-6 py-4 text-sm ${
-                            isDark ? "text-silver-300" : "text-gray-700"
-                          }`}
-                        >
-                          {customer.total_active_client || "-"}
-                        </td>
-                        <td
-                          className={`px-6 py-4 text-sm ${
-                            isDark ? "text-silver-300" : "text-gray-700"
-                          }`}
-                        >
-                          {customer.previous_total_client || "-"}
-                        </td>
-                        <td
-                          className={`px-6 py-4 text-sm ${
-                            isDark ? "text-silver-300" : "text-gray-700"
-                          }`}
-                        >
-                          {customer.free_giveaway_client || "-"}
-                        </td>
-                        <td
-                          className={`px-6 py-4 text-sm ${
-                            isDark ? "text-silver-300" : "text-gray-700"
-                          }`}
-                        >
-                          {customer.default_percentage_share || "-"}
-                        </td>
+                        {filterCustomerType === "channel_partner" && (
+                          <>
+                            <td
+                              className={`px-6 py-4 text-sm ${
+                                isDark ? "text-silver-300" : "text-gray-700"
+                              }`}
+                            >
+                              {customer.total_client || "-"}
+                            </td>
+                            <td
+                              className={`px-6 py-4 text-sm ${
+                                isDark ? "text-silver-300" : "text-gray-700"
+                              }`}
+                            >
+                              {customer.total_active_client || "-"}
+                            </td>
+                            <td
+                              className={`px-6 py-4 text-sm ${
+                                isDark ? "text-silver-300" : "text-gray-700"
+                              }`}
+                            >
+                              {customer.previous_total_client || "-"}
+                            </td>
+                            <td
+                              className={`px-6 py-4 text-sm ${
+                                isDark ? "text-silver-300" : "text-gray-700"
+                              }`}
+                            >
+                              {customer.free_giveaway_client || "-"}
+                            </td>
+                            <td
+                              className={`px-6 py-4 text-sm ${
+                                isDark ? "text-silver-300" : "text-gray-700"
+                              }`}
+                            >
+                              {customer.default_percentage_share || "-"}
+                            </td>
+                          </>
+                        )}
                         <td
                           className={`px-6 py-4 text-sm ${
                             isDark ? "text-silver-300" : "text-gray-700"
