@@ -40,7 +40,7 @@ class CustomerEntitlementMasterAdmin(admin.ModelAdmin):
             'fields': ('customer_master_id', 'activation_date', 'total_bill')
         }),
         ('NTTN Information', {
-            'fields': ('nttn_company', 'nttn_capacity'),
+            'fields': ('nttn_company', 'nttn_capacity', 'link_id', 'nttn_uses'),
             'classes': ('collapse',)
         }),
         ('Home Package Information', {

@@ -17,6 +17,8 @@ class CustomerEntitlementMaster(models.Model):
     activation_date = models.DateField(null=True, blank=True)
     nttn_company = models.CharField(max_length=200, blank=True, null=True)
     nttn_capacity = models.CharField(max_length=100, blank=True, null=True)
+    link_id = models.CharField(max_length=100, blank=True, null=True)
+    nttn_uses = models.CharField(max_length=100, blank=True, null=True)
     total_bill = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     type_of_bw = models.CharField(max_length=50, blank=True, null=True, help_text="Home only")
     type_of_connection = models.CharField(max_length=50, blank=True, null=True, help_text="Home only")
